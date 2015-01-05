@@ -1081,12 +1081,12 @@ function setup_ISCC_pages()
 		addpage( [[ 'Tower Solar Field' ]], { 'sidebar'='Heliostat Field', 'help'='mspt_heliostat_field' } );
 		addpage( [[ 'Molten Salt Tower Receiver',{'name' = 'ISCC Receiver and Powerblock', 'caption'='DESIGN POINT Integration with Natural Gas Combined Cycle',
 		'collapsible'=false,'collapsible_var'='iscc_is_shown'}]], { 'sidebar'='Tower and Receiver', 'help'='mspt_tower_and_receiver' } );
-		addpage( [[ 'Molten Salt Tower Parasitics' ]], { 'sidebar'='Parasitics', 'help'='mspt_parasitics' } );
+		addpage( [[ 'ISCC Parasitics' ]], { 'sidebar'='Parasitics', 'help'='mspt_parasitics' } );
 }
 
 //-----------------------------------------------------
 setconfig( 'ISCC', 'Single Owner' );
-setmodules( ['tcsmolten_salt', 'singleowner']);
+setmodules( ['tcsiscc', 'singleowner']);
 setup_ISCC_pages();
 addpage( [[ 'Tower Capital Costs','O and M Costs']],{ 'sidebar'='System Costs', 'help'='pt_system_costs' } );
 setup_single_owner_pages(true);
