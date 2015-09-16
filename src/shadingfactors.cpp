@@ -157,7 +157,7 @@ bool ShadingInputData::read( VarValue *root )
 }
 
 
-static const char *hourly_text = "The Hourly 8760 option is appropriate if you have a set of hourly beam shading losses for each of the 8,760 hours in a year. ";
+static const char *hourly_text = "The timestep option is appropriate if you have a set of beam shading losses for each of the simulation timesteps in a single year. ";
 static const char *mxh_text = "The Month by Hour option allows you to specify a set of 288 (12 months x 24 hours) beam shading losses that apply to the 24 hours of the day for each month of the year. Select a cell or group of cells and type a number between 0% and 100% to assign values to the table by hand. Click Import to import a table of values from a properly formatted text file. ";
 static const char *azal_text = "The Azimuth by Altitude option allows you to specify a set of beam shading losses for different sun positions.\n"
   "1. Define the size of the table by entering values for the number of rows and columns.\n"
@@ -178,8 +178,8 @@ class ShadingDialog : public wxDialog
 {
 	wxScrolledWindow *m_scrollWin;
 
-	wxCheckBox *m_enableHourly;
-	AFDataArrayButton *m_hourly;
+	wxCheckBox *m_enableTimestep;
+	AFDataMatrixCtrl *m_timestep;
 	wxStaticText *m_textHourly;
 	 
 	wxCheckBox *m_enableMxH;
@@ -208,9 +208,17 @@ public:
 		m_scrollWin = new wxScrolledWindow( this, wxID_ANY );
 		m_scrollWin->SetScrollRate( 50, 50 );
 
-		m_enableHourly = new wxCheckBox( m_scrollWin, ID_ENABLE_HOURLY, "Enable hourly beam irradiance shading losses" );
-		m_hourly = new AFDataArrayButton( m_scrollWin, wxID_ANY );
-		m_hourly->SetMode( DATA_ARRAY_8760_ONLY );
+		m_enableTimestep = new wxCheckBox( m_scrollWin, ID_ENABLE_HOURLY, "Enable timestep beam irradiance shading losses" );
+		m_timestep = new AFDataMatrixCtrl(m_scrollWin, wxID_ANY);
+		m_timestep->SetInitialSize(wxSize(900, 200));
+		m_timestep->ShowLabels(false);
+
+		matrix_t<float> ts_data(8761, 9, 1.0);
+		for (int c = 1; c<9; c++)
+			ts_data.at(0, c) = c;
+		for (int r = 1; r<8761; r++)
+			ts_data.at(r, 0) = r;
+		m_timestep->SetData(ts_data);
 
 		m_enableMxH = new wxCheckBox( m_scrollWin, ID_ENABLE_MXH, "Enable month by hour beam irradiance shading losses" );
 		m_mxh = new AFMonthByHourFactorCtrl( m_scrollWin, wxID_ANY );
@@ -244,9 +252,9 @@ public:
 		scroll->Add( import_tools, 0, wxALL, 5 );
 		scroll->Add( new wxStaticLine( m_scrollWin ), 0, wxALL|wxEXPAND );
 
-		scroll->Add( m_enableHourly, 0, wxALL|wxEXPAND, 5 );
+		scroll->Add( m_enableTimestep, 0, wxALL|wxEXPAND, 5 );
 		scroll->Add( m_textHourly = new wxStaticText( m_scrollWin, wxID_ANY, hourly_text ), 0, wxALL|wxEXPAND, 10 );
-		scroll->Add( m_hourly, 0, wxALL, 5 );
+		scroll->Add( m_timestep, 0, wxALL, 5 );
 		m_textHourly->Wrap( wrap_width );
 		m_textHourly->SetForegroundColour( text_color );
 		
@@ -289,8 +297,8 @@ public:
 
 	void UpdateVisibility()
 	{
-		m_hourly->Show( m_enableHourly->IsChecked() );
-		m_textHourly->Show( m_enableHourly->IsChecked() );
+		m_timestep->Show( m_enableTimestep->IsChecked() );
+		m_textHourly->Show( m_enableTimestep->IsChecked() );
 		
 		m_mxh->Show( m_enableMxH->IsChecked() );
 		m_textMxH->Show( m_enableMxH->IsChecked() );
@@ -369,8 +377,8 @@ public:
 
 		if ( all || sh.en_hourly )
 		{
-			m_enableHourly->SetValue( sh.en_hourly );
-			m_hourly->Set( sh.hourly );
+			m_enableTimestep->SetValue( sh.en_hourly );
+//			m_timestep->Set( sh.hourly ); load previous hourly array
 			stat += "Updated hourly beam shading losses.\n";
 		}
 
@@ -402,8 +410,8 @@ public:
 
 	void Save( ShadingInputData &sh )
 	{
-		sh.en_hourly = m_enableHourly->IsChecked();
-		m_hourly->Get( sh.hourly );
+		sh.en_hourly = m_enableTimestep->IsChecked();
+		//m_timestep->Get( sh.hourly ); get data and save matrix data
 
 		sh.en_mxh = m_enableMxH->IsChecked();
 		sh.mxh.copy( m_mxh->GetData() );
@@ -413,6 +421,8 @@ public:
 
 		sh.en_diff = m_enableDiffuse->IsChecked();
 		sh.diff = m_diffuseFrac->Value();
+
+		
 	}
 
 	DECLARE_EVENT_TABLE()
