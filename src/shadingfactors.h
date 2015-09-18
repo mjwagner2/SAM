@@ -70,5 +70,62 @@ bool ImportSunEyeHourly( ShadingInputData &dat, wxWindow *parent = 0 );
 bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent = 0 );
 bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent = 0 );
 
+
+/* custom control for shading fractions for each parallel string (up to 8) in each subarray (up to 4)  can move to widgets or wex if necessary */
+BEGIN_DECLARE_EVENT_TYPES()
+DECLARE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE, 0)
+END_DECLARE_EVENT_TYPES()
+
+
+class wxSpinBoxGridCtrl : public wxPanel
+{
+public:
+	wxSpinBoxGridCtrl(wxWindow *parent, int id,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &sz = wxDefaultSize,
+		bool sidebuttons = false);
+
+	void SetData(const matrix_t<float> &mat);
+	void GetData(matrix_t<float> &mat);
+	matrix_t<float> GetData() const { return m_data; }
+
+
+	void SetCaption(const wxString &cap);
+	wxString GetCaption();
+
+
+	void ShowCols(bool b);
+	bool ShowCols();
+
+	void ShowColLabels(bool b);
+	bool ShowColLabels();
+
+	void SetColLabels(const wxString &colLabels);
+	wxString GetColLabels();
+
+
+private:
+
+	wxString m_rowFormat;
+	wxString m_colFormat;
+
+	matrix_t<float> m_data;
+	wxExtGridCtrl *m_grid;
+	wxStaticText *m_caption;
+
+
+	void OnCellChange(wxGridEvent &evt);
+	void OnCommand(wxCommandEvent &evt);
+
+
+	void MatrixToGrid();
+
+	DECLARE_EVENT_TABLE();
+};
+
+
+
+
+
 #endif
 

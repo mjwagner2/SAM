@@ -179,7 +179,7 @@ class ShadingDialog : public wxDialog
 	wxScrolledWindow *m_scrollWin;
 
 	wxCheckBox *m_enableTimestep;
-	AFDataMatrixCtrl *m_timestep;
+	wxSpinBoxGridCtrl *m_timestep;
 	wxStaticText *m_textHourly;
 	 
 	wxCheckBox *m_enableMxH;
@@ -209,15 +209,10 @@ public:
 		m_scrollWin->SetScrollRate( 50, 50 );
 
 		m_enableTimestep = new wxCheckBox( m_scrollWin, ID_ENABLE_HOURLY, "Enable timestep beam irradiance shading losses" );
-		m_timestep = new AFDataMatrixCtrl(m_scrollWin, wxID_ANY);
+		m_timestep = new wxSpinBoxGridCtrl(m_scrollWin, wxID_ANY);
 		m_timestep->SetInitialSize(wxSize(900, 200));
-		m_timestep->ShowLabels(false);
 
-		matrix_t<float> ts_data(8761, 9, 1.0);
-		for (int c = 1; c<9; c++)
-			ts_data.at(0, c) = c;
-		for (int r = 1; r<8761; r++)
-			ts_data.at(r, 0) = r;
+		matrix_t<float> ts_data(8760, 8, 0);
 		m_timestep->SetData(ts_data);
 
 		m_enableMxH = new wxCheckBox( m_scrollWin, ID_ENABLE_MXH, "Enable month by hour beam irradiance shading losses" );
@@ -229,7 +224,7 @@ public:
 		m_azal->SetInitialSize( wxSize(900,280) );
 		m_azal->ShowLabels( false );
 
-		matrix_t<float> data(10, 18, 1.0);
+		matrix_t<float> data(10, 18, 0);
 		for ( int c=0;c<18;c++ )
 			data.at(0, c) = c*20;
 		for ( int r=0;r<10;r++ )
@@ -1028,3 +1023,133 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 		return false;
 	}
 }
+
+
+
+
+DEFINE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE)
+
+enum { IDDMC_NUMROWS = wxID_HIGHEST + 857, IDDMC_NUMCOLS, IDDMC_GRID, IDDMC_COPY, IDDMC_PASTE };
+
+BEGIN_EVENT_TABLE(wxSpinBoxGridCtrl, wxPanel)
+EVT_GRID_CMD_CELL_CHANGE(IDDMC_GRID, wxSpinBoxGridCtrl::OnCellChange)
+END_EVENT_TABLE()
+
+wxSpinBoxGridCtrl::wxSpinBoxGridCtrl(wxWindow *parent, int id,
+const wxPoint &pos,
+const wxSize &sz,
+bool sidebuttons)
+: wxPanel(parent, id, pos, sz)
+{
+
+	m_grid = new wxExtGridCtrl(this, IDDMC_GRID);
+	m_grid->CreateGrid(8, 12);
+	m_grid->EnableCopyPaste(true);
+	m_grid->EnablePasteEvent(false);
+	m_grid->DisableDragCell();
+	m_grid->DisableDragRowSize();
+	m_grid->DisableDragColMove();
+	m_grid->DisableDragGridSize();
+	m_grid->SetRowLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+
+	m_caption = new wxStaticText(this, wxID_ANY, "");
+	m_caption->SetFont(*wxNORMAL_FONT);
+
+	if (sidebuttons)
+	{
+		// for side buttons layout
+		wxBoxSizer *v_tb_sizer = new wxBoxSizer(wxVERTICAL);
+		v_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->AddStretchSpacer();
+
+		wxBoxSizer *h_sizer = new wxBoxSizer(wxHORIZONTAL);
+		h_sizer->Add(v_tb_sizer, 0, wxALL | wxEXPAND, 1);
+		h_sizer->Add(m_grid, 1, wxALL | wxEXPAND, 1);
+
+		SetSizer(h_sizer);
+	}
+	else
+	{
+		// for top buttons layout (default)
+		wxBoxSizer *h_tb_sizer = new wxBoxSizer(wxHORIZONTAL);
+		h_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->AddStretchSpacer();
+		wxBoxSizer *v_sizer = new wxBoxSizer(wxVERTICAL);
+		v_sizer->Add(h_tb_sizer, 0, wxALL | wxEXPAND, 1);
+		v_sizer->Add(m_grid, 1, wxALL | wxEXPAND, 1);
+
+		SetSizer(v_sizer, false);
+	}
+
+
+	if (m_caption->GetLabel().Length() == 0)
+		m_caption->Show(false);
+	else
+		m_caption->Show(true);
+
+	MatrixToGrid();
+}
+
+
+
+
+
+void wxSpinBoxGridCtrl::SetData(const matrix_t<float> &mat)
+{
+	m_data = mat;
+	MatrixToGrid();
+}
+
+void wxSpinBoxGridCtrl::GetData(matrix_t<float> &mat)
+{
+	mat = m_data;
+}
+
+
+
+void wxSpinBoxGridCtrl::OnCellChange(wxGridEvent &evt)
+{
+	int irow = evt.GetRow();
+	int icol = evt.GetCol();
+
+	float val = (float)wxAtof(m_grid->GetCellValue(irow, icol).c_str());
+
+
+	if (irow < m_data.nrows() && icol < m_data.ncols()
+		&& irow >= 0 && icol >= 0)
+		m_data.at(irow, icol) = val;
+
+	m_grid->SetCellValue(irow, icol, wxString::Format("%g", val));
+
+	wxCommandEvent dmcevt(wxEVT_wxSpinBoxGridCtrl_CHANGE, this->GetId());
+	dmcevt.SetEventObject(this);
+	GetEventHandler()->ProcessEvent(dmcevt);
+}
+
+
+
+void wxSpinBoxGridCtrl::MatrixToGrid()
+{
+	int r, nr = m_data.nrows();
+	int c, nc = m_data.ncols();
+
+	m_grid->ResizeGrid(nr, nc);
+	for (r = 0; r<nr; r++)
+		for (c = 0; c<nc; c++)
+			m_grid->SetCellValue(r, c, wxString::Format("%g", m_data.at(r, c)));
+
+
+}
+
+
+void wxSpinBoxGridCtrl::SetCaption(const wxString &cap)
+{
+	m_caption->SetLabel(cap);
+	this->Layout();
+}
+
+wxString wxSpinBoxGridCtrl::GetCaption()
+{
+	return m_caption->GetLabel();
+}
+
