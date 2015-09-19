@@ -212,8 +212,15 @@ public:
 		m_timestep = new wxSpinBoxGridCtrl(m_scrollWin, wxID_ANY);
 		m_timestep->SetInitialSize(wxSize(900, 200));
 
-		matrix_t<float> ts_data(8760, 8, 0);
+		m_timestep->SetCaption(wxString("Number of parallel strings") + wxString((!descText.IsEmpty() ? " for " : "")) + descText);
+		int num_cols = 8;
+		// TODO: 8760 should be weather file timestep
+		matrix_t<float> ts_data(8760, num_cols, 0);
 		m_timestep->SetData(ts_data);
+		wxArrayString cl;
+		for (size_t i = 0; i < num_cols; i++)
+			cl.push_back(wxString::Format("String %d", i+1));
+		m_timestep->SetColLabels(cl);
 
 		m_enableMxH = new wxCheckBox( m_scrollWin, ID_ENABLE_MXH, "Enable month by hour beam irradiance shading losses" );
 		m_mxh = new AFMonthByHourFactorCtrl( m_scrollWin, wxID_ANY );
@@ -1029,10 +1036,11 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 
 DEFINE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE)
 
-enum { IDDMC_NUMROWS = wxID_HIGHEST + 857, IDDMC_NUMCOLS, IDDMC_GRID, IDDMC_COPY, IDDMC_PASTE };
+enum { ISBGC_SPIN = wxID_HIGHEST + 857, ISBGC_GRID };
 
 BEGIN_EVENT_TABLE(wxSpinBoxGridCtrl, wxPanel)
-EVT_GRID_CMD_CELL_CHANGE(IDDMC_GRID, wxSpinBoxGridCtrl::OnCellChange)
+EVT_GRID_CMD_CELL_CHANGE(ISBGC_GRID, wxSpinBoxGridCtrl::OnCellChange)
+EVT_SPINCTRL(ISBGC_SPIN, wxSpinBoxGridCtrl::OnSpin)
 END_EVENT_TABLE()
 
 wxSpinBoxGridCtrl::wxSpinBoxGridCtrl(wxWindow *parent, int id,
@@ -1042,7 +1050,7 @@ bool sidebuttons)
 : wxPanel(parent, id, pos, sz)
 {
 
-	m_grid = new wxExtGridCtrl(this, IDDMC_GRID);
+	m_grid = new wxExtGridCtrl(this, ISBGC_GRID);
 	m_grid->CreateGrid(8, 12);
 	m_grid->EnableCopyPaste(true);
 	m_grid->EnablePasteEvent(false);
@@ -1055,11 +1063,15 @@ bool sidebuttons)
 	m_caption = new wxStaticText(this, wxID_ANY, "");
 	m_caption->SetFont(*wxNORMAL_FONT);
 
+	m_spin = new wxSpinCtrl(this, ISBGC_SPIN);
+
+
 	if (sidebuttons)
 	{
 		// for side buttons layout
 		wxBoxSizer *v_tb_sizer = new wxBoxSizer(wxVERTICAL);
 		v_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_spin, 0, wxALL | wxEXPAND, 3);
 		v_tb_sizer->AddStretchSpacer();
 
 		wxBoxSizer *h_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -1073,6 +1085,7 @@ bool sidebuttons)
 		// for top buttons layout (default)
 		wxBoxSizer *h_tb_sizer = new wxBoxSizer(wxHORIZONTAL);
 		h_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_spin, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
 		h_tb_sizer->AddStretchSpacer();
 		wxBoxSizer *v_sizer = new wxBoxSizer(wxVERTICAL);
 		v_sizer->Add(h_tb_sizer, 0, wxALL | wxEXPAND, 1);
@@ -1092,7 +1105,14 @@ bool sidebuttons)
 
 
 
+void wxSpinBoxGridCtrl::OnSpin(wxSpinEvent  &evt)
+{
+	if (m_spin->GetValue() != m_num_cols)
+	{ // update number of cols and add or remove data
 
+
+	}
+}
 
 void wxSpinBoxGridCtrl::SetData(const matrix_t<float> &mat)
 {
@@ -1133,6 +1153,10 @@ void wxSpinBoxGridCtrl::MatrixToGrid()
 	int r, nr = m_data.nrows();
 	int c, nc = m_data.ncols();
 
+	m_spin->SetValue(nc);
+	m_num_cols = nc;
+	m_num_rows = nr;
+
 	m_grid->ResizeGrid(nr, nc);
 	for (r = 0; r<nr; r++)
 		for (c = 0; c<nc; c++)
@@ -1151,5 +1175,32 @@ void wxSpinBoxGridCtrl::SetCaption(const wxString &cap)
 wxString wxSpinBoxGridCtrl::GetCaption()
 {
 	return m_caption->GetLabel();
+}
+
+
+void wxSpinBoxGridCtrl::SetNumCols(int &cols)
+{
+	m_num_cols = cols;
+	// TODO update matrix data and grid
+}
+
+void wxSpinBoxGridCtrl::SetNumRows(int &rows)
+{
+	m_num_rows = rows;
+	// TODO update matrix data and grid
+}
+
+void wxSpinBoxGridCtrl::SetColLabels(const wxArrayString &colLabels)
+{
+	for (size_t i = 0; i < m_grid->GetNumberCols() && i < colLabels.Count(); i++)
+		m_grid->SetColLabelValue(i, colLabels[i]);
+}
+
+wxArrayString wxSpinBoxGridCtrl::GetColLabels()
+{
+	wxArrayString ret;
+	for (size_t i = 0; i < m_grid->GetNumberCols(); i++)
+		ret.push_back(m_grid->GetColLabelValue(i));
+	return ret;
 }
 

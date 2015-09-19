@@ -8,6 +8,8 @@
 #include <wx/splitter.h>
 #include <wx/aui/auibook.h>
 #include <wx/imaglist.h>
+#include <wx/spinctrl.h>
+#include <wx/spinbutt.h>
 
 #include <wex/numeric.h>
 
@@ -65,16 +67,11 @@ private:
 };
 
 
-bool ImportPVsystNearShading( ShadingInputData &dat, wxWindow *parent = 0 );
-bool ImportSunEyeHourly( ShadingInputData &dat, wxWindow *parent = 0 );
-bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent = 0 );
-bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent = 0 );
-
-
 /* custom control for shading fractions for each parallel string (up to 8) in each subarray (up to 4)  can move to widgets or wex if necessary */
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE, 0)
 END_DECLARE_EVENT_TYPES()
+
 
 
 class wxSpinBoxGridCtrl : public wxPanel
@@ -100,28 +97,48 @@ public:
 	void ShowColLabels(bool b);
 	bool ShowColLabels();
 
-	void SetColLabels(const wxString &colLabels);
-	wxString GetColLabels();
+	void SetColLabels(const wxArrayString &colLabels);
+	wxArrayString GetColLabels();
 
+	int GetNumCols() { return m_num_cols; }
+	int GetNumRows() { return m_num_rows; }
+
+	void SetNumCols(int &cols);
+	void SetNumRows(int &rows);
 
 private:
 
-	wxString m_rowFormat;
-	wxString m_colFormat;
+//	wxString m_rowFormat;
+//	wxString m_colFormat;
 
 	matrix_t<float> m_data;
 	wxExtGridCtrl *m_grid;
 	wxStaticText *m_caption;
+	wxSpinCtrl *m_spin;
 
+	int m_num_cols;
+	int m_num_rows;
 
 	void OnCellChange(wxGridEvent &evt);
 	void OnCommand(wxCommandEvent &evt);
+	void OnSpin(wxSpinEvent  &evt);
 
 
 	void MatrixToGrid();
 
 	DECLARE_EVENT_TABLE();
 };
+
+
+
+
+
+bool ImportPVsystNearShading( ShadingInputData &dat, wxWindow *parent = 0 );
+bool ImportSunEyeHourly( ShadingInputData &dat, wxWindow *parent = 0 );
+bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent = 0 );
+bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent = 0 );
+
+
 
 
 
