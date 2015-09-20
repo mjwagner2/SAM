@@ -100,17 +100,34 @@ public:
 	void SetColLabels(const wxArrayString &colLabels);
 	wxArrayString GetColLabels();
 
+	void SetColLabelFormatString(const wxString &col_format_str);
+	wxString GetColLabelFormatString() { return m_col_format_str; }
+
 	int GetNumCols() { return m_num_cols; }
 	int GetNumRows() { return m_num_rows; }
 
 	void SetNumCols(int &cols);
 	void SetNumRows(int &rows);
 
+	void SetDefaultValue(float &default_val) { m_default_val=default_val; }
+	float GetDefaultValue() { return m_default_val; }
+
+	void SetMinimumNumberCols(int &min_cols);
+	int GetMinimumNumberCols() { return m_min_cols; }
+
+	void SetMaximumNumberCols(int &max_cols);
+	int GetMaximumNumberCols() { return m_max_cols; }
+
 private:
+	void UpdateNumberColumns(int &new_cols);
+	void UpdateColumnHeaders();
 
-//	wxString m_rowFormat;
-//	wxString m_colFormat;
-
+	bool m_col_header_use_format;
+	wxArrayString m_col_ary_str;
+	wxString m_col_format_str;
+	float m_default_val;
+	int m_min_cols;
+	int m_max_cols;
 	matrix_t<float> m_data;
 	wxExtGridCtrl *m_grid;
 	wxStaticText *m_caption;

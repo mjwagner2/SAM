@@ -1049,11 +1049,17 @@ const wxSize &sz,
 bool sidebuttons)
 : wxPanel(parent, id, pos, sz)
 {
+	m_default_val = 0;
+	m_min_cols = 1;
+	m_max_cols = 8;
+	m_col_header_use_format = false;
+	m_col_ary_str.Clear();
+	m_col_format_str = wxEmptyString;
 
 	m_grid = new wxExtGridCtrl(this, ISBGC_GRID);
 	m_grid->CreateGrid(8, 12);
 	m_grid->EnableCopyPaste(true);
-	m_grid->EnablePasteEvent(false);
+	m_grid->EnablePasteEvent(true);
 	m_grid->DisableDragCell();
 	m_grid->DisableDragRowSize();
 	m_grid->DisableDragColMove();
@@ -1064,7 +1070,8 @@ bool sidebuttons)
 	m_caption->SetFont(*wxNORMAL_FONT);
 
 	m_spin = new wxSpinCtrl(this, ISBGC_SPIN);
-
+	m_spin->SetMax(m_max_cols);
+	m_spin->SetMin(m_min_cols);
 
 	if (sidebuttons)
 	{
@@ -1094,23 +1101,72 @@ bool sidebuttons)
 		SetSizer(v_sizer, false);
 	}
 
-
-	if (m_caption->GetLabel().Length() == 0)
-		m_caption->Show(false);
-	else
-		m_caption->Show(true);
-
 	MatrixToGrid();
 }
 
 
+void wxSpinBoxGridCtrl::UpdateNumberColumns(int &new_cols)
+{
+	// resize and preserve existing data and fill new data with default.
+	m_data.resize_preserve(m_num_rows, new_cols, m_default_val);
+	MatrixToGrid();
+}
+
+
+void wxSpinBoxGridCtrl::UpdateColumnHeaders()
+{
+	if (m_col_header_use_format)
+	{
+		for (size_t i = 0; i < m_grid->GetNumberCols(); i++)
+		{
+			if (m_col_format_str.Find("%d") != wxNOT_FOUND)
+				m_grid->SetColLabelValue(i, wxString::Format(m_col_format_str, i));
+			else
+				m_grid->SetColLabelValue(i, m_col_format_str);
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < m_grid->GetNumberCols() && i < m_col_ary_str.Count(); i++)
+			m_grid->SetColLabelValue(i, m_col_ary_str[i]);
+	}
+}
+
+
+
+void wxSpinBoxGridCtrl::SetColLabelFormatString(const wxString &col_format_str)
+{
+	if (col_format_str != m_col_format_str)
+		m_col_format_str = col_format_str;
+	m_col_header_use_format = false;
+	UpdateColumnHeaders();
+}
+
+
+void wxSpinBoxGridCtrl::SetMinimumNumberCols(int &min_cols)
+{
+	if ((min_cols > 0) && (min_cols != m_min_cols))
+	{
+		m_min_cols = min_cols;
+		m_spin->SetMin(m_min_cols);
+	}
+}
+
+void wxSpinBoxGridCtrl::SetMaximumNumberCols(int &max_cols)
+{
+	if ((max_cols > m_min_cols) && (max_cols != m_max_cols))
+	{
+		m_max_cols = max_cols;
+		m_spin->SetMax(m_max_cols);
+	}
+}
 
 void wxSpinBoxGridCtrl::OnSpin(wxSpinEvent  &evt)
 {
 	if (m_spin->GetValue() != m_num_cols)
 	{ // update number of cols and add or remove data
-
-
+		int new_cols = m_spin->GetValue();
+		UpdateNumberColumns(new_cols);
 	}
 }
 
@@ -1132,15 +1188,26 @@ void wxSpinBoxGridCtrl::OnCellChange(wxGridEvent &evt)
 	int irow = evt.GetRow();
 	int icol = evt.GetCol();
 
-	float val = (float)wxAtof(m_grid->GetCellValue(irow, icol).c_str());
+	if (irow == -1 && icol == -1) // paste event generated from base class
+	{
+		for (int ir = 0; ir < m_grid->GetNumberRows(); ir++)
+			for (int ic = 0; ic < m_grid->GetNumberCols(); ic++)
+			{
+				float val = (float)wxAtof(m_grid->GetCellValue(ir, ic).c_str());
+				m_data.at(ir, ic) = val;
+				m_grid->SetCellValue(ir, ic, wxString::Format("%g", val));
+			}
+	}
+	else
+	{
+		float val = (float)wxAtof(m_grid->GetCellValue(irow, icol).c_str());
 
+		if (irow < m_data.nrows() && icol < m_data.ncols()
+			&& irow >= 0 && icol >= 0)
+			m_data.at(irow, icol) = val;
 
-	if (irow < m_data.nrows() && icol < m_data.ncols()
-		&& irow >= 0 && icol >= 0)
-		m_data.at(irow, icol) = val;
-
-	m_grid->SetCellValue(irow, icol, wxString::Format("%g", val));
-
+		m_grid->SetCellValue(irow, icol, wxString::Format("%g", val));
+	}
 	wxCommandEvent dmcevt(wxEVT_wxSpinBoxGridCtrl_CHANGE, this->GetId());
 	dmcevt.SetEventObject(this);
 	GetEventHandler()->ProcessEvent(dmcevt);
@@ -1162,7 +1229,7 @@ void wxSpinBoxGridCtrl::MatrixToGrid()
 		for (c = 0; c<nc; c++)
 			m_grid->SetCellValue(r, c, wxString::Format("%g", m_data.at(r, c)));
 
-
+	UpdateColumnHeaders();
 }
 
 
@@ -1180,20 +1247,21 @@ wxString wxSpinBoxGridCtrl::GetCaption()
 
 void wxSpinBoxGridCtrl::SetNumCols(int &cols)
 {
-	m_num_cols = cols;
-	// TODO update matrix data and grid
+	UpdateNumberColumns(cols);
 }
 
 void wxSpinBoxGridCtrl::SetNumRows(int &rows)
 {
 	m_num_rows = rows;
-	// TODO update matrix data and grid
+	UpdateNumberColumns(m_num_cols);
 }
 
 void wxSpinBoxGridCtrl::SetColLabels(const wxArrayString &colLabels)
 {
-	for (size_t i = 0; i < m_grid->GetNumberCols() && i < colLabels.Count(); i++)
-		m_grid->SetColLabelValue(i, colLabels[i]);
+	if (colLabels != m_col_ary_str)
+		m_col_ary_str = colLabels;
+	m_col_header_use_format = false;
+	UpdateColumnHeaders();
 }
 
 wxArrayString wxSpinBoxGridCtrl::GetColLabels()
