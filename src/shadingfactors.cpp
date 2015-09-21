@@ -27,19 +27,21 @@ ShadingInputData::ShadingInputData()
 void ShadingInputData::save( std::vector<float> &data )
 {
 	data.clear();
-	data.push_back( 2.0 ); // version number of data format - allows for expansion of options in future.
+	data.push_back(3.0); // version number of data format - allows for expansion of options in future.
+//	data.push_back(2.0); // version number of data format - allows for expansion of options in future.
 
-	data.push_back( (en_hourly && hourly.size() == 8760) ? 1.0 : 0.0 );
-	data.push_back( (en_mxh && mxh.nrows() == 12 && mxh.ncols() == 24 ) ? 1.0 : 0.0 );
+//	data.push_back( (en_hourly && hourly.size() == 8760) ? 1.0 : 0.0 );
+	data.push_back((en_mxh && mxh.nrows() == 12 && mxh.ncols() == 24) ? 1.0 : 0.0);
 	data.push_back( en_azal ? 1.0 : 0.0 );
 	data.push_back( en_diff ? 1.0 : 0.0 );
 	data.push_back( -1.0 );
 	data.push_back( -1.0 );
 	data.push_back( -1.0 );
 
-	for (int i=0;i<8760;i++)
-		data.push_back( i < hourly.size() ? hourly[i] : 0.0 );
-	
+//	for (int i=0;i<8760;i++)
+//		data.push_back( i < hourly.size() ? hourly[i] : 0.0 );
+
+
 	if ( mxh.nrows() != 12 || mxh.ncols() != 24 )
 		mxh.resize_fill(12, 24, 0.0);
 
@@ -55,14 +57,27 @@ void ShadingInputData::save( std::vector<float> &data )
 	
 	data.push_back( diff );
 
+	// timestep at end for potential backwards compatibility
+	// timestep string shading fractions matrix added timestep x number of parallel strings
+	data.push_back((en_timestep && (timestep.nrows() % 8760 == 0)) ? 1.0 : 0.0);
+	data.push_back(timestep.nrows());
+	data.push_back(timestep.ncols());
+	for (size_t r = 0; r < timestep.nrows(); r++)
+		for (size_t c = 0; c < timestep.ncols(); c++)
+			data.push_back(timestep.at(r, c));
+
+
 	data.push_back( data.size() + 1 ); // verification flag that size is consistent
 }
 
 void ShadingInputData::clear()
 {
-	en_hourly = en_mxh = en_azal = en_diff = false;
+//	en_hourly = en_mxh = en_azal = en_diff = en_timestep = false;
+	en_mxh = en_azal = en_diff = en_timestep = false;
 
-	hourly.resize( 8760, 0 );
+	timestep.resize(8760, 0);
+
+//	hourly.resize(8760, 0);
 
 	mxh.resize_fill(12,24, 0.0);
 
@@ -88,7 +103,8 @@ bool ShadingInputData::load( const std::vector<float> &data )
 	int ver = (int)data[idx++];	
 	if (ver == 2)
 	{
-		en_hourly = data[idx++] > 0 ? true : false;
+		//		en_hourly = data[idx++] > 0 ? true : false;
+		en_timestep = data[idx++] > 0 ? true : false;
 		en_mxh = data[idx++] > 0 ? true : false;
 		en_azal = data[idx++] > 0 ? true : false;
 		en_diff = data[idx++] > 0 ? true : false;
@@ -96,10 +112,14 @@ bool ShadingInputData::load( const std::vector<float> &data )
 		idx++; // skip unused -1
 		idx++; // skip unused -1
 
-		hourly.clear();
-		hourly.reserve(8760);
-		for (int i=0;i<8760;i++)
-			hourly.push_back( data[idx++] );
+//		hourly.clear();
+//		hourly.reserve(8760);
+//		for (int i=0;i<8760;i++)
+//			hourly.push_back( data[idx++] );
+		timestep.resize_fill(8760, 1, 0);
+		for (int r = 0; r<8760; r++)
+			timestep.at(r, 0) = data[idx++];
+
 
 		for (int r=0;r<12;r++)
 			for (int c=0;c<24;c++)
@@ -118,6 +138,43 @@ bool ShadingInputData::load( const std::vector<float> &data )
 
 		return idx == verify;
 	}
+	else if (ver == 3)
+	{
+		en_mxh = data[idx++] > 0 ? true : false;
+		en_azal = data[idx++] > 0 ? true : false;
+		en_diff = data[idx++] > 0 ? true : false;
+		idx++; // skip unused -1
+		idx++; // skip unused -1
+		idx++; // skip unused -1
+
+
+		for (int r = 0; r<12; r++)
+			for (int c = 0; c<24; c++)
+				mxh.at(r, c) = data[idx++];
+
+		int nr = (int)data[idx++];
+		int nc = (int)data[idx++];
+		azal.resize_fill(nr, nc, 1.0);
+		for (int r = 0; r<nr; r++)
+			for (int c = 0; c<nc; c++)
+				azal.at(r, c) = data[idx++];
+
+		diff = data[idx++];
+
+		en_timestep = data[idx++] > 0 ? true : false;
+		nr = (int)data[idx++];
+		nc = (int)data[idx++];
+		timestep.resize_fill(nr, nc, 0);
+		for (int r = 0; r<nr; r++)
+			for (int c = 0; c<nc; c++)
+				timestep.at(r, c) = data[idx++];
+
+
+		int verify = data[idx++];
+
+		return idx == verify;
+	}
+
 
 	return false;
 }
@@ -126,9 +183,13 @@ void ShadingInputData::write( VarValue *vv )
 {
 	vv->SetType( VV_TABLE );
 	VarTable &tab = vv->Table();
-	tab.Set( "en_hourly", VarValue( (bool)en_hourly ) );
-	tab.Set( "hourly", VarValue( hourly ) );
-	tab.Set( "en_mxh", VarValue( (bool)en_mxh ) );
+	// Version 2 - should be upgraded in project upgrader
+	//	tab.Set( "en_hourly", VarValue( (bool)en_hourly ) );
+	//	tab.Set( "hourly", VarValue( hourly ) );
+	tab.Set( "en_timestep", VarValue( (bool)en_timestep ) );
+	tab.Set( "timestep", VarValue( timestep ) );
+
+	tab.Set("en_mxh", VarValue((bool)en_mxh));
 	tab.Set( "mxh", VarValue( mxh ) );
 	tab.Set( "en_azal", VarValue( (bool)en_azal ) );
 	tab.Set( "azal", VarValue( azal ) );
@@ -142,9 +203,12 @@ bool ShadingInputData::read( VarValue *root )
 	if ( root->Type() == VV_TABLE )
 	{
 		VarTable &tab = root->Table();
-		if ( VarValue *vv = tab.Get( "en_hourly" ) ) en_hourly = vv->Boolean();
-		if ( VarValue *vv = tab.Get("hourly") ) hourly = vv->Array();
-		if ( VarValue *vv = tab.Get("en_mxh") ) en_mxh = vv->Boolean();
+		// version 2 - should be upgraded in project upgrader
+		//if ( VarValue *vv = tab.Get( "en_hourly" ) ) en_hourly = vv->Boolean();
+		//if ( VarValue *vv = tab.Get("hourly") ) hourly = vv->Array();
+		if ( VarValue *vv = tab.Get( "en_timestep" ) ) en_timestep = vv->Boolean();
+		if ( VarValue *vv = tab.Get("timestep") ) timestep = vv->Matrix();
+		if (VarValue *vv = tab.Get("en_mxh")) en_mxh = vv->Boolean();
 		if ( VarValue *vv = tab.Get("mxh") ) mxh = vv->Matrix();
 		if ( VarValue *vv = tab.Get("en_azal") ) en_azal = vv->Boolean();
 		if ( VarValue *vv = tab.Get("azal") ) azal = vv->Matrix();
@@ -377,11 +441,16 @@ public:
 	{
 		wxString stat;
 
-		if ( all || sh.en_hourly )
+		//if ( all || sh.en_hourly )
+		//{
+		//	m_enableHourly->SetValue( sh.en_hourly );
+		//	stat += "Updated hourly beam shading losses.\n";
+		//}
+		if (all || sh.en_timestep)
 		{
-			m_enableTimestep->SetValue( sh.en_hourly );
-//			m_timestep->Set( sh.hourly ); load previous hourly array
-			stat += "Updated hourly beam shading losses.\n";
+			m_enableTimestep->SetValue(sh.en_timestep);
+			m_timestep->SetData(sh.timestep);
+			stat += "Updated timestep beam shading losses.\n";
 		}
 
 		if ( all || sh.en_mxh )
@@ -407,13 +476,39 @@ public:
 
 		UpdateVisibility();
 
+		// check that timestep number of rows = weather file rows
+		size_t nr = m_timestep->GetData().nrows();
+		ssc_data_t pdata = ssc_data_create();
+		//TODO var value for solar resource file
+		wxString wf = "solar_resource_file";
+		ssc_data_set_string(pdata, "file_name", wf);
+		ssc_data_set_number(pdata, "header_only", 1);
+
+		if (const char *err = ssc_module_exec_simple_nothread("wfreader", pdata))
+		{
+			wxLogStatus("error scanning '" + wf + "'");
+			wxLogStatus("\t%s", err);
+		}
+		else
+		{
+			ssc_number_t num_wf_records;
+			ssc_data_get_number(pdata,"nrecords", &num_wf_records);
+			int wf_nrec = (int)num_wf_records;
+
+			if (nr != (size_t)num_wf_records)
+				m_timestep->SetNumRows(wf_nrec);
+		}
+
 		return stat;
 	}
 
 	void Save( ShadingInputData &sh )
 	{
-		sh.en_hourly = m_enableTimestep->IsChecked();
-		//m_timestep->Get( sh.hourly ); get data and save matrix data
+//		sh.en_hourly = m_enableTimestep->IsChecked();
+//		m_hourly->Get( sh.hourly ); 
+
+		sh.en_timestep = m_enableTimestep->IsChecked();
+		m_timestep->GetData(sh.timestep);
 
 		sh.en_mxh = m_enableMxH->IsChecked();
 		sh.mxh.copy( m_mxh->GetData() );
@@ -766,11 +861,16 @@ bool ImportSunEyeHourly( ShadingInputData &dat, wxWindow *parent )
 	if (readok)
 	{
 		dat.clear();
-		dat.en_hourly = true;
-		dat.hourly.clear();
-		dat.hourly.reserve( 8760 );
-		for( size_t i=0;i<8760;i++ ) 
-			dat.hourly.push_back( beam[i] );
+		//dat.en_hourly = true;
+		//dat.hourly.clear();
+		//dat.hourly.reserve( 8760 );
+		//for( size_t i=0;i<8760;i++ ) 
+		//	dat.hourly.push_back( beam[i] );
+		dat.en_timestep = true;
+		dat.timestep.clear();
+		dat.timestep.resize_fill(8760,1,0);
+		for (size_t i = 0; i<8760; i++)
+			dat.timestep.at(i,0) = beam[i];
 		return true;
 	}
 	else

@@ -22,10 +22,11 @@ class AFMonthByHourFactorCtrl;
 struct ShadingInputData
 {
 	ShadingInputData();
+	/* version 2 */
+//	bool en_hourly;
+//	std::vector<float> hourly;
 
-	bool en_hourly;
-	std::vector<float> hourly;
-
+	/* version 3 */
 	bool en_timestep;
 	matrix_t<float> timestep;
 
