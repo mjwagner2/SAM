@@ -88,8 +88,11 @@ public:
 	matrix_t<float> GetData() const { return m_data; }
 
 
-	void SetCaption(const wxString &cap);
-	wxString GetCaption();
+	void SetColCaption(const wxString &cap);
+	wxString GetColCaption();
+
+	void SetMinuteCaption(const wxString &cap);
+	wxString GetMinuteCaption();
 
 
 	void ShowCols(bool b);
@@ -104,23 +107,34 @@ public:
 	void SetColLabelFormatString(const wxString &col_format_str);
 	wxString GetColLabelFormatString() { return m_col_format_str; }
 
-	int GetNumCols() { return m_num_cols; }
-	int GetNumRows() { return m_num_rows; }
+	size_t GetNumCols() { return m_num_cols; }
+	void SetNumCols(size_t &cols);
 
-	void SetNumCols(int &cols);
-	void SetNumRows(int &rows);
+	size_t GetNumRows() { return m_num_rows; }
+	void SetNumRows(size_t &rows);
+
+	size_t GetNumMinutes() { return m_num_minutes; }
+	void SetNumMinutes(size_t &minutes);
 
 	void SetDefaultValue(float &default_val) { m_default_val=default_val; }
 	float GetDefaultValue() { return m_default_val; }
 
 	void SetMinimumNumberCols(int &min_cols);
-	int GetMinimumNumberCols() { return m_min_cols; }
+	size_t GetMinimumNumberCols() { return m_min_cols; }
 
 	void SetMaximumNumberCols(int &max_cols);
 	int GetMaximumNumberCols() { return m_max_cols; }
 
+	void SetMinimumNumberMinutes(int &min_minutes);
+	int GetMinimumNumberMinutes() { return m_min_minutes; }
+
+	void SetMaximumNumberMinutes(int &max_minutes);
+	int GetMaximumNumberMinutes() { return m_max_minutes; }
+
 private:
-	void UpdateNumberColumns(int &new_cols);
+	void UpdateNumberColumns(size_t &new_cols);
+	void UpdateNumberRows(size_t &new_rows);
+	void UpdateNumberMinutes(size_t &new_minutes);
 	void UpdateColumnHeaders();
 
 	bool m_col_header_use_format;
@@ -129,17 +143,23 @@ private:
 	float m_default_val;
 	int m_min_cols;
 	int m_max_cols;
+	int m_min_minutes;
+	int m_max_minutes;
 	matrix_t<float> m_data;
 	wxExtGridCtrl *m_grid;
-	wxStaticText *m_caption;
-	wxSpinCtrl *m_spin;
+	wxStaticText *m_caption_col;
+	wxSpinCtrl *m_spin_col;
+	wxStaticText *m_caption_minute;
+	wxSpinCtrl *m_spin_minute;
 
-	int m_num_cols;
-	int m_num_rows;
+	size_t m_num_cols;
+	size_t m_num_rows;
+	size_t m_num_minutes;
 
 	void OnCellChange(wxGridEvent &evt);
 	void OnCommand(wxCommandEvent &evt);
-	void OnSpin(wxSpinEvent  &evt);
+	void OnSpinCol(wxSpinEvent  &evt);
+	void OnSpinMinute(wxSpinEvent  &evt);
 
 
 	void MatrixToGrid();

@@ -275,8 +275,8 @@ public:
 		m_enableTimestep = new wxCheckBox( m_scrollWin, ID_ENABLE_HOURLY, "Enable timestep beam irradiance shading losses" );
 		m_timestep = new wxSpinBoxGridCtrl(m_scrollWin, wxID_ANY);
 		m_timestep->SetInitialSize(wxSize(900, 200));
-
-		m_timestep->SetCaption(wxString("Number of parallel strings") + wxString((!descText.IsEmpty() ? " for " : "")) + descText);
+		m_timestep->SetMinuteCaption("Time step in minutes (1-60)");
+		m_timestep->SetColCaption(wxString("Number of parallel strings") + wxString((!descText.IsEmpty() ? " for " : "")) + descText);
 		int num_cols = 8;
 		// TODO: 8760 should be weather file timestep
 		matrix_t<float> ts_data(8760, num_cols, 0);
@@ -476,7 +476,9 @@ public:
 
 		UpdateVisibility();
 
+		/*
 		// check that timestep number of rows = weather file rows
+		// up to user or from Shade tool
 		size_t nr = m_timestep->GetData().nrows();
 		ssc_data_t pdata = ssc_data_create();
 		//TODO var value for solar resource file
@@ -498,7 +500,7 @@ public:
 			if (nr != (size_t)num_wf_records)
 				m_timestep->SetNumRows(wf_nrec);
 		}
-
+		*/
 		return stat;
 	}
 
@@ -1136,11 +1138,12 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 
 DEFINE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE)
 
-enum { ISBGC_SPIN = wxID_HIGHEST + 857, ISBGC_GRID };
+enum { ISBGC_SPINCOL = wxID_HIGHEST + 857, ISBGC_SPINMINUTE, ISBGC_GRID };
 
 BEGIN_EVENT_TABLE(wxSpinBoxGridCtrl, wxPanel)
 EVT_GRID_CMD_CELL_CHANGE(ISBGC_GRID, wxSpinBoxGridCtrl::OnCellChange)
-EVT_SPINCTRL(ISBGC_SPIN, wxSpinBoxGridCtrl::OnSpin)
+EVT_SPINCTRL(ISBGC_SPINCOL, wxSpinBoxGridCtrl::OnSpinCol)
+EVT_SPINCTRL(ISBGC_SPINMINUTE, wxSpinBoxGridCtrl::OnSpinMinute)
 END_EVENT_TABLE()
 
 wxSpinBoxGridCtrl::wxSpinBoxGridCtrl(wxWindow *parent, int id,
@@ -1152,6 +1155,9 @@ bool sidebuttons)
 	m_default_val = 0;
 	m_min_cols = 1;
 	m_max_cols = 8;
+	m_min_minutes = 1;
+	m_max_minutes = 60;
+	m_num_minutes = 60;
 	m_col_header_use_format = false;
 	m_col_ary_str.Clear();
 	m_col_format_str = wxEmptyString;
@@ -1166,19 +1172,30 @@ bool sidebuttons)
 	m_grid->DisableDragGridSize();
 	m_grid->SetRowLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
-	m_caption = new wxStaticText(this, wxID_ANY, "");
-	m_caption->SetFont(*wxNORMAL_FONT);
+	m_caption_col = new wxStaticText(this, wxID_ANY, "");
+	m_caption_col->SetFont(*wxNORMAL_FONT);
 
-	m_spin = new wxSpinCtrl(this, ISBGC_SPIN);
-	m_spin->SetMax(m_max_cols);
-	m_spin->SetMin(m_min_cols);
+	m_spin_col = new wxSpinCtrl(this, ISBGC_SPINCOL);
+	m_spin_col->SetSize(75, 24);
+	m_spin_col->SetMax(m_max_cols);
+	m_spin_col->SetMin(m_min_cols);
+
+	m_caption_minute = new wxStaticText(this, wxID_ANY, "");
+	m_caption_minute->SetFont(*wxNORMAL_FONT);
+
+	m_spin_minute = new wxSpinCtrl(this, ISBGC_SPINMINUTE);
+	m_spin_minute->SetSize(75, 24);
+	m_spin_minute->SetMax(m_max_minutes);
+	m_spin_minute->SetMin(m_min_minutes);
 
 	if (sidebuttons)
 	{
 		// for side buttons layout
 		wxBoxSizer *v_tb_sizer = new wxBoxSizer(wxVERTICAL);
-		v_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND, 3);
-		v_tb_sizer->Add(m_spin, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_spin_col, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_caption_minute, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_spin_minute, 0, wxALL | wxEXPAND, 3);
 		v_tb_sizer->AddStretchSpacer();
 
 		wxBoxSizer *h_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -1191,9 +1208,12 @@ bool sidebuttons)
 	{
 		// for top buttons layout (default)
 		wxBoxSizer *h_tb_sizer = new wxBoxSizer(wxHORIZONTAL);
-		h_tb_sizer->Add(m_caption, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
-		h_tb_sizer->Add(m_spin, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_spin_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_caption_minute, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_spin_minute, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
 		h_tb_sizer->AddStretchSpacer();
+
 		wxBoxSizer *v_sizer = new wxBoxSizer(wxVERTICAL);
 		v_sizer->Add(h_tb_sizer, 0, wxALL | wxEXPAND, 1);
 		v_sizer->Add(m_grid, 1, wxALL | wxEXPAND, 1);
@@ -1205,11 +1225,30 @@ bool sidebuttons)
 }
 
 
-void wxSpinBoxGridCtrl::UpdateNumberColumns(int &new_cols)
+void wxSpinBoxGridCtrl::UpdateNumberColumns(size_t &new_cols)
 {
 	// resize and preserve existing data and fill new data with default.
 	m_data.resize_preserve(m_num_rows, new_cols, m_default_val);
 	MatrixToGrid();
+}
+
+void wxSpinBoxGridCtrl::UpdateNumberRows(size_t &new_rows)
+{
+	// resize and preserve existing data and fill new data with default.
+	m_data.resize_preserve(new_rows, m_num_cols, m_default_val);
+	MatrixToGrid();
+}
+
+void wxSpinBoxGridCtrl::UpdateNumberMinutes(size_t &new_minutes)
+{
+	// resize and preserve existing data and fill new data with default.
+	// multiple of 8760 minutes to number of minutes
+	if ((new_minutes > 0) && (new_minutes <= 60))
+	{
+		size_t new_rows = 60 / new_minutes * 8760;
+		m_data.resize_preserve(new_rows, m_num_cols, m_default_val);
+		MatrixToGrid();
+	}
 }
 
 
@@ -1245,10 +1284,10 @@ void wxSpinBoxGridCtrl::SetColLabelFormatString(const wxString &col_format_str)
 
 void wxSpinBoxGridCtrl::SetMinimumNumberCols(int &min_cols)
 {
-	if ((min_cols > 0) && (min_cols != m_min_cols))
+	if ((min_cols > m_min_cols) && (min_cols < m_max_cols) && (min_cols != m_min_cols))
 	{
 		m_min_cols = min_cols;
-		m_spin->SetMin(m_min_cols);
+		m_spin_col->SetMin(m_min_cols);
 	}
 }
 
@@ -1257,16 +1296,25 @@ void wxSpinBoxGridCtrl::SetMaximumNumberCols(int &max_cols)
 	if ((max_cols > m_min_cols) && (max_cols != m_max_cols))
 	{
 		m_max_cols = max_cols;
-		m_spin->SetMax(m_max_cols);
+		m_spin_col->SetMax(m_max_cols);
 	}
 }
 
-void wxSpinBoxGridCtrl::OnSpin(wxSpinEvent  &evt)
+void wxSpinBoxGridCtrl::OnSpinCol(wxSpinEvent  &evt)
 {
-	if (m_spin->GetValue() != m_num_cols)
-	{ // update number of cols and add or remove data
-		int new_cols = m_spin->GetValue();
+	if (m_spin_col->GetValue() != m_num_cols)
+	{ 
+		size_t new_cols = m_spin_col->GetValue();
 		UpdateNumberColumns(new_cols);
+	}
+}
+
+void wxSpinBoxGridCtrl::OnSpinMinute(wxSpinEvent  &evt)
+{
+	if (m_spin_minute->GetValue() != m_num_minutes)
+	{ 
+		m_num_minutes = m_spin_minute->GetValue();
+		UpdateNumberMinutes(m_num_minutes);
 	}
 }
 
@@ -1320,7 +1368,7 @@ void wxSpinBoxGridCtrl::MatrixToGrid()
 	int r, nr = m_data.nrows();
 	int c, nc = m_data.ncols();
 
-	m_spin->SetValue(nc);
+	m_spin_col->SetValue(nc);
 	m_num_cols = nc;
 	m_num_rows = nr;
 
@@ -1333,27 +1381,38 @@ void wxSpinBoxGridCtrl::MatrixToGrid()
 }
 
 
-void wxSpinBoxGridCtrl::SetCaption(const wxString &cap)
+void wxSpinBoxGridCtrl::SetColCaption(const wxString &cap)
 {
-	m_caption->SetLabel(cap);
+	m_caption_col->SetLabel(cap);
 	this->Layout();
 }
 
-wxString wxSpinBoxGridCtrl::GetCaption()
+wxString wxSpinBoxGridCtrl::GetColCaption()
 {
-	return m_caption->GetLabel();
+	return m_caption_col->GetLabel();
 }
 
 
-void wxSpinBoxGridCtrl::SetNumCols(int &cols)
+void wxSpinBoxGridCtrl::SetMinuteCaption(const wxString &cap)
+{
+	m_caption_minute->SetLabel(cap);
+	this->Layout();
+}
+
+wxString wxSpinBoxGridCtrl::GetMinuteCaption()
+{
+	return m_caption_minute->GetLabel();
+}
+
+
+void wxSpinBoxGridCtrl::SetNumCols(size_t &cols)
 {
 	UpdateNumberColumns(cols);
 }
 
-void wxSpinBoxGridCtrl::SetNumRows(int &rows)
+void wxSpinBoxGridCtrl::SetNumRows(size_t &rows)
 {
-	m_num_rows = rows;
-	UpdateNumberColumns(m_num_cols);
+	UpdateNumberRows(rows);
 }
 
 void wxSpinBoxGridCtrl::SetColLabels(const wxArrayString &colLabels)
