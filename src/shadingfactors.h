@@ -8,8 +8,6 @@
 #include <wx/splitter.h>
 #include <wx/aui/auibook.h>
 #include <wx/imaglist.h>
-#include <wx/spinctrl.h>
-#include <wx/spinbutt.h>
 
 #include <wex/numeric.h>
 
@@ -70,15 +68,15 @@ private:
 
 /* custom control for shading fractions for each parallel string (up to 8) in each subarray (up to 4)  can move to widgets or wex if necessary */
 BEGIN_DECLARE_EVENT_TYPES()
-DECLARE_EVENT_TYPE(wxEVT_wxSpinBoxGridCtrl_CHANGE, 0)
+DECLARE_EVENT_TYPE(wxEVT_wxShadingFactorsCtrl_CHANGE, 0)
 END_DECLARE_EVENT_TYPES()
 
 
 
-class wxSpinBoxGridCtrl : public wxPanel
+class wxShadingFactorsCtrl : public wxPanel
 {
 public:
-	wxSpinBoxGridCtrl(wxWindow *parent, int id,
+	wxShadingFactorsCtrl(wxWindow *parent, int id,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &sz = wxDefaultSize,
 		bool sidebuttons = false);
@@ -113,53 +111,42 @@ public:
 	size_t GetNumRows() { return m_num_rows; }
 	void SetNumRows(size_t &rows);
 
-	size_t GetNumMinutes() { return m_num_minutes; }
-	void SetNumMinutes(size_t &minutes);
+	size_t GetNumMinutes() { return m_num_timesteps; }
+	void SetNumMinutes(size_t &timesteps);
 
 	void SetDefaultValue(float &default_val) { m_default_val=default_val; }
 	float GetDefaultValue() { return m_default_val; }
 
-	void SetMinimumNumberCols(int &min_cols);
-	size_t GetMinimumNumberCols() { return m_min_cols; }
-
-	void SetMaximumNumberCols(int &max_cols);
-	int GetMaximumNumberCols() { return m_max_cols; }
-
-	void SetMinimumNumberMinutes(int &min_minutes);
-	int GetMinimumNumberMinutes() { return m_min_minutes; }
-
-	void SetMaximumNumberMinutes(int &max_minutes);
-	int GetMaximumNumberMinutes() { return m_max_minutes; }
 
 private:
 	void UpdateNumberColumns(size_t &new_cols);
 	void UpdateNumberRows(size_t &new_rows);
-	void UpdateNumberMinutes(size_t &new_minutes);
+	void UpdateNumberMinutes(size_t &new_timesteps);
 	void UpdateColumnHeaders();
+	void UpdateRowLabels();
 
 	bool m_col_header_use_format;
 	wxArrayString m_col_ary_str;
 	wxString m_col_format_str;
 	float m_default_val;
-	int m_min_cols;
-	int m_max_cols;
-	int m_min_minutes;
-	int m_max_minutes;
 	matrix_t<float> m_data;
 	wxExtGridCtrl *m_grid;
 	wxStaticText *m_caption_col;
-	wxSpinCtrl *m_spin_col;
-	wxStaticText *m_caption_minute;
-	wxSpinCtrl *m_spin_minute;
+	wxChoice *m_choice_col;
+	wxStaticText *m_caption_timestep;
+	wxChoice *m_choice_timestep;
+
+	wxArrayString m_timestep_arystrvals;
+	wxArrayString m_col_arystrvals;
 
 	size_t m_num_cols;
 	size_t m_num_rows;
-	size_t m_num_minutes;
+	size_t m_num_timesteps;
 
 	void OnCellChange(wxGridEvent &evt);
 	void OnCommand(wxCommandEvent &evt);
-	void OnSpinCol(wxSpinEvent  &evt);
-	void OnSpinMinute(wxSpinEvent  &evt);
+	void OnChoiceCol(wxCommandEvent  &evt);
+	void OnChoiceMinute(wxCommandEvent  &evt);
 
 
 	void MatrixToGrid();
