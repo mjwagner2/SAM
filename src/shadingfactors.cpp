@@ -66,6 +66,7 @@ void ShadingInputData::save( std::vector<float> &data )
 		for (size_t c = 0; c < timestep.ncols(); c++)
 			data.push_back(timestep.at(r, c));
 
+	data.push_back((en_shading_db && (timestep.nrows() % 8760 == 0)) ? 1.0 : 0.0);
 
 	data.push_back( data.size() + 1 ); // verification flag that size is consistent
 }
@@ -73,7 +74,7 @@ void ShadingInputData::save( std::vector<float> &data )
 void ShadingInputData::clear()
 {
 //	en_hourly = en_mxh = en_azal = en_diff = en_timestep = false;
-	en_mxh = en_azal = en_diff = en_timestep = false;
+	en_mxh = en_azal = en_diff = en_timestep = en_shading_db = false;
 
 	timestep.resize(8760, 0);
 
@@ -169,6 +170,7 @@ bool ShadingInputData::load( const std::vector<float> &data )
 			for (int c = 0; c<nc; c++)
 				timestep.at(r, c) = data[idx++];
 
+		en_shading_db = data[idx++] > 0 ? true : false;
 
 		int verify = data[idx++];
 
@@ -186,8 +188,9 @@ void ShadingInputData::write( VarValue *vv )
 	// Version 2 - should be upgraded in project upgrader
 	//	tab.Set( "en_hourly", VarValue( (bool)en_hourly ) );
 	//	tab.Set( "hourly", VarValue( hourly ) );
-	tab.Set( "en_timestep", VarValue( (bool)en_timestep ) );
-	tab.Set( "timestep", VarValue( timestep ) );
+	tab.Set("en_shading_db", VarValue((bool)en_shading_db));
+	tab.Set("en_timestep", VarValue((bool)en_timestep));
+	tab.Set("timestep", VarValue(timestep));
 
 	tab.Set("en_mxh", VarValue((bool)en_mxh));
 	tab.Set( "mxh", VarValue( mxh ) );
@@ -206,8 +209,9 @@ bool ShadingInputData::read( VarValue *root )
 		// version 2 - should be upgraded in project upgrader
 		//if ( VarValue *vv = tab.Get( "en_hourly" ) ) en_hourly = vv->Boolean();
 		//if ( VarValue *vv = tab.Get("hourly") ) hourly = vv->Array();
-		if ( VarValue *vv = tab.Get( "en_timestep" ) ) en_timestep = vv->Boolean();
-		if ( VarValue *vv = tab.Get("timestep") ) timestep = vv->Matrix();
+		if (VarValue *vv = tab.Get("en_shading_db")) en_shading_db = vv->Boolean();
+		if (VarValue *vv = tab.Get("en_timestep")) en_timestep = vv->Boolean();
+		if (VarValue *vv = tab.Get("timestep")) timestep = vv->Matrix();
 		if (VarValue *vv = tab.Get("en_mxh")) en_mxh = vv->Boolean();
 		if ( VarValue *vv = tab.Get("mxh") ) mxh = vv->Matrix();
 		if ( VarValue *vv = tab.Get("en_azal") ) en_azal = vv->Boolean();

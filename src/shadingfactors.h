@@ -25,6 +25,7 @@ struct ShadingInputData
 //	std::vector<float> hourly;
 
 	/* version 3 */
+	bool en_shading_db;
 	bool en_timestep;
 	matrix_t<float> timestep;
 
