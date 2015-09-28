@@ -188,7 +188,8 @@ void ShadingInputData::write( VarValue *vv )
 	// Version 2 - should be upgraded in project upgrader
 	//	tab.Set( "en_hourly", VarValue( (bool)en_hourly ) );
 	//	tab.Set( "hourly", VarValue( hourly ) );
-	tab.Set("en_shading_db", VarValue((bool)en_shading_db));
+	tab.Set("en_shading_db_lookup", VarValue(true));
+	tab.Set("shading_db_lookup", VarValue((bool)en_shading_db));
 	tab.Set("en_timestep", VarValue((bool)en_timestep));
 	tab.Set("timestep", VarValue(timestep));
 
@@ -209,7 +210,7 @@ bool ShadingInputData::read( VarValue *root )
 		// version 2 - should be upgraded in project upgrader
 		//if ( VarValue *vv = tab.Get( "en_hourly" ) ) en_hourly = vv->Boolean();
 		//if ( VarValue *vv = tab.Get("hourly") ) hourly = vv->Array();
-		if (VarValue *vv = tab.Get("en_shading_db")) en_shading_db = vv->Boolean();
+		if (VarValue *vv = tab.Get("shading_db_lookup")) en_shading_db = vv->Boolean();
 		if (VarValue *vv = tab.Get("en_timestep")) en_timestep = vv->Boolean();
 		if (VarValue *vv = tab.Get("timestep")) timestep = vv->Matrix();
 		if (VarValue *vv = tab.Get("en_mxh")) en_mxh = vv->Boolean();
@@ -248,7 +249,7 @@ class ShadingDialog : public wxDialog
 
 	wxCheckBox *m_enableTimestep;
 	wxShadingFactorsCtrl *m_timestep;
-	wxStaticText *m_textHourly;
+	wxStaticText *m_textTimestep;
 	 
 	wxCheckBox *m_enableMxH;
 	AFMonthByHourFactorCtrl *m_mxh;
@@ -262,8 +263,10 @@ class ShadingDialog : public wxDialog
 	wxNumericCtrl *m_diffuseFrac;
 	wxStaticText *m_textDiffuse;
 
+	bool m_show_db_options;
+
 public:
-	ShadingDialog( wxWindow *parent, const wxString &descText )
+	ShadingDialog( wxWindow *parent, const wxString &descText, bool show_db_options = false )
 		: wxDialog( parent, wxID_ANY, 
 			wxString("Edit shading data") + wxString( (!descText.IsEmpty() ? ": " : "") ) + descText, 
 			wxDefaultPosition, wxDefaultSize, 
@@ -273,16 +276,17 @@ public:
 
 		SetClientSize( 870, 600 );
 
+		m_show_db_options = show_db_options;
+
 		m_scrollWin = new wxScrolledWindow( this, wxID_ANY );
 		m_scrollWin->SetScrollRate( 50, 50 );
 
 		m_enableTimestep = new wxCheckBox( m_scrollWin, ID_ENABLE_HOURLY, "Enable timestep beam irradiance shading losses" );
-		m_timestep = new wxShadingFactorsCtrl(m_scrollWin, wxID_ANY);
+		m_timestep = new wxShadingFactorsCtrl(m_scrollWin, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_show_db_options);
 		m_timestep->SetInitialSize(wxSize(900, 200));
 		m_timestep->SetMinuteCaption("Time step in minutes:");
 		m_timestep->SetColCaption(wxString("Number of parallel strings:") + wxString((!descText.IsEmpty() ? " for " : "")) + descText);
 		int num_cols = 8;
-		// TODO: 8760 should be weather file timestep
 		matrix_t<float> ts_data(8760, num_cols, 0);
 		m_timestep->SetData(ts_data);
 		wxArrayString cl;
@@ -323,10 +327,10 @@ public:
 		scroll->Add( new wxStaticLine( m_scrollWin ), 0, wxALL|wxEXPAND );
 
 		scroll->Add( m_enableTimestep, 0, wxALL|wxEXPAND, 5 );
-		scroll->Add( m_textHourly = new wxStaticText( m_scrollWin, wxID_ANY, hourly_text ), 0, wxALL|wxEXPAND, 10 );
+		scroll->Add( m_textTimestep = new wxStaticText( m_scrollWin, wxID_ANY, hourly_text ), 0, wxALL|wxEXPAND, 10 );
 		scroll->Add( m_timestep, 0, wxALL, 5 );
-		m_textHourly->Wrap( wrap_width );
-		m_textHourly->SetForegroundColour( text_color );
+		m_textTimestep->Wrap(wrap_width);
+		m_textTimestep->SetForegroundColour(text_color);
 		
 		scroll->Add( new wxStaticLine( m_scrollWin ), 0, wxALL|wxEXPAND );
 		scroll->Add( m_enableMxH, 0, wxALL|wxEXPAND, 5 );
@@ -368,7 +372,7 @@ public:
 	void UpdateVisibility()
 	{
 		m_timestep->Show( m_enableTimestep->IsChecked() );
-		m_textHourly->Show( m_enableTimestep->IsChecked() );
+		m_textTimestep->Show( m_enableTimestep->IsChecked() );
 		
 		m_mxh->Show( m_enableMxH->IsChecked() );
 		m_textMxH->Show( m_enableMxH->IsChecked() );
@@ -453,8 +457,21 @@ public:
 		if (all || sh.en_timestep)
 		{
 			m_enableTimestep->SetValue(sh.en_timestep);
+			if (sh.timestep.nrows() < 8760)
+			{
+				sh.timestep.resize_fill(8760, 1, 0);
+			}
 			m_timestep->SetData(sh.timestep);
+			size_t ncols = sh.timestep.ncols();
+			m_timestep->SetNumCols(ncols);
+
+			size_t nminutes = 60;
+			if ((sh.timestep.nrows() / 8760) > 0)
+				nminutes /= (sh.timestep.nrows() / 8760);
+			m_timestep->SetNumMinutes(nminutes);
 			stat += "Updated timestep beam shading losses.\n";
+			bool en_shade_db = (sh.en_shading_db == 1);
+			m_timestep->SetEnableShadingDB(en_shade_db);
 		}
 
 		if ( all || sh.en_mxh )
@@ -516,6 +533,8 @@ public:
 		sh.en_timestep = m_enableTimestep->IsChecked();
 		m_timestep->GetData(sh.timestep);
 
+		sh.en_shading_db = m_timestep->GetEnableShadingDB();
+
 		sh.en_mxh = m_enableMxH->IsChecked();
 		sh.mxh.copy( m_mxh->GetData() );
 
@@ -553,10 +572,11 @@ BEGIN_EVENT_TABLE(ShadingButtonCtrl, wxButton)
 EVT_BUTTON(wxID_ANY, ShadingButtonCtrl::OnPressed)
 END_EVENT_TABLE()
 
-ShadingButtonCtrl::ShadingButtonCtrl( wxWindow *parent, int id, 
+ShadingButtonCtrl::ShadingButtonCtrl(wxWindow *parent, int id, bool show_db_options,
 	const wxPoint &pos, const wxSize &size)
 	: wxButton( parent, id, "Edit shading...", pos, size )
 {
+	m_show_db_options = show_db_options;
 }
 
 void ShadingButtonCtrl::Write( VarValue *vv )
@@ -571,7 +591,7 @@ bool ShadingButtonCtrl::Read( VarValue *vv )
 
 void ShadingButtonCtrl::OnPressed(wxCommandEvent &evt)
 {
-	ShadingDialog dlg( this, m_descText );
+	ShadingDialog dlg( this, m_descText, m_show_db_options );
 	dlg.Load( m_shad );
 	
 	if (dlg.ShowModal()==wxID_OK)
@@ -1153,16 +1173,17 @@ END_EVENT_TABLE()
 wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 const wxPoint &pos,
 const wxSize &sz,
+bool show_db_options,
 bool sidebuttons)
 : wxPanel(parent, id, pos, sz)
 {
 	m_default_val = 0;
-	m_num_timesteps = 60;
+	m_num_minutes = 60;
 	m_col_header_use_format = false;
 	m_col_ary_str.Clear();
 	m_col_format_str = wxEmptyString;
 	m_col_arystrvals.Clear();
-	m_timestep_arystrvals.Clear();
+	m_minute_arystrvals.Clear();
 
 	m_grid = new wxExtGridCtrl(this, ISFC_GRID);
 	m_grid->CreateGrid(8760, 8);
@@ -1173,6 +1194,8 @@ bool sidebuttons)
 	m_grid->DisableDragColMove();
 	m_grid->DisableDragGridSize();
 	m_grid->SetRowLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+
+	m_en_shading_db = new wxCheckBox(this, wxID_ANY, "Use shading database lookup");
 
 	m_caption_col = new wxStaticText(this, wxID_ANY, "");
 	m_caption_col->SetFont(*wxNORMAL_FONT);
@@ -1191,32 +1214,40 @@ bool sidebuttons)
 	m_caption_timestep = new wxStaticText(this, wxID_ANY, "");
 	m_caption_timestep->SetFont(*wxNORMAL_FONT);
 
-	m_timestep_arystrvals.push_back("1");
-	m_timestep_arystrvals.push_back("2");
-	m_timestep_arystrvals.push_back("3");
-	m_timestep_arystrvals.push_back("4");
-	m_timestep_arystrvals.push_back("5");
-	m_timestep_arystrvals.push_back("6");
-	m_timestep_arystrvals.push_back("10");
-	m_timestep_arystrvals.push_back("12");
-	m_timestep_arystrvals.push_back("15");
-	m_timestep_arystrvals.push_back("20");
-	m_timestep_arystrvals.push_back("30");
-	m_timestep_arystrvals.push_back("60");
-	m_choice_timestep = new wxChoice(this, ISFC_CHOICEMINUTE, wxDefaultPosition, wxDefaultSize, m_timestep_arystrvals);
+	m_minute_arystrvals.push_back("1");
+	m_minute_arystrvals.push_back("3");
+	m_minute_arystrvals.push_back("5");
+	m_minute_arystrvals.push_back("10");
+	m_minute_arystrvals.push_back("15");
+	m_minute_arystrvals.push_back("30");
+	m_minute_arystrvals.push_back("60");
+	m_choice_timestep = new wxChoice(this, ISFC_CHOICEMINUTE, wxDefaultPosition, wxDefaultSize, m_minute_arystrvals);
 	m_choice_timestep->SetBackgroundColour(*wxWHITE);
+
+	if (!show_db_options)
+	{
+		m_caption_col->Show(false);
+		m_choice_col->Show(false);
+		m_en_shading_db->Show(false);
+	}
 
 
 	if (sidebuttons)
 	{
 		// for side buttons layout
 		wxBoxSizer *v_tb_sizer = new wxBoxSizer(wxVERTICAL);
-		v_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND, 3);
-		v_tb_sizer->Add(m_choice_col, 0, wxALL | wxEXPAND, 3);
-		v_tb_sizer->AddSpacer(5);
 		v_tb_sizer->Add(m_caption_timestep, 0, wxALL | wxEXPAND, 3);
 		v_tb_sizer->Add(m_choice_timestep, 0, wxALL | wxEXPAND, 3);
-		v_tb_sizer->AddStretchSpacer();
+		if (show_db_options)
+		{
+			v_tb_sizer->AddSpacer(5);
+			v_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND, 3);
+			v_tb_sizer->Add(m_choice_col, 0, wxALL | wxEXPAND, 3);
+			v_tb_sizer->AddSpacer(5);
+			v_tb_sizer->Add(m_en_shading_db, 0, wxALL | wxEXPAND, 3);
+			v_tb_sizer->AddStretchSpacer();
+		}
+	
 
 		wxBoxSizer *h_sizer = new wxBoxSizer(wxHORIZONTAL);
 		h_sizer->Add(v_tb_sizer, 0, wxALL | wxEXPAND, 1);
@@ -1228,12 +1259,17 @@ bool sidebuttons)
 	{
 		// for top buttons layout (default)
 		wxBoxSizer *h_tb_sizer = new wxBoxSizer(wxHORIZONTAL);
-		h_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
-		h_tb_sizer->Add(m_choice_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
-		h_tb_sizer->AddSpacer(5);
 		h_tb_sizer->Add(m_caption_timestep, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
 		h_tb_sizer->Add(m_choice_timestep, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
-		h_tb_sizer->AddStretchSpacer();
+		if (show_db_options)
+		{
+			h_tb_sizer->AddSpacer(5);
+			h_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+			h_tb_sizer->Add(m_choice_col, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+			h_tb_sizer->AddSpacer(5);
+			h_tb_sizer->Add(m_en_shading_db, 0, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 3);
+			h_tb_sizer->AddStretchSpacer();
+		}
 
 		wxBoxSizer *v_sizer = new wxBoxSizer(wxVERTICAL);
 		v_sizer->Add(h_tb_sizer, 0, wxALL | wxEXPAND, 1);
@@ -1315,10 +1351,10 @@ void wxShadingFactorsCtrl::OnChoiceCol(wxCommandEvent  &evt)
 
 void wxShadingFactorsCtrl::OnChoiceMinute(wxCommandEvent  &evt)
 {
-	if ((m_choice_timestep->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection())) != m_num_timesteps))
+	if ((m_choice_timestep->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection())) != m_num_minutes))
 	{
-		m_num_timesteps = wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection()));
-		UpdateNumberMinutes(m_num_timesteps);
+		m_num_minutes = wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection()));
+		UpdateNumberMinutes(m_num_minutes);
 	}
 }
 
@@ -1372,11 +1408,6 @@ void wxShadingFactorsCtrl::MatrixToGrid()
 	int r, nr = m_data.nrows();
 	int c, nc = m_data.ncols();
 
-
-//	int ndx = m_choice_col->FindString(wxString::Format("%d",nc));
-//	if (ndx != wxNOT_FOUND)
-//		m_choice_col->SetSelection(ndx);
-
 	m_num_cols = nc;
 	m_num_rows = nr;
 
@@ -1387,6 +1418,8 @@ void wxShadingFactorsCtrl::MatrixToGrid()
 
 	UpdateColumnHeaders();
 	UpdateRowLabels();
+	if (m_num_cols > 1) // if not shading database then set to use
+		m_en_shading_db->SetValue(true);
 }
 
 
@@ -1414,8 +1447,19 @@ wxString wxShadingFactorsCtrl::GetMinuteCaption()
 }
 
 
+void wxShadingFactorsCtrl::SetNumMinutes(size_t &minutes)
+{
+	int ndx = m_minute_arystrvals.Index(wxString::Format("%d", (int)minutes));
+	if (ndx >= 0)
+		m_choice_timestep->SetSelection(ndx);
+	UpdateNumberMinutes(minutes);
+}
+
 void wxShadingFactorsCtrl::SetNumCols(size_t &cols)
 {
+	int ndx = m_col_arystrvals.Index(wxString::Format("%d", (int)cols));
+	if (ndx >= 0)
+		m_choice_col->SetSelection(ndx);
 	UpdateNumberColumns(cols);
 }
 
@@ -1465,4 +1509,14 @@ void  wxShadingFactorsCtrl::UpdateRowLabels()
 		for (size_t row = 0; row < num_rows; row++)
 			m_grid->SetRowLabelValue(row, wxString::Format("%d", row+1));
 	}
+}
+
+void wxShadingFactorsCtrl::SetEnableShadingDB(bool &en_shading_db)
+{
+	m_en_shading_db->SetValue(en_shading_db);
+}
+
+bool wxShadingFactorsCtrl::GetEnableShadingDB()
+{
+	return m_en_shading_db->GetValue();
 }

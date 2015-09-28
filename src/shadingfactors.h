@@ -52,7 +52,7 @@ struct ShadingInputData
 class ShadingButtonCtrl : public wxButton
 {
 public:
-	ShadingButtonCtrl( wxWindow *parent, int id, 
+	ShadingButtonCtrl( wxWindow *parent, int id, bool show_db_options = false,
 		const wxPoint &pos=wxDefaultPosition, const wxSize &size=wxDefaultSize);
 
 	void Write( VarValue * );
@@ -61,6 +61,7 @@ public:
 	void OnPressed(wxCommandEvent &evt);
 
 private:
+	bool m_show_db_options;
 	ShadingInputData m_shad;
 	wxString m_descText;
 	DECLARE_EVENT_TABLE();
@@ -80,6 +81,7 @@ public:
 	wxShadingFactorsCtrl(wxWindow *parent, int id,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &sz = wxDefaultSize,
+		bool show_db_options = false,
 		bool sidebuttons = false);
 
 	void SetData(const matrix_t<float> &mat);
@@ -112,12 +114,14 @@ public:
 	size_t GetNumRows() { return m_num_rows; }
 	void SetNumRows(size_t &rows);
 
-	size_t GetNumMinutes() { return m_num_timesteps; }
-	void SetNumMinutes(size_t &timesteps);
+	size_t GetNumMinutes() { return m_num_minutes; }
+	void SetNumMinutes(size_t &minutes);
 
 	void SetDefaultValue(float &default_val) { m_default_val=default_val; }
 	float GetDefaultValue() { return m_default_val; }
 
+	void SetEnableShadingDB(bool &en_shading_db);
+	bool GetEnableShadingDB();
 
 private:
 	void UpdateNumberColumns(size_t &new_cols);
@@ -136,13 +140,14 @@ private:
 	wxChoice *m_choice_col;
 	wxStaticText *m_caption_timestep;
 	wxChoice *m_choice_timestep;
+	wxCheckBox *m_en_shading_db;
 
-	wxArrayString m_timestep_arystrvals;
+	wxArrayString m_minute_arystrvals;
 	wxArrayString m_col_arystrvals;
 
 	size_t m_num_cols;
 	size_t m_num_rows;
-	size_t m_num_timesteps;
+	size_t m_num_minutes;
 
 	void OnCellChange(wxGridEvent &evt);
 	void OnCommand(wxCommandEvent &evt);
