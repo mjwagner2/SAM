@@ -43,7 +43,7 @@ AFSchedNumeric::AFSchedNumeric( wxWindow *parent, int id, const wxPoint &pos, co
 	bUseSchedule = false;
 	bScheduleOnly = false;
 
-	mFixedValue = new wxNumericCtrl(this, IDAFSN_NUMERIC, 0.0, wxNumericCtrl::REAL, wxPoint(m_switchWidth,0), wxSize( size.GetWidth()-m_switchWidth, size.GetHeight()) );
+	mFixedValue = new wxNumericCtrl(this, IDAFSN_NUMERIC, 0.0, wxNUMERIC_REAL, wxPoint(m_switchWidth,0), wxSize( size.GetWidth()-m_switchWidth, size.GetHeight()) );
 	mBtnEditSched = new wxButton(this, IDAFSN_SBUTTON, "Edit...", wxPoint(m_switchWidth,0), wxSize( size.GetWidth()-m_switchWidth, size.GetHeight()) );
 	mBtnEditSched->Show(false);
 }
@@ -231,7 +231,7 @@ public:
 		m_grid = new wxExtGridCtrl( this, wxID_ANY );
 		m_grid->CreateGrid( 50, 1);
 		m_grid->SetColLabelValue( 0, label );
-		m_grid->SetColumnWidth( 0, wxGRID_AUTOSIZE );
+		m_grid->SetColSize( 0, wxGRID_AUTOSIZE );
 		m_grid->SetColLabelAlignment( wxALIGN_LEFT, wxALIGN_CENTER );
 		
 		wxBoxSizer *tools = new wxBoxSizer( wxVERTICAL );
@@ -239,7 +239,7 @@ public:
 		if ( with_resize_options )
 		{
 			tools->Add( new wxStaticText( this, wxID_ANY, "Number of values:"), 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-			tools->Add( m_numVals = new wxNumericCtrl( this, ID_numValueCount, 50, wxNumericCtrl::INTEGER ), 0, wxALL, 3 );
+			tools->Add( m_numVals = new wxNumericCtrl( this, ID_numValueCount, 50, wxNUMERIC_INTEGER ), 0, wxALL, 3 );
 		}
 		
 		tools->Add( new wxButton( this, ID_btnCopyData, "Copy" ), 0, wxALL, 3 );
@@ -1296,7 +1296,7 @@ public:
 		GridTable->SetAttrProvider( new wxExtGridCellAttrProvider );
 
 		Grid->SetTable( GridTable, true );
-		Grid->SetColumnWidth(0, (int)(130*wxGetScreenHDScale()));
+		Grid->SetColSize(0, (int)(130*wxGetScreenHDScale()));
 
 		Grid->Layout();
 		Grid->Refresh();
@@ -1552,8 +1552,8 @@ AFDataMatrixCtrl::AFDataMatrixCtrl( wxWindow *parent, int id,
 
 	m_data.resize_fill( 8, 6, 0.0f );
 
-	m_numRows = new wxNumericCtrl( this, IDDMC_NUMROWS, m_data.nrows(), wxNumericCtrl::INTEGER );
-	m_numCols = new wxNumericCtrl( this, IDDMC_NUMCOLS, m_data.ncols(), wxNumericCtrl::INTEGER );
+	m_numRows = new wxNumericCtrl( this, IDDMC_NUMROWS, m_data.nrows(), wxNUMERIC_INTEGER );
+	m_numCols = new wxNumericCtrl( this, IDDMC_NUMCOLS, m_data.ncols(), wxNUMERIC_INTEGER );
 	m_labelRows = new wxStaticText(this, wxID_ANY, "Rows:");
 	m_labelCols = new wxStaticText(this, wxID_ANY, "Cols:");
 
@@ -2055,7 +2055,7 @@ EVT_BUTTON(IDEDMC_IMPORT, AFDataMatrixCtrl::OnCommand)
 EVT_BUTTON(IDEDMC_EXPORT, AFDataMatrixCtrl::OnCommand)
 EVT_BUTTON(IDEDMC_COPY, AFDataMatrixCtrl::OnCommand)
 EVT_BUTTON(IDEDMC_PASTE, AFDataMatrixCtrl::OnCommand)
-EVT_GRID_CMD_CELL_CHANGE(IDEDMC_GRID, AFDataMatrixCtrl::OnCellChange)
+EVT_GRID_CMD_CELL_CHANGED(IDEDMC_GRID, AFDataMatrixCtrl::OnCellChange)
 END_EVENT_TABLE()
 
 AFDataMatrixCtrl::AFDataMatrixCtrl(wxWindow *parent, int id,
@@ -2090,8 +2090,8 @@ bool bottombuttons)
 
 	m_data.resize_fill(8, 6, 0.0f);
 
-	m_numRows = new wxNumericCtrl(this, IDEDMC_NUMROWS, m_data.nrows(), wxNumericCtrl::INTEGER);
-	m_numCols = new wxNumericCtrl(this, IDEDMC_NUMCOLS, m_data.ncols(), wxNumericCtrl::INTEGER);
+	m_numRows = new wxNumericCtrl(this, IDEDMC_NUMROWS, m_data.nrows(), wxNUMERIC_INTEGER);
+	m_numCols = new wxNumericCtrl(this, IDEDMC_NUMCOLS, m_data.ncols(), wxNUMERIC_INTEGER);
 	m_labelRows = new wxStaticText(this, wxID_ANY, "Rows:");
 	m_labelCols = new wxStaticText(this, wxID_ANY, "Cols:");
 
@@ -2746,7 +2746,7 @@ BEGIN_EVENT_TABLE(DataGridDialog, wxDialog)
 	EVT_BUTTON( IDDD_COPY, DataGridDialog::OnCommand )
 	EVT_BUTTON( IDDD_PASTE, DataGridDialog::OnCommand )
 	EVT_BUTTON( IDDD_CHANGENUMROWS, DataGridDialog::OnCommand )
-	EVT_GRID_CMD_CELL_CHANGE( IDDD_GRID, DataGridDialog::OnCellChange )
+	EVT_GRID_CMD_CELL_CHANGED( IDDD_GRID, DataGridDialog::OnCellChange )
 END_EVENT_TABLE()
 
 
@@ -2774,7 +2774,7 @@ AFValueMatrixButton::AFValueMatrixButton(wxWindow *parent, int id, const wxPoint
 
 	bUseTable = false;
 
-	mSingleValue = new wxNumericCtrl(this, IDDGB_NUMERIC, 0.0, wxNumericCtrl::REAL, wxPoint(m_switchWidth,0), wxSize( sz.GetWidth()-m_switchWidth, sz.GetHeight()) );
+	mSingleValue = new wxNumericCtrl(this, IDDGB_NUMERIC, 0.0, wxNUMERIC_REAL, wxPoint(m_switchWidth,0), wxSize( sz.GetWidth()-m_switchWidth, sz.GetHeight()) );
 	mBtnEditTable = new wxButton(this, IDDGB_BUTTON, "Table...", wxPoint(m_switchWidth,0), wxSize( sz.GetWidth()-m_switchWidth, sz.GetHeight()) );
 	mBtnEditTable->Show(false);
 
@@ -2942,7 +2942,7 @@ enum { IDSF_GRID = wxID_HIGHEST+495, IDSF_SHADINGVAL, IDSF_APPLY, IDSF_IMPORT, I
 
 BEGIN_EVENT_TABLE(AFMonthByHourFactorCtrl, wxPanel)
 
-	EVT_GRID_CMD_CELL_CHANGE( IDSF_GRID, AFMonthByHourFactorCtrl::OnGridCellChange)
+	EVT_GRID_CMD_CELL_CHANGED( IDSF_GRID, AFMonthByHourFactorCtrl::OnGridCellChange)
 	EVT_GRID_CMD_SELECT_CELL( IDSF_GRID, AFMonthByHourFactorCtrl::OnGridCellSelect)
 	EVT_GRID_CMD_RANGE_SELECT( IDSF_GRID, AFMonthByHourFactorCtrl::OnGridRangeSelect)
 	EVT_GRID_CMD_EDITOR_HIDDEN( IDSF_GRID, AFMonthByHourFactorCtrl::OnGridEditorHidden)

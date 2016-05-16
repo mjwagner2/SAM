@@ -70,7 +70,7 @@ BEGIN_EVENT_TABLE( MatPropDialog, wxDialog )
 	EVT_BUTTON( ID_IMPORT, MatPropDialog::OnCommand )
 	EVT_BUTTON( ID_EXPORT, MatPropDialog::OnCommand )
 	EVT_NUMERIC( ID_NUMPOINTS, MatPropDialog::OnNumPointsChange )
-	EVT_GRID_CMD_CELL_CHANGE( ID_GRID, MatPropDialog::OnGridCellChange)
+	EVT_GRID_CMD_CELL_CHANGED( ID_GRID, MatPropDialog::OnGridCellChange)
 	EVT_CLOSE( MatPropDialog::OnCloseWindow )
 END_EVENT_TABLE()
 
@@ -95,7 +95,7 @@ MatPropDialog::MatPropDialog(wxWindow *parent)
 	m_grid->SetColLabelAlignment(wxALIGN_LEFT,wxALIGN_CENTRE);
 	m_grid->AutoSize();
 
-	m_numPoints = new wxNumericCtrl(this, ID_NUMPOINTS, 1, wxNumericCtrl::INTEGER );
+	m_numPoints = new wxNumericCtrl(this, ID_NUMPOINTS, 1, wxNUMERIC_INTEGER );
 
 	wxBoxSizer *bxtop = new wxBoxSizer(wxHORIZONTAL);
 	bxtop->Add( new wxStaticText( this,-1, "Number of data points:" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 2);

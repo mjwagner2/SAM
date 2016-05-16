@@ -742,7 +742,7 @@ public:
 
 		cdf_grid = new wxExtGridCtrl(this, wxID_ANY);
 		cdf_grid->CreateGrid(5, 2);
-		cdf_grid->SetEditable(true);
+		cdf_grid->EnableEditing(true);
 
 		wxBoxSizer *sizer = new wxBoxSizer( wxVERTICAL );
 		sizer->Add( cboDistribution, 0, wxALL|wxEXPAND, 5 );
@@ -915,11 +915,11 @@ StochasticPanel::StochasticPanel(wxWindow *parent, Case *cc)
 	top_panel->SetBackgroundColour( wxMetroTheme::Colour( wxMT_FOREGROUND ) );
 	
 	wxSize sz;
-	m_N = new wxNumericCtrl(top_panel, ID_m_N, 100, wxNumericCtrl::INTEGER);
+	m_N = new wxNumericCtrl(top_panel, ID_m_N, 100, wxNUMERIC_INTEGER);
 	sz = m_N->GetBestSize();
 	m_N->SetInitialSize( wxSize( sz.x/2, sz.y ) );
 
-	m_seed = new wxNumericCtrl(top_panel, ID_m_seed, -1, wxNumericCtrl::INTEGER);
+	m_seed = new wxNumericCtrl(top_panel, ID_m_seed, -1, wxNUMERIC_INTEGER);
 	sz = m_seed->GetBestSize();
 	m_seed->SetInitialSize( wxSize( sz.x/2,sz.y ) );
 
