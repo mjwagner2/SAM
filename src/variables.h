@@ -2,7 +2,7 @@
 #define __variable_h
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 #include <wx/string.h>
 #include <wx/arrstr.h>
@@ -255,7 +255,8 @@ struct ArraySizeKey
 };
 struct ArraySizeKeyCompare
 {
-	bool operator()(const ArraySizeKey& x, const ArraySizeKey& y){
+	bool operator()(const ArraySizeKey& x, const ArraySizeKey& y)  const
+    {
 
 		if (x.n_rows < y.n_rows)
 		{
