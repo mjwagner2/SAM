@@ -2348,7 +2348,10 @@ void TabularBrowser::UpdateGridSpecific(wxExtGridCtrl*& grid, ResultsTable*& gri
 	if (gridTable->IsSingleValues)
 	{
 		grid->SetRowLabelSize(wxGRID_AUTOSIZE);
-		grid->HideColLabels();
+		grid->SetColLabelSize(wxGRID_AUTOSIZE);
+		// gridTable->SetColLabelValue(0, wxString("Variable"));
+		// gridTable->SetColLabelValue(1, wxString("Value"));
+		//grid->HideColLabels();
 	}
 	else if (gridTable->IsMatrix)
 		grid->AutoSizeColumns();
@@ -2915,6 +2918,8 @@ void TabularBrowser::GetTextData(wxString &dat, char sep)
 
 	if (!IsSingleValues)
 	{
+		wxString ts_label = "Time stamp";
+		dat += '"' + ts_label + '"' + sep;
 		for (c = 0; c < columns; c++)
 		{
 			wxString label;
@@ -2943,6 +2948,8 @@ void TabularBrowser::GetTextData(wxString &dat, char sep)
 		}
 		else 
 		{
+			wxString ord(m_gridTable->GetRowLabelValue(r));
+			dat += '"' + ord + '"' + sep;
 			for (c = 0; c < columns; c++)
 			{
 				int N = (IsMatrix ? m_gridTable->Matrix.nrows() : m_gridTable->Table[c]->N);

@@ -70,18 +70,32 @@ function setup_elec_load_page( mode ) //i is 1 for technologies that HAVE the bu
 	}
 	else return;
 }
-function setup_battery_pages()
+function setup_battery_pages_behind_the_meter()
 {
 	addpage([ [{'name'='Battery None','caption'='No Battery'}],
 			  [{'name'='Battery Model', 'caption'='Enable Battery'},
 			   'Battery Configuration',
-			   'Battery Dispatch',
+			   'Battery Dispatch Behind the Meter',
+			   'Battery Dispatch Common',
+			   'Battery Dispatch Manual', 
 			   'Battery Lifetime',
 			   'Battery Replacements',
 			   'Battery Thermal'] ],
 			  { 'sidebar'='Battery Storage', 'help'='battery_model', 'exclusive_var'='en_batt'} );
 }
-
+function setup_battery_pages_front_of_meter()
+{
+	addpage([ [{'name'='Battery None','caption'='No Battery'}],
+			  [{'name'='Battery Model', 'caption'='Enable Battery'},
+			   'Battery Configuration',
+			   'Battery Dispatch Front of Meter',
+			   'Battery Dispatch Common',
+			   'Battery Dispatch Manual', 
+			   'Battery Lifetime',
+			   'Battery Replacements',
+			   'Battery Thermal'] ],
+			  { 'sidebar'='Battery Storage', 'help'='battery_model', 'exclusive_var'='en_batt'} );
+}
 function setup_pvwatts_pages()
 {
 	addpage( [[ 'Solar Resource Data' ]], { 'sidebar'='Location and Resource', 'help'='pv_location_and_resource' } );
@@ -444,7 +458,7 @@ setmodules( ['tcstrough_empirical']);
 setup_csp_empirical_trough_pages();
 
 setconfig( 'Empirical Trough', 'Commercial' );
-setmodules( ['tcstrough_empirical', 'utilityrate4', 'cashloan']);
+setmodules( ['tcstrough_empirical', 'utilityrate5', 'cashloan']);
 setup_csp_empirical_trough_pages();
 addpage( [[ 'Empirical Trough Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='trough_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -522,23 +536,23 @@ addpage( [ ['PV Losses'] ], { 'sidebar'='Losses', 'help'='pv_losses' } );
 setmodules( ['pvsamv1'] );
 
 setconfig( 'Flat Plate PV', 'Residential' );
-setmodules( ['belpe', 'pvsamv1', 'utilityrate4', 'cashloan']);
+setmodules( ['belpe', 'pvsamv1', 'utilityrate5', 'cashloan']);
 setup_flat_plate_pv_pages();
-setup_battery_pages();
+setup_battery_pages_behind_the_meter();
 addpage( [[ 'PV Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='pv_system_costs' } );
 setup_residential_pages( LOAD_BELPE , LIFETIME_PV ); //includes building load calculator
 
 
 setconfig( 'Flat Plate PV', 'Third Party' );
-setmodules( ['belpe', 'pvsamv1', 'utilityrate4', 'thirdpartyownership']);
+setmodules( ['belpe', 'pvsamv1', 'utilityrate5', 'thirdpartyownership']);
 setup_flat_plate_pv_pages();
-setup_battery_pages();
+setup_battery_pages_behind_the_meter();
 setup_thirdparty_pages( LIFETIME_PV ); //includes building load calculator by default in this function
 
 setconfig( 'Flat Plate PV', 'Commercial' );
-setmodules( ['pvsamv1', 'utilityrate4', 'cashloan']);
+setmodules( ['pvsamv1', 'utilityrate5', 'cashloan']);
 setup_flat_plate_pv_pages();
-setup_battery_pages();
+setup_battery_pages_behind_the_meter();
 addpage( [[ 'PV Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='pv_system_costs' } );
 setup_commercial_pages( LOAD_SIMPLE, LIFETIME_PV ); //belpe not valid for commercial
 
@@ -575,6 +589,7 @@ setup_sale_leaseback_pages( LIFETIME_PV );
 setconfig( 'Flat Plate PV', 'Single Owner' );	
 setmodules( ['pvsamv1', 'singleowner']);
 setup_flat_plate_pv_pages();
+setup_battery_pages_front_of_meter();
 addpage( [[ 'PV Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='pv_system_costs' } );
 setup_single_owner_pages( LIFETIME_PV );
 
@@ -590,7 +605,7 @@ setmodules( ['tcstrough_physical']);
 setup_csp_physical_trough_pages();
 
 setconfig( 'Physical Trough', 'Commercial' );
-setmodules( ['tcstrough_physical', 'utilityrate4', 'cashloan']);
+setmodules( ['tcstrough_physical', 'utilityrate5', 'cashloan']);
 setup_csp_physical_trough_pages();
 addpage( [[ 'Physical Trough Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='trough_system_costs' } );
 setup_commercial_pages( LOAD_SIMPLE , LIFETIME_SYSTEM ); //belpe not valid for commercial
@@ -643,18 +658,18 @@ setmodules( ['pvwattsv5']);
 setup_pvwatts_pages();
 
 setconfig( 'PVWatts', 'Residential' );	
-setmodules( ['pvwattsv5', 'belpe',  'utilityrate4', 'cashloan']);
+setmodules( ['pvwattsv5', 'belpe',  'utilityrate5', 'cashloan']);
 setup_pvwatts_pages();
 addpage( [[ 'PV Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='pv_system_costs' } );
 setup_residential_pages( LOAD_BELPE, LIFETIME_SYSTEM ); //includes building load calculator
 
 setconfig( 'PVWatts', 'Third Party' );	
-setmodules( ['pvwattsv5', 'belpe', 'utilityrate4', 'thirdpartyownership']);
+setmodules( ['pvwattsv5', 'belpe', 'utilityrate5', 'thirdpartyownership']);
 setup_pvwatts_pages();
 setup_thirdparty_pages(LIFETIME_SYSTEM); //includes building load calculator by default in this function
 
 setconfig( 'PVWatts', 'Commercial' );	
-setmodules( ['pvwattsv5',  'utilityrate4', 'cashloan']);
+setmodules( ['pvwattsv5',  'utilityrate5', 'cashloan']);
 setup_pvwatts_pages();
 addpage( [[ 'PV Capital Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='pv_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -700,7 +715,7 @@ setup_single_owner_pages(LIFETIME_SYSTEM);
 
 //-----------------------------------------------------
 setconfig( 'Wind Power', 'Residential' );	
-setmodules( ['windpower',  'utilityrate4', 'cashloan']);
+setmodules( ['windpower',  'utilityrate5', 'cashloan']);
 setup_windpower_pages();
 addpage( [['Wind Farm Costs','O and M Costs',
 		{'name'='Wind BOS','caption'='Land-Based Balance of System Cost Model','collapsible'=true,'collapsible_var'='wind_bos_shown'} ]],
@@ -709,7 +724,7 @@ setup_residential_pages( LOAD_SIMPLE, LIFETIME_SYSTEM ); //does not include buil
 
 //-----------------------------------------------------
 setconfig( 'Wind Power', 'Commercial' );	
-setmodules( ['windpower',  'utilityrate4', 'cashloan']);
+setmodules( ['windpower',  'utilityrate5', 'cashloan']);
 setup_windpower_pages();
 addpage( [['Wind Farm Costs','O and M Costs',
 		{'name'='Wind BOS','caption'='Land-Based Balance of System Cost Model','collapsible'=true,'collapsible_var'='wind_bos_shown'} ]],
@@ -797,13 +812,13 @@ setmodules( ['swh'] );
 setup_solar_water_heating_pages();
 
 setconfig( 'Solar Water Heating', 'Residential');
-setmodules( ['swh',  'belpe', 'utilityrate4', 'cashloan'] );
+setmodules( ['swh',  'belpe', 'utilityrate5', 'cashloan'] );
 setup_solar_water_heating_pages();
 addpage( [[ 'Solar Water Heating Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='shw_system_costs' } );
 setup_residential_pages( LOAD_BELPE, LIFETIME_SYSTEM ); //yes belpe
 
 setconfig( 'Solar Water Heating', 'Commercial');
-setmodules( ['swh', 'utilityrate4', 'cashloan'] );
+setmodules( ['swh', 'utilityrate5', 'cashloan'] );
 setup_solar_water_heating_pages();
 addpage( [[ 'Solar Water Heating Costs','O and M Costs' ]], { 'sidebar'='System Costs', 'help'='shw_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -857,18 +872,18 @@ setup_geothermal_power_pages();
 // Generic System //////////////////////////////////////////////////////////////
 function setup_generic_system_pages()
 {
-	addpage( [[ 'Generic System Plant' ]], { 'sidebar'='Power Plant' } );
+	addpage( [[ 'Generic System Plant' ]], { 'sidebar'='Power Plant' , 'help'='generic_system_plant' } );
 }
 
 setconfig( 'Generic System', 'Residential' );	
-setmodules( ['generic_system',  'utilityrate4', 'cashloan']);
+setmodules( ['generic_system',  'utilityrate5', 'cashloan']);
 setup_generic_system_pages();
 addpage( [[ 'Generic System Costs','O and M Costs']],{ 'sidebar'='System Costs', 'help'='generic_system_costs' } );
 setup_residential_pages( LOAD_SIMPLE, LIFETIME_SYSTEM ); //does not include building load calculator
 
 //-----------------------------------------------------
 setconfig( 'Generic System', 'Commercial' );	
-setmodules( ['generic_system',  'utilityrate4', 'cashloan']);
+setmodules( ['generic_system',  'utilityrate5', 'cashloan']);
 setup_generic_system_pages();
 addpage( [[ 'Generic System Costs','O and M Costs']],{ 'sidebar'='System Costs', 'help'='generic_system_costs' } );
 setup_commercial_pages(0, LIFETIME_SYSTEM); //does not include building load calculator
@@ -942,7 +957,7 @@ function setup_generic_csp_pages()
 
 //-----------------------------------------------------
 setconfig( 'Generic CSP System', 'Commercial' );	
-setmodules( ['tcsgeneric_solar', 'utilityrate4', 'cashloan']);
+setmodules( ['tcsgeneric_solar', 'utilityrate5', 'cashloan']);
 setup_generic_csp_pages();
 addpage( [[ 'Generic CSP System Costs','O and M Costs']],{ 'sidebar'='System Costs', 'help'='gss_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -1069,7 +1084,7 @@ function setup_dish_stirling_pages()
 
 //-----------------------------------------------------
 setconfig( 'Dish Stirling', 'Commercial' );	
-setmodules( ['tcsdish', 'utilityrate4', 'cashloan']);
+setmodules( ['tcsdish', 'utilityrate5', 'cashloan']);
 setup_dish_stirling_pages();
 addpage( [[ 'Dish Capital Costs','O and M Costs']],{ 'sidebar'='System Costs', 'help'='dish_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -1138,7 +1153,7 @@ function setup_biopower_pages()
 
 //-----------------------------------------------------
 setconfig( 'Biopower', 'Commercial' );	
-setmodules( ['biomass', 'utilityrate4', 'cashloan']);
+setmodules( ['biomass', 'utilityrate5', 'cashloan']);
 setup_biopower_pages();
 addpage( [[ 'Biopower System Cost','O and M Costs']],{ 'sidebar'='System Costs', 'help'='biopower_system_costs' } );
 addpage( [[ 'Biopower Feedstock Costs' ]], { 'sidebar'='Feedstock Costs', 'help'='biopower_feedstock_costs' } );
@@ -1295,7 +1310,7 @@ setup_DSLF_pages();
 
 //-----------------------------------------------------
 setconfig( 'DSLF', 'Commercial' );	
-setmodules( ['tcslinear_fresnel', 'utilityrate4', 'cashloan']);
+setmodules( ['tcslinear_fresnel', 'utilityrate5', 'cashloan']);
 setup_DSLF_pages();
 addpage( [[ 'Linear Fresnel Capital Costs','O and M Costs']], { 'sidebar'='System Costs', 'help'='lf_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -1407,7 +1422,7 @@ setup_MSLF_pages();
 
 //-----------------------------------------------------
 setconfig( 'MSLF', 'Commercial' );	
-setmodules( ['tcsMSLF', 'utilityrate4', 'cashloan']);
+setmodules( ['tcsMSLF', 'utilityrate5', 'cashloan']);
 setup_MSLF_pages();
 addpage( [[ 'Molten Salt Linear Fresnel Capital Costs','O and M Costs']], { 'sidebar'='System Costs', 'help'='lf_system_costs' } );
 setup_commercial_pages(LOAD_SIMPLE,LIFETIME_SYSTEM); //belpe not valid for commercial
@@ -1474,4 +1489,4 @@ addpage( [[ {'name'='Lifetime System', 'caption'='PV simulation over one year'}]
 		[ {'name'='Lifetime PV', 'caption'='PV simulation over analysis period' }],],
 	   {  'sidebar'='Lifetime','help'='lifetime', 'exclusive_var'='pv_lifetime_simulation' } );
 
-setup_battery_pages();
+setup_battery_pages_behind_the_meter();

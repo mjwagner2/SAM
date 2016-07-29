@@ -1,0 +1,137 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%% asme2ej.tex %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Template for producing ASME-format journal articles using LaTeX    %
+% Written by   Harry H. Cheng, Professor and Director                %
+%              Integration Engineering Laboratory                    %
+%              Department of Mechanical and Aeronautical Engineering %
+%              University of California                              %
+%              Davis, CA 95616                                       %
+%              Tel: (530) 752-5020 (office)                          %
+%                   (530) 752-1028 (lab)                             %
+%              Fax: (530) 752-4158                                   %
+%              Email: hhcheng@ucdavis.edu                            %
+%              WWW:   http://iel.ucdavis.edu/people/cheng.html       %
+%              May 7, 1994                                           %
+% Modified: February 16, 2001 by Harry H. Cheng                      %
+% Modified: January  01, 2003 by Geoffrey R. Shiflett                %
+% Use at your own risk, send complaints to /dev/null                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% use twocolumn and 10pt options with the asme2ej format
+\documentclass[twocolumn,10pt]{asme2ej}
+
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{float}
+%\usepackage[section]{placeins}
+%\usepackage[below]{placeins}
+\usepackage{epstopdf}
+%\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\newcommand\bslash{\char`\\}
+\newcommand\lt{\char`\<}
+\newcommand\gt{\char`\>}
+\newcommand{\supers}[1]{\ensuremath{^\textrm{{\scriptsize #1}}}}
+\newcommand{\subs}[1]{\ensuremath{_\textrm{{\scriptsize #1}}}}
+
+%% The class has several options
+%  onecolumn/twocolumn - format for one or two columns per page
+%  10pt/11pt/12pt - use 10, 11, or 12 point font
+%  oneside/twoside - format for oneside/twosided printing
+%  final/draft - format for final/draft copy
+%  cleanfoot - take out copyright info in footer leave page number
+%  cleanhead - take out the conference banner on the title page
+%  titlepage/notitlepage - put in titlepage or leave out titlepage
+%  
+%% The default is oneside, onecolumn, 10pt, final
+
+
+\title{Assessment of 3D Shading Calculations for Photovoltaic System Modeling}
+
+%%% first author
+\author{Aron P. Dobos
+    \affiliation{
+	Senior Engineer, NREL\\
+	aron.dobos@nrel.gov
+    }	
+}
+\author{Janine M. Freeman
+    \affiliation{
+	Energy Modeling Engineer, NREL\\
+	janine.freeman@nrel.gov
+    }	
+}
+\author{Nicholas A. DiOrio
+    \affiliation{
+	Modeling and Software Engineer, NREL\\
+	nicholas.diorio@nrel.gov
+    }	
+}
+
+\begin{document}
+
+\maketitle    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+{\it 
+This paper assesses three popular models for estimating shading losses on photovoltaic systems.  Several hypothetical and actual scenes are used to compare the loss predictions of the three dimensional shading scene calculators in the System Advisor Model, PVsyst, and PV*SOL tools.   Comparisons with measured shade blocking from a SunEye device are also made.  Results show some notable differences in hourly shade loss profiles among the studied tools, even for very simplistic geometries.  However, on a annual energy basis, the differences appear to cancel out to some degree and result in errors that are comparable to documented variations in energy predictions.  These outcomes demonstrate a need for further development and improvement of 3D shade calculators to reduce model prediction errors and variability.
+}
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Accurate prediction of shading losses on photovoltaic (PV) systems is an imperative for ensuring economically viable large scale deployment, particularly for distributed systems.     
+
+\section{Methodology}
+
+Lorem ipsum methodologum.
+
+\section{Results}
+
+Lorem ipsum resultatis.
+
+\section{Conclusions}
+
+Lorum ipsum conclusionem.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{acknowledgment}
+This work was supported by the U.S. Department of Energy under Contract No. DE-AC36-08-GO28308 with the National Renewable Energy Laboratory.
+\end{acknowledgment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The bibliography is stored in an external database file
+% in the BibTeX format (file_name.bib).  The bibliography is
+% created by the following command and it will appear in this
+% position in the document. You may, of course, create your
+% own bibliography by using thebibliography environment as in
+%
+% \begin{thebibliography}{12}
+% ...
+% \bibitem{itemreference} D. E. Knudsen.
+% {\em 1966 World Bnus Almanac.}
+% {Permafrost Press, Novosibirsk.}
+% ...
+% \end{thebibliography}
+
+\begin{thebibliography}{8}
+
+
+\bibitem{blair2013} Blair, N.; Gilman, P.; Dobos, A. P. \emph{Comparison of Photovoltaic models in the System Advisor Model}. American Solar Energy Society, SOLAR 2013 Conference, 2013.
+
+\bibitem{freeman2013} Freeman, J.; Whitmore, J.; Kaffine, L.; Blair, N.; Dobos, A.; \emph{System Advisor Model: Flat Plate Photovoltaic Performance Modeling Validation Report}. NREL/TP-6A20-60204, 2013.
+
+\bibitem{freeman2014} Freeman, J.; Whitmore, J.; Blair, N.; Dobos, A.; \emph{Validation of Multiple Tools for Flat Plate Photovoltaic Modeling Against Measured Data.} 2014 IEEE 40th Photovoltaic Specialist Conference (PVSC), Denver, CO, 2014.
+
+\bibitem{haroon2012} Haroon, S.; \emph{PV Performance and Yield Comparisons, NREL SAM and PVSYST}. Suniva Corporation. Presentation at the SAM Virtual Conference, \texttt{https://sam.nrel.gov/conferences} , June 2012
+
+\bibitem{sam} National Renewable Energy Laboratory, \emph{System Advisor Model}, http://sam.nrel.gov, 2016.
+
+\bibitem{yates2010} Yates, T., Hibberd, B., \emph{Production Modeling for GridTied PV Systems}, Solar Pro Magazine, Issue 3.3, April/May 2010. 
+
+
+\end{thebibliography}
+
+\end{document}

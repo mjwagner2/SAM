@@ -17,11 +17,13 @@ char *lhs_dist_names[LHS_NUMDISTS] = {
 	"Uniform,Min,Max",
 	"Normal,Mean (mu),Std. Dev. (sigma)",
 	"Lognormal,Mean,ErrorF",
+	"Lognormal-N,Mean,Std. Dev.",
 	"Triangular,A,B,C",
 	"Gamma,Alpha,Beta",
 	"Poisson,Lambda",
 	"Binomial,P,N",
 	"Exponential,Lambda",
+	"Weibull,Alpha or k (shape parameter),Beta or lambda (scale parameter)",
 	"UserCDF,N"
 };
 
@@ -53,7 +55,7 @@ void LHS::SeedVal(int sv)
 
 bool LHS::Exec()
 {
-	wxString workdir( wxFileName::GetTempDir() );
+	wxString workdir(wxFileName::GetTempDir());
 	
 	wxString lhsexe( SamApp::GetRuntimePath() + "/bin/" + wxString(LHSBINARY) );
 
@@ -114,6 +116,11 @@ bool LHS::Exec()
 				m_dist[i].params[0], 
 				m_dist[i].params[1]);
 			break;
+		case LHS_LOGNORMAL_N:
+			fprintf(fp, "%s LOGNORMAL-N %lg %lg\n", (const char*)m_dist[i].name.c_str(),
+				m_dist[i].params[0],
+				m_dist[i].params[1]);
+			break;
 		case LHS_TRIANGULAR:
 			fprintf(fp, "%s %lg TRIANGULAR %lg %lg %lg\n", (const char*)m_dist[i].name.c_str(), m_dist[i].params[1], 
 				m_dist[i].params[0], 
@@ -137,6 +144,11 @@ bool LHS::Exec()
 		case LHS_EXPONENTIAL:
 			fprintf(fp, "%s EXPONENTIAL %lg\n", (const char*)m_dist[i].name.c_str(), 
 				m_dist[i].params[0]);
+			break;
+		case LHS_WEIBULL:
+			fprintf(fp, "%s WEIBULL %lg %lg\n", (const char*)m_dist[i].name.c_str(),
+				m_dist[i].params[0],
+				m_dist[i].params[1]);
 			break;
 		case LHS_USERCDF:
 			ncdfpairs = (int) m_dist[i].params[0];

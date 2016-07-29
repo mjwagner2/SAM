@@ -1,4 +1,4 @@
-SAMVER=2016.3.14
+SAMVER=2016.7.21
 SAMVERDASH=$(subst .,-,$(SAMVER))
 SRCDIR = ../src
 VPATH = $(SRCDIR)
@@ -16,8 +16,9 @@ SSCLIB = ssc.so
 CC = gcc
 CXX = g++
 CFLAGS = -g -DLK_USE_WXWIDGETS -I. -I$(SRCDIR) -I$(WEXDIR)/include -I$(LKDIR)/include -I$(SSCDIR) `wx-config-3 --cflags`
-CXXFLAGS = $(CFLAGS)
-LDFLAGS = $(SSCLIB) $(LKLIB) $(WEXLIB) `wx-config-3 --libs propgrid` `wx-config-3 --libs aui` `wx-config-3 --libs stc` `wx-config-3 --libs richtext` `wx-config-3 --libs` -lm -lstdc++ -lcurl
+LDFLAGS = -std=c++0x $(SSCLIB) $(LKLIB) $(WEXLIB) `wx-config-3 --libs propgrid` `wx-config-3 --libs aui` `wx-config-3 --libs stc` `wx-config-3 --libs richtext` `wx-config-3 --libs` -lm -lstdc++ -lcurl
+CXXFLAGS=-std=c++0x $(CFLAGS)
+
 
 OBJECTS = ide.o \
 	lossdiag.o \
@@ -60,7 +61,7 @@ OBJECTS = ide.o \
 	troughloop.o \
 	shadingfactors.o \
 	materials.o \
-	codegen.o
+	codegenerator.o
 
 TARGET = sam.bin
 
@@ -89,9 +90,11 @@ package:
 	rm -rf ./sam.deploy/x64
 	rm -rfv ./sam.deploy/linux_64/SAM
 	rm -rfv ./sam.deploy/linux_64/SAM~
-	rm -rfv `find ./sam.deploy -type d -name .svn`
+# Following leaves .svn folders in directories with spaces in names.	
+#	rm -rfv `find ./sam.deploy -type d -name .svn`
 	rm -rfv `find ./sam.deploy -type f -name "*.iss"`
 	rm -rfv `find ./sam.deploy -type f -name "*.exe"`
+	find ./sam.deploy  -name .svn -exec rm -rf {} \; 2> /dev/null; true
 	echo "stripping binaries..."
 # for now, don't strip debugging information even though
 # the binaries are much bigger, because backtraces from crashes 
@@ -117,7 +120,7 @@ DEPENDS = $(OBJECTS:.o=.d)
 -include $(DEPENDS)
 
 %.d: %.cpp
-	$(CXX) -MM $(CFLAGS) $^ > $*.d
+	$(CXX) -MM $(CXXFLAGS) $^ > $*.d
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
