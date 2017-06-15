@@ -589,6 +589,7 @@ public:
 		if the optimization is happening within the cmod
 		*/
 		double H_rec, D_rec, rec_aspect, THT, A_sf;
+		double land_area_base = std::numeric_limits<double>::quiet_NaN();
 
 		if( is_optimize || heliostatfield.ms_params.m_run_type == 0 )
 		{
@@ -645,170 +646,9 @@ public:
 			assign("h_tower", var_data((ssc_number_t)THT));
 			assign("A_sf", var_data((ssc_number_t)A_sf));
 			assign("piping_length", var_data((ssc_number_t)piping_length));
-		
-			//Update the total installed cost
-			double total_direct_cost = 0.;
-			double A_rec;
-			switch( spi.recs.front().rec_type.mapval() )
-			{
-            case var_receiver::REC_TYPE::EXTERNAL_CYLINDRICAL:
-			{
-                double h = spi.recs.front().rec_height.val;
-                double d = h / spi.recs.front().rec_aspect.Val();
-                A_rec = h*d*3.1415926;
-                break;
-			}
-            case var_receiver::REC_TYPE::FLAT_PLATE:
-            //case Receiver::REC_TYPE::CAVITY:
-				double h = spi.recs.front().rec_height.val;
-				double w = h / spi.recs.front().rec_aspect.Val();
-				A_rec = h*w;
-				break;
-			}
-			
-			
-			// ******* Re-calculate system costs here ************
-			C_mspt_system_costs sys_costs;
-			
-			sys_costs.ms_par.A_sf_refl = A_sf;
-			sys_costs.ms_par.site_improv_spec_cost = as_double("site_spec_cost");
-			sys_costs.ms_par.heliostat_spec_cost = as_double("heliostat_spec_cost");
-			sys_costs.ms_par.heliostat_fixed_cost = as_double("cost_sf_fixed");
 
-			sys_costs.ms_par.h_tower = THT;
-			sys_costs.ms_par.h_rec = H_rec;
-			sys_costs.ms_par.h_helio = as_double("helio_height");
-			sys_costs.ms_par.tower_fixed_cost = as_double("tower_fixed_cost");
-			sys_costs.ms_par.tower_cost_scaling_exp = as_double("tower_exp");
-
-			sys_costs.ms_par.A_rec = A_rec;
-			sys_costs.ms_par.rec_ref_cost = as_double("rec_ref_cost");
-			sys_costs.ms_par.A_rec_ref = as_double("rec_ref_area");
-			sys_costs.ms_par.rec_cost_scaling_exp = as_double("rec_cost_exp");
-
-			sys_costs.ms_par.Q_storage = as_double("P_ref") / as_double("design_eff")*as_double("tshours");
-			sys_costs.ms_par.tes_spec_cost = as_double("tes_spec_cost");
-
-			sys_costs.ms_par.W_dot_design = as_double("P_ref");
-			sys_costs.ms_par.power_cycle_spec_cost = as_double("plant_spec_cost");
-
-			sys_costs.ms_par.bop_spec_cost = as_double("bop_spec_cost");
-
-			sys_costs.ms_par.fossil_backup_spec_cost = as_double("fossil_spec_cost");
-
-			sys_costs.ms_par.contingency_rate = as_double("contingency_rate");
-
-			//land area
-			double land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
-			sys_costs.ms_par.total_land_area = spi.land.land_area.Val() * as_double("csp.pt.sf.land_overhead_factor") + as_double("csp.pt.sf.fixed_land_area");
+			land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
 			assign("land_area_base", land_area_base);
-			assign("csp.pt.cost.total_land_area", sys_costs.ms_par.total_land_area);
-			
-
-			sys_costs.ms_par.plant_net_capacity = as_double("system_capacity")/1000.0;			//[MWe], convert from kWe
-			sys_costs.ms_par.EPC_land_spec_cost = as_double("csp.pt.cost.epc.per_acre");
-			sys_costs.ms_par.EPC_land_perc_direct_cost = as_double("csp.pt.cost.epc.percent");
-			sys_costs.ms_par.EPC_land_per_power_cost = as_double("csp.pt.cost.epc.per_watt");
-			sys_costs.ms_par.EPC_land_fixed_cost = as_double("csp.pt.cost.epc.fixed");
-			sys_costs.ms_par.total_land_spec_cost = as_double("csp.pt.cost.plm.per_acre");
-			sys_costs.ms_par.total_land_perc_direct_cost = as_double("csp.pt.cost.plm.percent");
-			sys_costs.ms_par.total_land_per_power_cost = as_double("csp.pt.cost.plm.per_watt");
-			sys_costs.ms_par.total_land_fixed_cost = as_double("csp.pt.cost.plm.fixed");
-			sys_costs.ms_par.sales_tax_basis = as_double("sales_tax_frac");
-			sys_costs.ms_par.sales_tax_rate = as_double("sales_tax_rate");
-
-			try
-			{
-				sys_costs.calculate_costs();
-			}
-			catch( C_csp_exception &csp_exception )
-			{
-				throw exec_error("MSPT system costs", util::format("System cost calculations failed. Check that all inputs are properly defined"));
-			}
-
-			// 1.5.2016 twn: financial model needs an updated total_installed_cost, remaining are for reporting only
-			assign("total_installed_cost", sys_costs.ms_out.total_installed_cost);
-			
-			assign("csp.pt.cost.site_improvements", sys_costs.ms_out.site_improvement_cost);
-			assign("csp.pt.cost.heliostats", sys_costs.ms_out.heliostat_cost);
-			assign("csp.pt.cost.tower", sys_costs.ms_out.tower_cost);
-			assign("csp.pt.cost.receiver", sys_costs.ms_out.receiver_cost);
-			assign("csp.pt.cost.storage", sys_costs.ms_out.tes_cost);
-			assign("csp.pt.cost.power_block", sys_costs.ms_out.power_cycle_cost);
-			assign("csp.pt.cost.bop", sys_costs.ms_out.bop_cost);
-			assign("csp.pt.cost.fossil", sys_costs.ms_out.fossil_backup_cost);
-			assign("ui_direct_subtotal", sys_costs.ms_out.direct_capital_precontingency_cost);
-			assign("csp.pt.cost.contingency", sys_costs.ms_out.contingency_cost);
-			assign("total_direct_cost", sys_costs.ms_out.total_direct_cost);
-			assign("csp.pt.cost.epc.total", sys_costs.ms_out.epc_and_owner_cost);
-			assign("csp.pt.cost.plm.total", sys_costs.ms_out.total_land_cost);
-			assign("csp.pt.cost.sales_tax.total", sys_costs.ms_out.sales_tax_cost);
-			assign("total_indirect_cost", sys_costs.ms_out.total_indirect_cost);
-			assign("csp.pt.cost.installed_per_capacity", sys_costs.ms_out.estimated_installed_cost_per_cap);
-
-			// Update construction financing costs, specifically, update: "construction_financing_cost"
-			double const_per_interest_rate1 = as_double("const_per_interest_rate1");
-			double const_per_interest_rate2 = as_double("const_per_interest_rate2");
-			double const_per_interest_rate3 = as_double("const_per_interest_rate3");
-			double const_per_interest_rate4 = as_double("const_per_interest_rate4");
-			double const_per_interest_rate5 = as_double("const_per_interest_rate5");
-			double const_per_months1 = as_double("const_per_months1");
-			double const_per_months2 = as_double("const_per_months2");
-			double const_per_months3 = as_double("const_per_months3");
-			double const_per_months4 = as_double("const_per_months4");
-			double const_per_months5 = as_double("const_per_months5");
-			double const_per_percent1 = as_double("const_per_percent1");
-			double const_per_percent2 = as_double("const_per_percent2");
-			double const_per_percent3 = as_double("const_per_percent3");
-			double const_per_percent4 = as_double("const_per_percent4");
-			double const_per_percent5 = as_double("const_per_percent5");
-			double const_per_upfront_rate1 = as_double("const_per_upfront_rate1");
-			double const_per_upfront_rate2 = as_double("const_per_upfront_rate2");
-			double const_per_upfront_rate3 = as_double("const_per_upfront_rate3");
-			double const_per_upfront_rate4 = as_double("const_per_upfront_rate4");
-			double const_per_upfront_rate5 = as_double("const_per_upfront_rate5");
-
-			double const_per_principal1, const_per_principal2, const_per_principal3, const_per_principal4, const_per_principal5;
-			double const_per_interest1, const_per_interest2, const_per_interest3, const_per_interest4, const_per_interest5;
-			double const_per_total1, const_per_total2, const_per_total3, const_per_total4, const_per_total5;
-			double const_per_percent_total, const_per_principal_total, const_per_interest_total, construction_financing_cost;
-
-			const_per_principal1 = const_per_principal2 = const_per_principal3 = const_per_principal4 = const_per_principal5 =
-				const_per_interest1 = const_per_interest2 = const_per_interest3 = const_per_interest4 = const_per_interest5 =
-				const_per_total1 = const_per_total2 = const_per_total3 = const_per_total4 = const_per_total5 =
-				const_per_percent_total = const_per_principal_total = const_per_interest_total = construction_financing_cost =
-				std::numeric_limits<double>::quiet_NaN();
-
-			N_financial_parameters::construction_financing_total_cost(sys_costs.ms_out.total_installed_cost,
-				const_per_interest_rate1, const_per_interest_rate2, const_per_interest_rate3, const_per_interest_rate4, const_per_interest_rate5,
-				const_per_months1, const_per_months2, const_per_months3, const_per_months4, const_per_months5,
-				const_per_percent1, const_per_percent2, const_per_percent3, const_per_percent4, const_per_percent5,
-				const_per_upfront_rate1, const_per_upfront_rate2, const_per_upfront_rate3, const_per_upfront_rate4, const_per_upfront_rate5,
-				const_per_principal1, const_per_principal2, const_per_principal3, const_per_principal4, const_per_principal5,
-				const_per_interest1, const_per_interest2, const_per_interest3, const_per_interest4, const_per_interest5,
-				const_per_total1, const_per_total2, const_per_total3, const_per_total4, const_per_total5,
-				const_per_percent_total, const_per_principal_total, const_per_interest_total, construction_financing_cost);
-
-			assign("const_per_principal1", const_per_principal1);
-			assign("const_per_principal2", const_per_principal2);
-			assign("const_per_principal3", const_per_principal3);
-			assign("const_per_principal4", const_per_principal4);
-			assign("const_per_principal5", const_per_principal5);
-			assign("const_per_interest1", const_per_interest1);
-			assign("const_per_interest2", const_per_interest2);
-			assign("const_per_interest3", const_per_interest3);
-			assign("const_per_interest4", const_per_interest4);
-			assign("const_per_interest5", const_per_interest5);
-			assign("const_per_total1", const_per_total1);
-			assign("const_per_total2", const_per_total2);
-			assign("const_per_total3", const_per_total3);
-			assign("const_per_total4", const_per_total4);
-			assign("const_per_total5", const_per_total5);
-			assign("const_per_percent_total", const_per_percent_total);
-			assign("const_per_principal_total", const_per_principal_total);
-			assign("const_per_interest_total", const_per_interest_total);
-			assign("construction_financing_cost", construction_financing_cost);
-
 		}
 		else
 		{
@@ -816,10 +656,26 @@ public:
 			rec_aspect = as_double("rec_aspect");
 			THT = as_double("THT");
 			A_sf = as_double("A_sf");
+			land_area_base = as_double("land_area_base");
 		}
 
 		D_rec = H_rec / rec_aspect;
 		
+		double A_rec = std::numeric_limits<double>::quiet_NaN();
+		int rec_type = as_integer("receiver_type");
+
+		switch (rec_type)
+		{
+		case var_receiver::REC_TYPE::EXTERNAL_CYLINDRICAL:
+		{
+			A_rec = H_rec * D_rec * 3.1415926;
+			break;
+		}
+		case var_receiver::REC_TYPE::FLAT_PLATE:
+			A_rec = H_rec * D_rec;
+			break;
+		}
+
 		heliostatfield.ms_params.m_rec_height = as_double("rec_height");
 		heliostatfield.ms_params.m_rec_aspect = as_double("rec_aspect");
 		heliostatfield.ms_params.m_h_tower = as_double("h_tower");
@@ -1591,6 +1447,145 @@ public:
 		{
 			log(out_msg, out_type);
 		}
+
+		// ******* Re-calculate system costs here ************
+		C_mspt_system_costs sys_costs;
+
+		sys_costs.ms_par.A_sf_refl = A_sf;
+		sys_costs.ms_par.site_improv_spec_cost = as_double("site_spec_cost");
+		sys_costs.ms_par.heliostat_spec_cost = as_double("heliostat_spec_cost");
+		sys_costs.ms_par.heliostat_fixed_cost = as_double("cost_sf_fixed");
+
+		sys_costs.ms_par.h_tower = THT;
+		sys_costs.ms_par.h_rec = H_rec;
+		sys_costs.ms_par.h_helio = as_double("helio_height");
+		sys_costs.ms_par.tower_fixed_cost = as_double("tower_fixed_cost");
+		sys_costs.ms_par.tower_cost_scaling_exp = as_double("tower_exp");
+
+		sys_costs.ms_par.A_rec = A_rec;
+		sys_costs.ms_par.rec_ref_cost = as_double("rec_ref_cost");
+		sys_costs.ms_par.A_rec_ref = as_double("rec_ref_area");
+		sys_costs.ms_par.rec_cost_scaling_exp = as_double("rec_cost_exp");
+
+		sys_costs.ms_par.Q_storage = as_double("P_ref") / as_double("design_eff")*as_double("tshours");
+		sys_costs.ms_par.tes_spec_cost = as_double("tes_spec_cost");
+
+		sys_costs.ms_par.W_dot_design = as_double("P_ref");
+		sys_costs.ms_par.power_cycle_spec_cost = as_double("plant_spec_cost");
+
+		sys_costs.ms_par.bop_spec_cost = as_double("bop_spec_cost");
+
+		sys_costs.ms_par.fossil_backup_spec_cost = as_double("fossil_spec_cost");
+
+		sys_costs.ms_par.contingency_rate = as_double("contingency_rate");
+
+		//land area
+		sys_costs.ms_par.total_land_area = land_area_base * as_double("csp.pt.sf.land_overhead_factor") + as_double("csp.pt.sf.fixed_land_area");
+		assign("csp.pt.cost.total_land_area", sys_costs.ms_par.total_land_area);
+
+		sys_costs.ms_par.plant_net_capacity = as_double("system_capacity") / 1000.0;			//[MWe], convert from kWe
+		sys_costs.ms_par.EPC_land_spec_cost = as_double("csp.pt.cost.epc.per_acre");
+		sys_costs.ms_par.EPC_land_perc_direct_cost = as_double("csp.pt.cost.epc.percent");
+		sys_costs.ms_par.EPC_land_per_power_cost = as_double("csp.pt.cost.epc.per_watt");
+		sys_costs.ms_par.EPC_land_fixed_cost = as_double("csp.pt.cost.epc.fixed");
+		sys_costs.ms_par.total_land_spec_cost = as_double("csp.pt.cost.plm.per_acre");
+		sys_costs.ms_par.total_land_perc_direct_cost = as_double("csp.pt.cost.plm.percent");
+		sys_costs.ms_par.total_land_per_power_cost = as_double("csp.pt.cost.plm.per_watt");
+		sys_costs.ms_par.total_land_fixed_cost = as_double("csp.pt.cost.plm.fixed");
+		sys_costs.ms_par.sales_tax_basis = as_double("sales_tax_frac");
+		sys_costs.ms_par.sales_tax_rate = as_double("sales_tax_rate");
+
+		try
+		{
+			sys_costs.calculate_costs();
+		}
+		catch (C_csp_exception &csp_exception)
+		{
+			throw exec_error("MSPT system costs", util::format("System cost calculations failed. Check that all inputs are properly defined"));
+		}
+
+		// 1.5.2016 twn: financial model needs an updated total_installed_cost, remaining are for reporting only
+		assign("total_installed_cost", sys_costs.ms_out.total_installed_cost);
+
+		assign("csp.pt.cost.site_improvements", sys_costs.ms_out.site_improvement_cost);
+		assign("csp.pt.cost.heliostats", sys_costs.ms_out.heliostat_cost);
+		assign("csp.pt.cost.tower", sys_costs.ms_out.tower_cost);
+		assign("csp.pt.cost.receiver", sys_costs.ms_out.receiver_cost);
+		assign("csp.pt.cost.storage", sys_costs.ms_out.tes_cost);
+		assign("csp.pt.cost.power_block", sys_costs.ms_out.power_cycle_cost);
+		assign("csp.pt.cost.bop", sys_costs.ms_out.bop_cost);
+		assign("csp.pt.cost.fossil", sys_costs.ms_out.fossil_backup_cost);
+		assign("ui_direct_subtotal", sys_costs.ms_out.direct_capital_precontingency_cost);
+		assign("csp.pt.cost.contingency", sys_costs.ms_out.contingency_cost);
+		assign("total_direct_cost", sys_costs.ms_out.total_direct_cost);
+		assign("csp.pt.cost.epc.total", sys_costs.ms_out.epc_and_owner_cost);
+		assign("csp.pt.cost.plm.total", sys_costs.ms_out.total_land_cost);
+		assign("csp.pt.cost.sales_tax.total", sys_costs.ms_out.sales_tax_cost);
+		assign("total_indirect_cost", sys_costs.ms_out.total_indirect_cost);
+		assign("csp.pt.cost.installed_per_capacity", sys_costs.ms_out.estimated_installed_cost_per_cap);
+
+		// Update construction financing costs, specifically, update: "construction_financing_cost"
+		double const_per_interest_rate1 = as_double("const_per_interest_rate1");
+		double const_per_interest_rate2 = as_double("const_per_interest_rate2");
+		double const_per_interest_rate3 = as_double("const_per_interest_rate3");
+		double const_per_interest_rate4 = as_double("const_per_interest_rate4");
+		double const_per_interest_rate5 = as_double("const_per_interest_rate5");
+		double const_per_months1 = as_double("const_per_months1");
+		double const_per_months2 = as_double("const_per_months2");
+		double const_per_months3 = as_double("const_per_months3");
+		double const_per_months4 = as_double("const_per_months4");
+		double const_per_months5 = as_double("const_per_months5");
+		double const_per_percent1 = as_double("const_per_percent1");
+		double const_per_percent2 = as_double("const_per_percent2");
+		double const_per_percent3 = as_double("const_per_percent3");
+		double const_per_percent4 = as_double("const_per_percent4");
+		double const_per_percent5 = as_double("const_per_percent5");
+		double const_per_upfront_rate1 = as_double("const_per_upfront_rate1");
+		double const_per_upfront_rate2 = as_double("const_per_upfront_rate2");
+		double const_per_upfront_rate3 = as_double("const_per_upfront_rate3");
+		double const_per_upfront_rate4 = as_double("const_per_upfront_rate4");
+		double const_per_upfront_rate5 = as_double("const_per_upfront_rate5");
+
+		double const_per_principal1, const_per_principal2, const_per_principal3, const_per_principal4, const_per_principal5;
+		double const_per_interest1, const_per_interest2, const_per_interest3, const_per_interest4, const_per_interest5;
+		double const_per_total1, const_per_total2, const_per_total3, const_per_total4, const_per_total5;
+		double const_per_percent_total, const_per_principal_total, const_per_interest_total, construction_financing_cost;
+
+		const_per_principal1 = const_per_principal2 = const_per_principal3 = const_per_principal4 = const_per_principal5 =
+			const_per_interest1 = const_per_interest2 = const_per_interest3 = const_per_interest4 = const_per_interest5 =
+			const_per_total1 = const_per_total2 = const_per_total3 = const_per_total4 = const_per_total5 =
+			const_per_percent_total = const_per_principal_total = const_per_interest_total = construction_financing_cost =
+			std::numeric_limits<double>::quiet_NaN();
+
+		N_financial_parameters::construction_financing_total_cost(sys_costs.ms_out.total_installed_cost,
+			const_per_interest_rate1, const_per_interest_rate2, const_per_interest_rate3, const_per_interest_rate4, const_per_interest_rate5,
+			const_per_months1, const_per_months2, const_per_months3, const_per_months4, const_per_months5,
+			const_per_percent1, const_per_percent2, const_per_percent3, const_per_percent4, const_per_percent5,
+			const_per_upfront_rate1, const_per_upfront_rate2, const_per_upfront_rate3, const_per_upfront_rate4, const_per_upfront_rate5,
+			const_per_principal1, const_per_principal2, const_per_principal3, const_per_principal4, const_per_principal5,
+			const_per_interest1, const_per_interest2, const_per_interest3, const_per_interest4, const_per_interest5,
+			const_per_total1, const_per_total2, const_per_total3, const_per_total4, const_per_total5,
+			const_per_percent_total, const_per_principal_total, const_per_interest_total, construction_financing_cost);
+
+		assign("const_per_principal1", const_per_principal1);
+		assign("const_per_principal2", const_per_principal2);
+		assign("const_per_principal3", const_per_principal3);
+		assign("const_per_principal4", const_per_principal4);
+		assign("const_per_principal5", const_per_principal5);
+		assign("const_per_interest1", const_per_interest1);
+		assign("const_per_interest2", const_per_interest2);
+		assign("const_per_interest3", const_per_interest3);
+		assign("const_per_interest4", const_per_interest4);
+		assign("const_per_interest5", const_per_interest5);
+		assign("const_per_total1", const_per_total1);
+		assign("const_per_total2", const_per_total2);
+		assign("const_per_total3", const_per_total3);
+		assign("const_per_total4", const_per_total4);
+		assign("const_per_total5", const_per_total5);
+		assign("const_per_percent_total", const_per_percent_total);
+		assign("const_per_principal_total", const_per_principal_total);
+		assign("const_per_interest_total", const_per_interest_total);
+		assign("construction_financing_cost", construction_financing_cost);
 
 		// Do unit post-processing here
 		float *p_q_pc_startup = allocate("q_pc_startup", n_steps_fixed);
