@@ -527,15 +527,6 @@ public:
 
 	void exec() throw(general_error)
 	{
-		//util::matrix_t<float> &p_udpc_T_htf_hot = allocate_matrix("ud_T_htf_ind_od_out", 1, 3);
-		//for (int j = 0; j < 1; j++)
-		//{
-		//	for (int i = 0; i < 3; i++)
-		//	{
-		//		p_udpc_T_htf_hot(j,i) = i;
-		//	}
-		//}
-
 		int tes_type = as_integer("tes_type");
 		if( tes_type != 1 )
 		{
@@ -584,82 +575,75 @@ public:
 
 		bool is_optimize = as_boolean("is_optimize");
 
-		/*
-		Any parameter that's dependent on the size of the solar field must be recalculated here
-		if the optimization is happening within the cmod
-		*/
-		double H_rec, D_rec, rec_aspect, THT, A_sf;
-		double land_area_base = std::numeric_limits<double>::quiet_NaN();
+		//Run solarpilot right away to update values as needed
+		solarpilot_invoke spi(this);
+		spi.run();
 
-		if( is_optimize || heliostatfield.ms_params.m_run_type == 0 )
-		{
-			//Run solarpilot right away to update values as needed
-			solarpilot_invoke spi(this);
-			spi.run();
+		//util::matrix_t<double> opteff_table = as_matrix("opteff_table");
+		//int n_rows = opteff_table.nrows();
+		//vector<double> effs;
+		//effs.clear();
+		//effs.reserve(n_rows);
+		//
+		//for (int i = 0; i < n_rows; i++)
+		//{
+		//	effs.push_back(opteff_table(i, 2));
+		//}
 
-            if(is_optimize)
+        if(is_optimize)
+        {
+			//Optimization iteration history
+			vector<vector<double> > steps;
+			vector<double> obj, flux;
+			spi.getOptimizationSimulationHistory(steps, obj, flux);
+			int nr = steps.size();
+            if(nr > 0)
             {
-			    //Optimization iteration history
-			    vector<vector<double> > steps;
-			    vector<double> obj, flux;
-			    spi.getOptimizationSimulationHistory(steps, obj, flux);
-			    int nr = steps.size();
-                if(nr > 0)
-                {
-			        int nc = steps.front().size() + 2;
-			        ssc_number_t *ssc_hist = allocate("opt_history", nr, nc);
-			        for( size_t i = 0; i<nr; i++ ){
+			    int nc = steps.front().size() + 2;
+			    ssc_number_t *ssc_hist = allocate("opt_history", nr, nc);
+			    for( size_t i = 0; i<nr; i++ ){
 
-				        for( size_t j = 0; j<steps.front().size(); j++ )
-					        ssc_hist[i*nc + j] = steps.at(i).at(j);
-				        ssc_hist[i*nc + nc - 2] = obj.at(i);
-				        ssc_hist[i*nc + nc - 1] = flux.at(i);
-                    }
-			    }
-            }
-		
-			//receiver calculations
-			H_rec = spi.recs.front().rec_height.val;
-			rec_aspect = spi.recs.front().rec_aspect.Val();
-			THT = spi.sf.tht.val;
-			//update heliostat position table
-
-			int nr = (int)spi.layout.heliostat_positions.size();
-			assign("N_hel", nr);
-			ssc_number_t *ssc_hl = allocate("helio_positions", nr, 2);
-			for( int i = 0; i<nr; i++ ){
-				ssc_hl[i * 2] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.x;
-				ssc_hl[i * 2 + 1] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.y;
+				    for( size_t j = 0; j<steps.front().size(); j++ )
+					    ssc_hist[i*nc + j] = steps.at(i).at(j);
+				    ssc_hist[i*nc + nc - 2] = obj.at(i);
+				    ssc_hist[i*nc + nc - 1] = flux.at(i);
+                }
 			}
+        }
+		
+		// receiver calculations
+		double H_rec = spi.recs.front().rec_height.val;
+		double rec_aspect = spi.recs.front().rec_aspect.Val();
+		double THT = spi.sf.tht.val;
+		//update heliostat position table
 
-			A_sf = as_double("helio_height") * as_double("helio_width") * as_double("dens_mirror") * (double)nr;
-
-			//update piping length for parasitic calculation
-			double piping_length = THT * as_double("piping_length_mult") + as_double("piping_length_const");
-
-			//update assignments for cost model
-			assign("H_rec", var_data((ssc_number_t)H_rec));
-			assign("rec_height", var_data((ssc_number_t)H_rec));
-			assign("rec_aspect", var_data((ssc_number_t)rec_aspect));
-			assign("D_rec", var_data((ssc_number_t)(H_rec / rec_aspect)));
-			assign("THT", var_data((ssc_number_t)THT));
-			assign("h_tower", var_data((ssc_number_t)THT));
-			assign("A_sf", var_data((ssc_number_t)A_sf));
-			assign("piping_length", var_data((ssc_number_t)piping_length));
-
-			land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
-			assign("land_area_base", land_area_base);
-		}
-		else
-		{
-			H_rec = as_double("H_rec");
-			rec_aspect = as_double("rec_aspect");
-			THT = as_double("THT");
-			A_sf = as_double("A_sf");
-			land_area_base = as_double("land_area_base");
+		int nr = (int)spi.layout.heliostat_positions.size();
+		assign("N_hel", nr);
+		ssc_number_t *ssc_hl = allocate("helio_positions", nr, 2);
+		for( int i = 0; i<nr; i++ ){
+			ssc_hl[i * 2] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.x;
+			ssc_hl[i * 2 + 1] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.y;
 		}
 
-		D_rec = H_rec / rec_aspect;
+		double A_sf = as_double("helio_height") * as_double("helio_width") * as_double("dens_mirror") * (double)nr;
+
+		//update piping length for parasitic calculation
+		double piping_length = THT * as_double("piping_length_mult") + as_double("piping_length_const");
+
+		//update assignments for cost model
+		assign("H_rec", var_data((ssc_number_t)H_rec));
+		assign("rec_height", var_data((ssc_number_t)H_rec));
+		assign("rec_aspect", var_data((ssc_number_t)rec_aspect));
+		assign("D_rec", var_data((ssc_number_t)(H_rec / rec_aspect)));
+		assign("THT", var_data((ssc_number_t)THT));
+		assign("h_tower", var_data((ssc_number_t)THT));
+		assign("A_sf", var_data((ssc_number_t)A_sf));
+		assign("piping_length", var_data((ssc_number_t)piping_length));
+
+		double land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
+		assign("land_area_base", land_area_base);
+
+		double D_rec = H_rec / rec_aspect;
 		
 		double A_rec = std::numeric_limits<double>::quiet_NaN();
 		int rec_type = as_integer("receiver_type");
@@ -686,8 +670,8 @@ public:
 		heliostatfield.ms_params.m_land_bound_type = (int) as_double("land_bound_type");
 		heliostatfield.ms_params.m_land_max = as_double("land_max");
 		heliostatfield.ms_params.m_land_min = as_double("land_min");
-		heliostatfield.ms_params.m_p_start = as_double("p_start");
-		heliostatfield.ms_params.m_p_track = as_double("p_track");
+		heliostatfield.ms_params.m_p_start = as_double("p_start");		//[kWe-hr] Heliostat startup energy
+		heliostatfield.ms_params.m_p_track = as_double("p_track");		//[kWe] Heliostat tracking power
 		heliostatfield.ms_params.m_hel_stow_deploy = as_double("hel_stow_deploy");
 		heliostatfield.ms_params.m_v_wind_max = as_double("v_wind_max");
 		heliostatfield.ms_params.m_n_flux_x = (int) as_double("n_flux_x");

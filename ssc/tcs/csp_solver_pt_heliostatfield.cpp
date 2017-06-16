@@ -140,9 +140,9 @@ void C_pt_heliostatfield::init()
 		//nrows2 = ms_params.m_nrows_land_bound_list;
 		//land_bound_list = value(P_land_bound_list, &nrows2);
 
-		m_p_start = ms_params.m_p_start;
-		m_p_track = ms_params.m_p_track;
-		m_hel_stow_deploy = ms_params.m_hel_stow_deploy*CSP::pi / 180.0;
+		m_p_start = ms_params.m_p_start;		//[kWe-hr] Heliostat startup energy
+		m_p_track = ms_params.m_p_track;		//[kWe] Heliostat tracking power
+		m_hel_stow_deploy = ms_params.m_hel_stow_deploy*CSP::pi / 180.0;	//[rad]
 		m_v_wind_max = ms_params.m_v_wind_max;
 		
 		interp_nug = ms_params.m_interp_nug;
@@ -464,7 +464,8 @@ void C_pt_heliostatfield::init()
 
 			
 
-			//set up flux map resolution
+			// set up flux map resolution
+			sp_flux_table fluxtab;
 			fluxtab.is_user_spacing = true;
 			fluxtab.n_flux_days = n_flux_days;
 			fluxtab.delta_flux_hrs = delta_flux_hrs;
@@ -661,7 +662,7 @@ void C_pt_heliostatfield::call(const C_csp_weatherreader::S_outputs &weather, do
 		sf_adjust = ms_params.m_sf_adjust.at((int)(time / full_step) - 1);
 	}
 
-	double v_wind = weather.m_wspd;
+	double v_wind = weather.m_wspd;			//[m/s]
 	m_v_wind_current = v_wind;
 	double field_control = field_control_in;	// Control Parameter ( range from 0 to 1; 0=off, 1=all on)
 	if( field_control_in > 1.0 )
