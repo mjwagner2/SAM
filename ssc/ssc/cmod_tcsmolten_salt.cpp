@@ -95,7 +95,7 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
 	{ SSC_INPUT,        SSC_NUMBER,      "cost_sf_fixed",        "Solar field fixed cost",                                            "$",            "",            "heliostat",      "*",                       "",                     "" },
 	{ SSC_INPUT,        SSC_NUMBER,      "fossil_spec_cost",     "Fossil system specific cost",                                       "$/kWe",        "",            "heliostat",      "*",                       "",                     "" },
 																																																									      
-    { SSC_INPUT,        SSC_NUMBER,      "is_optimize",          "Do SolarPILOT optimization",                                        "",             "",            "heliostat",       "?=0",                    "",                     "" },
+    { SSC_INPUT,        SSC_NUMBER,      "is_optimize",          "Do SolarPILOT optimization of solar field geometry",                "",             "",            "heliostat",       "?=0",                    "",                     "" },
     { SSC_INPUT,        SSC_NUMBER,      "flux_max",             "Maximum allowable flux",                                            "",             "",            "heliostat",       "?=1000",                 "",                     "" },
     { SSC_INPUT,        SSC_NUMBER,      "opt_init_step",        "Optimization initial step size",                                    "",             "",            "heliostat",       "?=0.05",                 "",                     "" },
     { SSC_INPUT,        SSC_NUMBER,      "opt_max_iter",         "Max. number iteration steps",                                       "",             "",            "heliostat",       "?=200",                  "",                     "" },
@@ -564,7 +564,15 @@ public:
         //heliostat field class
 		C_pt_heliostatfield heliostatfield;
 
-		heliostatfield.ms_params.m_run_type = (int) as_double("run_type");
+		bool is_optimize = as_boolean("is_optimize");		// True = optimize tower/receiver geometry
+		if (is_optimize)
+		{
+			// If 'is_optimize' is true. Then run_type must be 0. Currently not the case in UI
+			assign("run_type", 0);
+		}
+
+		int run_type = as_integer("run_type");
+		heliostatfield.ms_params.m_run_type = run_type;
 		heliostatfield.ms_params.m_helio_width = as_double("helio_width");
 		heliostatfield.ms_params.m_helio_height = as_double("helio_height");
 		heliostatfield.ms_params.m_helio_optical_error = as_double("helio_optical_error");
@@ -573,75 +581,216 @@ public:
 		heliostatfield.ms_params.m_helio_reflectance = as_double("helio_reflectance");
 		heliostatfield.ms_params.m_rec_absorptance = as_double("rec_absorptance");
 
-		bool is_optimize = as_boolean("is_optimize");
+
+		if (run_type == 0)		// Auto-design. Generate a new field layout
+		{
+			// lays out new field design
+				// 'helio_positions_in' should NOT be assigned
+				// 'calc_fluxmaps' should be true
+			assign("calc_fluxmaps", 1);
+			// is_optimize could be true or false here
+		}
+		else if (run_type == 1)		// User-field. Calculate flux and efficiency maps
+		{
+			// only calculates a flux map, so need to "assign" 'helio_positions_in'
+			util::matrix_t<double> helio_pos_temp = as_matrix("helio_positions");
+			int n_h_rows = helio_pos_temp.nrows();
+			ssc_number_t *p_helio_positions_in = allocate("helio_positions_in", n_h_rows, 2);
+			for (int i = 0; i < n_h_rows; i++)
+			{
+				p_helio_positions_in[i * 2] = helio_pos_temp(i, 0);
+				p_helio_positions_in[i * 2 + 1] = helio_pos_temp(i, 1);
+			}
+			assign("N_hel", n_h_rows);
+				// 'calc_fluxmaps' should be true
+			assign("calc_fluxmaps", 1);
+			// is_optimize should be false
+			assign("is_optimize", 0);
+		}
+		else if (run_type == 2)
+		{
+			// 'helio_positions' needs to be assigned
+			// 'calc_fluxmaps' should be false
+			assign("calc_fluxmaps", 0);
+			// 'is_optimize' should be false
+			assign("is_optimize", 0);
+		}
+		else
+		{
+			string msg = util::format("SSC INPUT 'run_type' must be set to either 0, 1 or 2. Its input value is %d", run_type);
+
+			throw exec_error("MSPT CSP Solver", msg);
+		}
+
+		util::matrix_t<double> mt_eta_map;
+		util::matrix_t<double> mt_solar_pos;
+		util::matrix_t<double> mt_flux_maps;
 
 		//Run solarpilot right away to update values as needed
 		solarpilot_invoke spi(this);
 		spi.run();
 
-		//util::matrix_t<double> opteff_table = as_matrix("opteff_table");
-		//int n_rows = opteff_table.nrows();
-		//vector<double> effs;
-		//effs.clear();
-		//effs.reserve(n_rows);
-		//
-		//for (int i = 0; i < n_rows; i++)
-		//{
-		//	effs.push_back(opteff_table(i, 2));
-		//}
+		if (run_type == 0)		// Auto-design. Generate a new field layout
+		{
+			if (is_optimize)
+			{
+				//Optimization iteration history
+				vector<vector<double> > steps;
+				vector<double> obj, flux;
+				spi.getOptimizationSimulationHistory(steps, obj, flux);
+				int nr = steps.size();
+				if (nr > 0)
+				{
+					int nc = steps.front().size() + 2;
+					ssc_number_t *ssc_hist = allocate("opt_history", nr, nc);
+					for (size_t i = 0; i<nr; i++){
 
-        if(is_optimize)
-        {
-			//Optimization iteration history
-			vector<vector<double> > steps;
-			vector<double> obj, flux;
-			spi.getOptimizationSimulationHistory(steps, obj, flux);
-			int nr = steps.size();
-            if(nr > 0)
-            {
-			    int nc = steps.front().size() + 2;
-			    ssc_number_t *ssc_hist = allocate("opt_history", nr, nc);
-			    for( size_t i = 0; i<nr; i++ ){
-
-				    for( size_t j = 0; j<steps.front().size(); j++ )
-					    ssc_hist[i*nc + j] = steps.at(i).at(j);
-				    ssc_hist[i*nc + nc - 2] = obj.at(i);
-				    ssc_hist[i*nc + nc - 1] = flux.at(i);
-                }
+						for (size_t j = 0; j<steps.front().size(); j++)
+							ssc_hist[i*nc + j] = steps.at(i).at(j);
+						ssc_hist[i*nc + nc - 2] = obj.at(i);
+						ssc_hist[i*nc + nc - 1] = flux.at(i);
+					}
+				}
 			}
-        }
-		
-		// receiver calculations
-		double H_rec = spi.recs.front().rec_height.val;
-		double rec_aspect = spi.recs.front().rec_aspect.Val();
-		double THT = spi.sf.tht.val;
-		//update heliostat position table
 
-		int nr = (int)spi.layout.heliostat_positions.size();
-		assign("N_hel", nr);
-		ssc_number_t *ssc_hl = allocate("helio_positions", nr, 2);
-		for( int i = 0; i<nr; i++ ){
-			ssc_hl[i * 2] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.x;
-			ssc_hl[i * 2 + 1] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.y;
+			// receiver calculations
+			double H_rec = spi.recs.front().rec_height.val;
+			double rec_aspect = spi.recs.front().rec_aspect.Val();
+			double THT = spi.sf.tht.val;
+
+			int nr = (int)spi.layout.heliostat_positions.size();
+			assign("N_hel", nr);
+
+			double A_sf = as_double("helio_height") * as_double("helio_width") * as_double("dens_mirror") * (double)nr;
+
+			//update piping length for parasitic calculation
+			double piping_length = THT * as_double("piping_length_mult") + as_double("piping_length_const");
+
+			//update assignments for cost model
+			assign("H_rec", var_data((ssc_number_t)H_rec));
+			assign("rec_height", var_data((ssc_number_t)H_rec));
+			assign("rec_aspect", var_data((ssc_number_t)rec_aspect));
+			assign("D_rec", var_data((ssc_number_t)(H_rec / rec_aspect)));
+			assign("THT", var_data((ssc_number_t)THT));
+			assign("h_tower", var_data((ssc_number_t)THT));
+			assign("A_sf", var_data((ssc_number_t)A_sf));
+			assign("piping_length", var_data((ssc_number_t)piping_length));
+
+			double land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
+			assign("land_area_base", land_area_base);
+
+			ssc_number_t *ssc_hl = allocate("helio_positions", nr, 2);
+			for (int i = 0; i<nr; i++)
+			{
+				ssc_hl[i * 2] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.x;
+				ssc_hl[i * 2 + 1] = (ssc_number_t)spi.layout.heliostat_positions.at(i).location.y;
+			}
+
+			//collect the optical efficiency data and sun positions
+			if (spi.fluxtab.zeniths.size() > 0 && spi.fluxtab.azimuths.size() > 0
+				&& spi.fluxtab.efficiency.size() > 0)
+			{
+				size_t nvals = spi.fluxtab.efficiency.size();
+				mt_eta_map.resize(nvals, 3);
+				mt_solar_pos.resize(nvals, 2);
+				//ssc_number_t *opteff = allocate("opteff_table", nvals, 3);
+				for (size_t i = 0; i<nvals; i++)
+				{
+					mt_solar_pos(i, 0) = mt_eta_map(i, 0) = (float)spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
+					mt_solar_pos(i, 1) = mt_eta_map(i, 1) = (float)spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
+					mt_eta_map(i, 2) = (float)spi.fluxtab.efficiency[i];
+				}
+			}
+			else
+				throw exec_error("solarpilot", "failed to calculate a correct optical efficiency table");
+
+			//collect the flux map data
+			block_t<double> *flux_data = &spi.fluxtab.flux_surfaces.front().flux_data;  //there should be only one flux stack for SAM
+			if (flux_data->ncols() > 0 && flux_data->nlayers() > 0)
+			{
+
+				int nflux_y = (int)flux_data->nrows();
+				int nflux_x = (int)flux_data->ncols();
+
+				mt_flux_maps.resize(nflux_y * flux_data->nlayers(), nflux_x);
+				ssc_number_t *fluxdata = allocate("flux_table", nflux_y * flux_data->nlayers(), nflux_x);
+
+				int cur_row = 0;
+
+				for (size_t i = 0; i<flux_data->nlayers(); i++)
+				{
+					for (int j = 0; j<nflux_y; j++)
+					{
+						for (int k = 0; k<nflux_x; k++)
+						{
+							mt_flux_maps(cur_row, k) = (float)flux_data->at(j, k, i);
+							//fluxdata[cur_row * nflux_x + k] = (float)flux_data->at(j, k, i);
+						}
+						cur_row++;
+					}
+				}
+			}
+			else
+				throw exec_error("solarpilot", "failed to calculate a correct flux map table");
+
 		}
+		else if (run_type == 1)		// User-field. Calculate flux and efficiency maps
+		{
+			//collect the optical efficiency data and sun positions
+			if (spi.fluxtab.zeniths.size() > 0 && spi.fluxtab.azimuths.size() > 0
+				&& spi.fluxtab.efficiency.size() > 0)
+			{
+				size_t nvals = spi.fluxtab.efficiency.size();
+				mt_eta_map.resize(nvals, 3);
+				mt_solar_pos.resize(nvals, 2);
+				//ssc_number_t *opteff = allocate("opteff_table", nvals, 3);
+				for (size_t i = 0; i<nvals; i++)
+				{
+					mt_solar_pos(i, 0) = mt_eta_map(i, 0) = (float)spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
+					mt_solar_pos(i, 1) = mt_eta_map(i, 1) = (float)spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
+					mt_eta_map(i, 2) = (float)spi.fluxtab.efficiency[i];
+				}
+			}
+			else
+				throw exec_error("solarpilot", "failed to calculate a correct optical efficiency table");
 
-		double A_sf = as_double("helio_height") * as_double("helio_width") * as_double("dens_mirror") * (double)nr;
+			//collect the flux map data
+			block_t<double> *flux_data = &spi.fluxtab.flux_surfaces.front().flux_data;  //there should be only one flux stack for SAM
+			if (flux_data->ncols() > 0 && flux_data->nlayers() > 0)
+			{
 
-		//update piping length for parasitic calculation
-		double piping_length = THT * as_double("piping_length_mult") + as_double("piping_length_const");
+				int nflux_y = (int)flux_data->nrows();
+				int nflux_x = (int)flux_data->ncols();
 
-		//update assignments for cost model
-		assign("H_rec", var_data((ssc_number_t)H_rec));
-		assign("rec_height", var_data((ssc_number_t)H_rec));
-		assign("rec_aspect", var_data((ssc_number_t)rec_aspect));
-		assign("D_rec", var_data((ssc_number_t)(H_rec / rec_aspect)));
-		assign("THT", var_data((ssc_number_t)THT));
-		assign("h_tower", var_data((ssc_number_t)THT));
-		assign("A_sf", var_data((ssc_number_t)A_sf));
-		assign("piping_length", var_data((ssc_number_t)piping_length));
+				mt_flux_maps.resize(nflux_y * flux_data->nlayers(), nflux_x);
+				ssc_number_t *fluxdata = allocate("flux_table", nflux_y * flux_data->nlayers(), nflux_x);
 
-		double land_area_base = spi.land.land_area.Val();		//[acres] Land area occupied by heliostats
-		assign("land_area_base", land_area_base);
+				int cur_row = 0;
+
+				for (size_t i = 0; i<flux_data->nlayers(); i++)
+				{
+					for (int j = 0; j<nflux_y; j++)
+					{
+						for (int k = 0; k<nflux_x; k++)
+						{
+							mt_flux_maps(cur_row, k) = (float)flux_data->at(j, k, i);
+							//fluxdata[cur_row * nflux_x + k] = (float)flux_data->at(j, k, i);
+						}
+						cur_row++;
+					}
+				}
+			}
+			else
+				throw exec_error("solarpilot", "failed to calculate a correct flux map table");
+
+		}
+		else if (run_type == 2)		// User flux and efficiency maps
+		{
+
+		}								
+
+		double H_rec = as_double("H_rec");
+		double rec_aspect = as_double("rec_aspect");
 
 		double D_rec = H_rec / rec_aspect;
 		
@@ -687,13 +836,20 @@ public:
 		heliostatfield.ms_params.m_n_flux_days = (int) as_double("n_flux_days");
 		heliostatfield.ms_params.m_delta_flux_hrs = (int) as_double("delta_flux_hrs");
 
-		int run_type = heliostatfield.ms_params.m_run_type;
-
 		if( run_type == 1 || run_type == 0 )
 		{
-			heliostatfield.ms_params.m_helio_positions = as_matrix("helio_positions");
-            //if run_type==0, then a layout has already been generated. Set to 1 to avoid regenerating in csp_solver_pt_heliostatfield::init()
-            heliostatfield.ms_params.m_run_type = run_type = 1;
+			//heliostatfield.ms_params.m_helio_positions = as_matrix("helio_positions");
+            ////if run_type==0, then a layout has already been generated. Set to 1 to avoid regenerating in csp_solver_pt_heliostatfield::init()
+            //heliostatfield.ms_params.m_run_type = run_type = 1;
+			heliostatfield.ms_params.m_eta_map = mt_eta_map;
+			heliostatfield.ms_params.m_eta_map_aod_format = false;
+			heliostatfield.ms_params.m_flux_positions = mt_solar_pos;
+			heliostatfield.ms_params.m_flux_maps = mt_flux_maps;
+			//allocate empty array of positions to indicate number of heliostats in the field
+			util::matrix_t<double> hpos(as_integer("N_hel"), 2);
+			heliostatfield.ms_params.m_helio_positions = hpos;
+			run_type = 2;
+			heliostatfield.ms_params.m_run_type = run_type;
 		}
 		else if( run_type == 2 )
 		{
@@ -746,7 +902,7 @@ public:
 		receiver.m_n_panels = as_double("N_panels");
 		receiver.m_d_rec = D_rec;
 		receiver.m_h_rec = H_rec;
-		receiver.m_h_tower = THT;
+		receiver.m_h_tower = as_double("THT");
 		receiver.m_od_tube = as_double("d_tube_out");
 		receiver.m_th_tube = as_double("th_tube");
 		receiver.m_mat_tube = as_double("mat_tube");
@@ -763,7 +919,7 @@ public:
 		receiver.m_rec_su_delay = as_double("rec_su_delay");
 		receiver.m_rec_qf_delay = as_double("rec_qf_delay");
 		receiver.m_m_dot_htf_max = as_double("m_dot_htf_max");
-		receiver.m_A_sf = A_sf;
+		receiver.m_A_sf = as_double("A_sf");
 
 		// 8.10.2015 twn: add tower piping thermal losses to receiver performance
 		receiver.m_pipe_loss_per_m = as_double("piping_loss");						//[Wt/m]
@@ -1435,12 +1591,12 @@ public:
 		// ******* Re-calculate system costs here ************
 		C_mspt_system_costs sys_costs;
 
-		sys_costs.ms_par.A_sf_refl = A_sf;
+		sys_costs.ms_par.A_sf_refl = as_double("A_sf");
 		sys_costs.ms_par.site_improv_spec_cost = as_double("site_spec_cost");
 		sys_costs.ms_par.heliostat_spec_cost = as_double("heliostat_spec_cost");
 		sys_costs.ms_par.heliostat_fixed_cost = as_double("cost_sf_fixed");
 
-		sys_costs.ms_par.h_tower = THT;
+		sys_costs.ms_par.h_tower = as_double("THT");
 		sys_costs.ms_par.h_rec = H_rec;
 		sys_costs.ms_par.h_helio = as_double("helio_height");
 		sys_costs.ms_par.tower_fixed_cost = as_double("tower_fixed_cost");
@@ -1464,7 +1620,7 @@ public:
 		sys_costs.ms_par.contingency_rate = as_double("contingency_rate");
 
 		//land area
-		sys_costs.ms_par.total_land_area = land_area_base * as_double("csp.pt.sf.land_overhead_factor") + as_double("csp.pt.sf.fixed_land_area");
+		sys_costs.ms_par.total_land_area = as_double("land_area_base") * as_double("csp.pt.sf.land_overhead_factor") + as_double("csp.pt.sf.fixed_land_area");
 		assign("csp.pt.cost.total_land_area", sys_costs.ms_par.total_land_area);
 
 		sys_costs.ms_par.plant_net_capacity = as_double("system_capacity") / 1000.0;			//[MWe], convert from kWe
@@ -1668,7 +1824,7 @@ public:
 		accumulate_annual_for_year("m_dot_water_pc", "annual_total_water_use", sim_setup.m_report_step / 1000.0, steps_per_hour, 1, n_steps_fixed/steps_per_hour); //[m^3], convert from kg
 			// Then, add water usage from mirror cleaning
 		ssc_number_t V_water_cycle = as_number("annual_total_water_use");
-		double V_water_mirrors = as_double("water_usage_per_wash") / 1000.0*A_sf*as_double("washing_frequency");
+		double V_water_mirrors = as_double("water_usage_per_wash") / 1000.0*as_double("A_sf")*as_double("washing_frequency");
 		assign("annual_total_water_use", V_water_cycle + V_water_mirrors);
 
 		ssc_number_t ae = as_number("annual_energy");
