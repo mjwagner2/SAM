@@ -572,16 +572,7 @@ public:
 		}
 
 		int run_type = as_integer("run_type");
-		heliostatfield.ms_params.m_run_type = run_type;
-		heliostatfield.ms_params.m_helio_width = as_double("helio_width");
-		heliostatfield.ms_params.m_helio_height = as_double("helio_height");
-		heliostatfield.ms_params.m_helio_optical_error = as_double("helio_optical_error");
-		heliostatfield.ms_params.m_helio_active_fraction = as_double("helio_active_fraction");
-		heliostatfield.ms_params.m_dens_mirror = as_double("dens_mirror");
-		heliostatfield.ms_params.m_helio_reflectance = as_double("helio_reflectance");
-		heliostatfield.ms_params.m_rec_absorptance = as_double("rec_absorptance");
-
-
+		
 		if (run_type == 0)		// Auto-design. Generate a new field layout
 		{
 			// lays out new field design
@@ -696,9 +687,11 @@ public:
 				//ssc_number_t *opteff = allocate("opteff_table", nvals, 3);
 				for (size_t i = 0; i<nvals; i++)
 				{
-					mt_solar_pos(i, 0) = mt_eta_map(i, 0) = (float)spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
-					mt_solar_pos(i, 1) = mt_eta_map(i, 1) = (float)spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
-					mt_eta_map(i, 2) = (float)spi.fluxtab.efficiency[i];
+					mt_solar_pos(i, 0) = spi.fluxtab.azimuths[i];      //Convention is usually S=0, E<0, W>0  
+					mt_eta_map(i, 0) = spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
+					mt_solar_pos(i, 1) = spi.fluxtab.zeniths[i];     //Provide zenith angle
+					mt_eta_map(i, 1) = spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
+					mt_eta_map(i, 2) = spi.fluxtab.efficiency[i];
 				}
 			}
 			else
@@ -723,7 +716,7 @@ public:
 					{
 						for (int k = 0; k<nflux_x; k++)
 						{
-							mt_flux_maps(cur_row, k) = (float)flux_data->at(j, k, i);
+							mt_flux_maps(cur_row, k) = flux_data->at(j, k, i);
 							//fluxdata[cur_row * nflux_x + k] = (float)flux_data->at(j, k, i);
 						}
 						cur_row++;
@@ -746,9 +739,11 @@ public:
 				//ssc_number_t *opteff = allocate("opteff_table", nvals, 3);
 				for (size_t i = 0; i<nvals; i++)
 				{
-					mt_solar_pos(i, 0) = mt_eta_map(i, 0) = (float)spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
-					mt_solar_pos(i, 1) = mt_eta_map(i, 1) = (float)spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
-					mt_eta_map(i, 2) = (float)spi.fluxtab.efficiency[i];
+					mt_solar_pos(i, 0) = spi.fluxtab.azimuths[i];      //Convention is usually S=0, E<0, W>0  
+					mt_eta_map(i, 0) = spi.fluxtab.azimuths[i] * 180. / CSP::pi;      //Convention is usually S=0, E<0, W>0 
+					mt_solar_pos(i, 1) = spi.fluxtab.zeniths[i];     //Provide zenith angle
+					mt_eta_map(i, 1) = spi.fluxtab.zeniths[i] * 180. / CSP::pi;     //Provide zenith angle
+					mt_eta_map(i, 2) = spi.fluxtab.efficiency[i];
 				}
 			}
 			else
@@ -773,7 +768,7 @@ public:
 					{
 						for (int k = 0; k<nflux_x; k++)
 						{
-							mt_flux_maps(cur_row, k) = (float)flux_data->at(j, k, i);
+							mt_flux_maps(cur_row, k) = flux_data->at(j, k, i);
 							//fluxdata[cur_row * nflux_x + k] = (float)flux_data->at(j, k, i);
 						}
 						cur_row++;
@@ -809,32 +804,40 @@ public:
 			break;
 		}
 
-		heliostatfield.ms_params.m_rec_height = as_double("rec_height");
-		heliostatfield.ms_params.m_rec_aspect = as_double("rec_aspect");
-		heliostatfield.ms_params.m_h_tower = as_double("h_tower");
-		heliostatfield.ms_params.m_rec_hl_perm2 = as_double("rec_hl_perm2");
-		heliostatfield.ms_params.m_q_design = as_double("P_ref")/as_double("design_eff")*as_double("solarm");
-		heliostatfield.ms_params.m_dni_des = as_double("dni_des");
-		heliostatfield.ms_params.m_weather_file = as_string("solar_resource_file");
+		heliostatfield.ms_params.m_run_type = run_type;
+		heliostatfield.ms_params.m_helio_width = as_double("helio_width");		// sp match
+		heliostatfield.ms_params.m_helio_height = as_double("helio_height");	// sp match
+		heliostatfield.ms_params.m_helio_optical_error = as_double("helio_optical_error");	// sp match
+		heliostatfield.ms_params.m_helio_active_fraction = as_double("helio_active_fraction");	// sp match
+		heliostatfield.ms_params.m_dens_mirror = as_double("dens_mirror");		// sp match
+		heliostatfield.ms_params.m_helio_reflectance = as_double("helio_reflectance");	// sp match
+		heliostatfield.ms_params.m_rec_absorptance = as_double("rec_absorptance");	// sp match
+		heliostatfield.ms_params.m_rec_height = as_double("rec_height");		// sp match
+		heliostatfield.ms_params.m_rec_aspect = as_double("rec_aspect");		// sp match
+		heliostatfield.ms_params.m_h_tower = as_double("h_tower");				// sp match
+		heliostatfield.ms_params.m_rec_hl_perm2 = as_double("rec_hl_perm2");	// sp match
+		heliostatfield.ms_params.m_q_design = as_double("q_design"); // (ssc_number_t)(as_double("P_ref") / as_double("design_eff")*as_double("solarm"));
+		heliostatfield.ms_params.m_dni_des = as_double("dni_des");				// sp match
+		heliostatfield.ms_params.m_weather_file = as_string("solar_resource_file");	// sp match
 		heliostatfield.ms_params.m_land_bound_type = (int) as_double("land_bound_type");
-		heliostatfield.ms_params.m_land_max = as_double("land_max");
-		heliostatfield.ms_params.m_land_min = as_double("land_min");
+		heliostatfield.ms_params.m_land_max = as_double("land_max");			// sp match
+		heliostatfield.ms_params.m_land_min = as_double("land_min");			// sp match
 		heliostatfield.ms_params.m_p_start = as_double("p_start");		//[kWe-hr] Heliostat startup energy
 		heliostatfield.ms_params.m_p_track = as_double("p_track");		//[kWe] Heliostat tracking power
-		heliostatfield.ms_params.m_hel_stow_deploy = as_double("hel_stow_deploy");
-		heliostatfield.ms_params.m_v_wind_max = as_double("v_wind_max");
-		heliostatfield.ms_params.m_n_flux_x = (int) as_double("n_flux_x");
-		heliostatfield.ms_params.m_n_flux_y = (int) as_double("n_flux_y");
-		heliostatfield.ms_params.m_c_atm_0 = as_double("c_atm_0");
-		heliostatfield.ms_params.m_c_atm_1 = as_double("c_atm_1");
-		heliostatfield.ms_params.m_c_atm_2 = as_double("c_atm_2");
-		heliostatfield.ms_params.m_c_atm_3 = as_double("c_atm_3");
-		heliostatfield.ms_params.m_n_facet_x = (int) as_double("n_facet_x");
-		heliostatfield.ms_params.m_n_facet_y = (int) as_double("n_facet_y");
-		heliostatfield.ms_params.m_focus_type = (int) as_double("focus_type");
-		heliostatfield.ms_params.m_cant_type = (int) as_double("cant_type");
-		heliostatfield.ms_params.m_n_flux_days = (int) as_double("n_flux_days");
-		heliostatfield.ms_params.m_delta_flux_hrs = (int) as_double("delta_flux_hrs");
+		heliostatfield.ms_params.m_hel_stow_deploy = as_double("hel_stow_deploy");	// N/A
+		heliostatfield.ms_params.m_v_wind_max = as_double("v_wind_max");			// N/A
+		heliostatfield.ms_params.m_n_flux_x = (int) as_double("n_flux_x");		// sp match
+		heliostatfield.ms_params.m_n_flux_y = (int) as_double("n_flux_y");		// sp match
+		heliostatfield.ms_params.m_c_atm_0 = as_double("c_atm_0");		// sp match
+		heliostatfield.ms_params.m_c_atm_1 = as_double("c_atm_1");		// sp match
+		heliostatfield.ms_params.m_c_atm_2 = as_double("c_atm_2");		// sp match
+		heliostatfield.ms_params.m_c_atm_3 = as_double("c_atm_3");		// sp match
+		heliostatfield.ms_params.m_n_facet_x = (int) as_double("n_facet_x");	// sp match
+		heliostatfield.ms_params.m_n_facet_y = (int) as_double("n_facet_y");	// sp match
+		heliostatfield.ms_params.m_focus_type = (int) as_double("focus_type");	// sp match
+		heliostatfield.ms_params.m_cant_type = (int) as_double("cant_type");	// sp match
+		heliostatfield.ms_params.m_n_flux_days = (int) as_double("n_flux_days");		// sp match
+		heliostatfield.ms_params.m_delta_flux_hrs = (int) as_double("delta_flux_hrs");	// sp match
 
 		if( run_type == 1 || run_type == 0 )
 		{
