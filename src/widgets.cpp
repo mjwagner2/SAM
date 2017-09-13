@@ -185,7 +185,7 @@ void AFSchedNumeric::SetSchedLen(int len)
 #define SCHEDNUM_FONT wxFont( 5, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, "arial" )
 
 
-void AFSchedNumeric::OnResize(wxSizeEvent &evt)
+void AFSchedNumeric::OnResize(wxSizeEvent &)
 {
 	int cw, ch;
 	GetClientSize(&cw,&ch);
@@ -209,7 +209,7 @@ void AFSchedNumeric::UpdateSwitchWidth()
 	m_switchWidth = 2 + ( sz1.x > sz2.x ? sz1.x : sz2.x );
 }
 
-void AFSchedNumeric::OnPaint(wxPaintEvent &evt)
+void AFSchedNumeric::OnPaint(wxPaintEvent &)
 {
 	wxAutoBufferedPaintDC pdc(this);
 	if (!bScheduleOnly)
@@ -312,7 +312,7 @@ public:
 		SetSizer( sizer );
 	}
 
-	void OnCopyData(wxCommandEvent &evt)
+	void OnCopyData(wxCommandEvent &)
 	{
 		if (wxTheClipboard->Open())
 		{
@@ -328,7 +328,7 @@ public:
 		}
 	}
 
-	void OnPasteData(wxCommandEvent &evt)
+	void OnPasteData(wxCommandEvent &)
 	{
 		if (wxTheClipboard->Open())
 		{
@@ -345,7 +345,7 @@ public:
 		}
 	}
 
-	void OnValueCount(wxCommandEvent &evt)
+	void OnValueCount(wxCommandEvent &)
 	{
 		int nrows = m_numVals->AsInteger();
 
@@ -387,7 +387,7 @@ BEGIN_EVENT_TABLE( SchedNumericDialog, wxDialog )
 	EVT_BUTTON( wxID_HELP, SchedNumericDialog::OnHelp )
 END_EVENT_TABLE()
 
-void AFSchedNumeric::OnEditSchedule(wxCommandEvent &evt)
+void AFSchedNumeric::OnEditSchedule(wxCommandEvent &)
 {
 	SchedNumericDialog dlg(this, "Edit Schedule", GetLabel(), GetDescription(), m_fixedLen < 1 );
 	wxExtGridCtrl *grid = dlg.GetGrid();
@@ -881,7 +881,7 @@ void AFSearchListBox::OnFilter( wxCommandEvent & )
 	m_list->SetStringSelection( sel );
 }
 
-void AFSearchListBox::OnSelect( wxCommandEvent &e )
+void AFSearchListBox::OnSelect( wxCommandEvent & )
 {
 	wxCommandEvent edup( wxEVT_COMMAND_LISTBOX_SELECTED, this->GetId() );
 	edup.SetEventObject( this );
@@ -935,22 +935,22 @@ public:
 		return 1;
 	}
 
-	virtual bool IsEmptyCell( int row, int col )
+	virtual bool IsEmptyCell( int , int )
 	{
 		return false;
 	}
 
-	virtual wxString GetValue( int row, int col )
+	virtual wxString GetValue( int row, int  )
 	{
-		if (d_arr && row >= 0 && row < d_arr->size())
+		if (d_arr && row >= 0 && row < (int)d_arr->size())
 			return wxString::Format("%g", d_arr->at(row));
 		else
 			return "-0.0";
 	}
 
-	virtual void SetValue( int row, int col, const wxString& value )
+	virtual void SetValue( int row, int , const wxString& value )
 	{
-		if (d_arr && row >= 0 && row < d_arr->size())
+		if (d_arr && row >= 0 && row <  (int)d_arr->size())
 			d_arr->at(row) = wxAtof( value );
 	}
 
@@ -974,22 +974,22 @@ public:
 		return wxString::Format("%d",row+1);
 	}
 
-	virtual wxString GetColLabelValue( int col )
+	virtual wxString GetColLabelValue( int  )
 	{
 		return label.IsEmpty()?"Value":label;
 	}
 
-	virtual wxString GetTypeName( int row, int col )
+	virtual wxString GetTypeName( int , int  )
 	{
 		return wxGRID_VALUE_STRING;
 	}
 
-	virtual bool CanGetValueAs( int row, int col, const wxString& typeName )
+	virtual bool CanGetValueAs( int , int , const wxString& typeName )
 	{
 		return typeName==wxGRID_VALUE_STRING;
 	}
 
-	virtual bool CanSetValueAs( int row, int col, const wxString& typeName )
+	virtual bool CanSetValueAs( int , int , const wxString& typeName )
 	{
 		return typeName==wxGRID_VALUE_STRING;
 	}
@@ -1001,7 +1001,7 @@ public:
 			if (d_arr->size()+nrows > d_arr->capacity())
 				d_arr->reserve( d_arr->size()+nrows );
 		
-			for (int i=0;i<nrows;i++)
+			for (size_t i=0;i<nrows;i++)
 				d_arr->push_back(0.0);
 
 			
@@ -1123,14 +1123,14 @@ public:
 		return (int)d_mat->ncols();
 	}
 
-	bool IsEmptyCell(int row, int col)
+	bool IsEmptyCell(int , int )
 	{ 
 		return false;
 	}
 
 	wxString GetValue(int row, int col)
 	{
-		if (d_mat && row >= 0 && row < d_mat->nrows() && col >= 0 && col < d_mat->ncols())
+		if (d_mat && row >= 0 && row < (int)d_mat->nrows() && col >= 0 && col < (int)d_mat->ncols())
 			return wxString::Format("%g", d_mat->at(row, col));
 		else
 			return "-0.0";
@@ -1138,7 +1138,7 @@ public:
 
 	void SetValue(int row, int col, const wxString& value)
 	{
-		if (d_mat && row >= 0 && row < d_mat->nrows() && col >= 0 && col < d_mat->ncols())
+		if (d_mat && row >= 0 && row < (int)d_mat->nrows() && col >= 0 && col < (int)d_mat->ncols())
 			d_mat->at(row, col) = wxAtof(value);
 	}
 	
@@ -1147,7 +1147,7 @@ public:
 		if (d_mat)
 		{
 			wxArrayString as = wxStringTokenize(rowlabels, ",");
-			if (row > -1 && row < as.Count())
+			if (row > -1 && row < (int)as.Count())
 				return as[row];
 		}
 		return wxString::Format("%d", row + 1);
@@ -1159,14 +1159,14 @@ public:
 		{
 			wxArrayString as = wxStringTokenize(collabels, ",");
 			collabels.Replace("\\n", "\n");
-			if (col > -1 && col < as.Count())
+			if (col > -1 && col < (int)as.Count())
 				return as[col];
 		}
 
 		return wxString::Format("%d", col + 1);
 	}
 
-	wxString GetTypeName(int row, int col)
+	wxString GetTypeName(int , int col)
 	{
 		if (col == choice_col)
 			return "GridCellChoice";
@@ -1175,12 +1175,12 @@ public:
 		
 	}
 
-	bool CanGetValueAs(int row, int col, const wxString& typeName)
+	bool CanGetValueAs(int , int , const wxString& typeName)
 	{
 		return typeName == wxGRID_VALUE_STRING;
 	}
 
-	bool CanSetValueAs(int row, int col, const wxString& typeName)
+	bool CanSetValueAs(int , int , const wxString& typeName)
 	{
 		return typeName == wxGRID_VALUE_STRING;
 	}
@@ -1566,7 +1566,7 @@ public:
 			fgets(buf,127,fp); // skip header line
 
 			bool error = false;
-			for (int i=0;i<mData.size();i++)
+			for (int i=0;i<(int)mData.size();i++)
 			{
 				if (fgets(buf, 127, fp) == NULL)
 				{
@@ -1595,7 +1595,7 @@ public:
 			}
 
 			fprintf(fp, "Exported Data (%d)\n", (int)mData.size());
-			for (int i=0;i<mData.size();i++)
+			for (size_t i=0;i<mData.size();i++)
 				fprintf(fp, "%g\n", mData[i]);
 			fclose(fp);
 		}
@@ -1640,7 +1640,7 @@ void AFDataArrayButton::Set(const std::vector<float> &data)
 	else if (mMode == DATA_ARRAY_8760_MULTIPLES)
 	{
 		int nmult = data.size()/8760;
-		if ( nmult*8760 != data.size())
+		if ( nmult*8760 != (int)data.size())
 		{
 			mData.resize(8760, -998.0);
 			return;
@@ -2032,9 +2032,9 @@ void AFDataMatrixCtrl::NormalizeToLimits()
 {
 	if (m_minVal != m_maxVal)
 	{
-		for (int r = 0; r<m_data.nrows(); r++)
+		for (size_t r = 0; r<m_data.nrows(); r++)
 		{
-			for (int c = 0; c<m_data.ncols(); c++)
+			for (size_t c = 0; c<m_data.ncols(); c++)
 			{
 				if (m_data.at(r, c) < m_minVal) m_data.at(r, c) = m_minVal;
 				if (m_data.at(r, c) > m_maxVal) m_data.at(r, c) = m_maxVal;
@@ -2064,8 +2064,8 @@ void AFDataMatrixCtrl::GetValueLimits(float *min, float *max)
 bool AFDataMatrixCtrl::Export(const wxString &file)
 {
 	wxCSVData csv;
-	for (int r = 0; r<m_data.nrows(); r++)
-		for (int c = 0; c<m_data.ncols(); c++)
+	for (size_t r = 0; r<m_data.nrows(); r++)
+		for (size_t c = 0; c<m_data.ncols(); c++)
 			csv(r, c) = wxString::Format("%g", m_data(r, c));
 
 	return csv.WriteFile(file);
@@ -2105,7 +2105,7 @@ void AFDataMatrixCtrl::OnCellChange(wxGridEvent &evt)
 		if (val > m_maxVal) val = m_maxVal;
 	}
 
-	if (irow < m_data.nrows() && icol < m_data.ncols()
+	if (irow < (int)m_data.nrows() && icol < (int)m_data.ncols()
 		&& irow >= 0 && icol >= 0)
 		m_data.at(irow, icol) = val;
 
@@ -2117,7 +2117,7 @@ void AFDataMatrixCtrl::OnCellChange(wxGridEvent &evt)
 	GetEventHandler()->ProcessEvent(dmcevt);
 }
 
-void AFDataMatrixCtrl::OnRowsColsChange(wxCommandEvent &evt)
+void AFDataMatrixCtrl::OnRowsColsChange(wxCommandEvent &)
 {
 	size_t rows = (size_t)m_numRows->AsInteger();
 	size_t cols = (size_t)m_numCols->AsInteger();
@@ -2177,8 +2177,8 @@ void AFDataMatrixCtrl::OnCommand(wxCommandEvent &evt)
 
 		m_grid->Paste( wxExtGridCtrl::PASTE_ALL );
 
-		for (int r = 0; r<m_data.nrows(); r++)
-			for (int c = 0; c<m_data.ncols(); c++)
+		for (size_t r = 0; r<m_data.nrows(); r++)
+			for (size_t c = 0; c<m_data.ncols(); c++)
 				m_data.at(r, c) = atof(m_grid->GetCellValue(r, c).c_str());
 
 		MatrixToGrid();
@@ -2250,7 +2250,7 @@ void AFDataMatrixCtrl::MatrixToGrid()
 	if (m_showRowLabels)
 	{
 		wxArrayString as = wxStringTokenize(m_rowLabels, ",");
-		for (r = 0; r<as.Count() && r < m_grid->GetNumberRows(); r++)
+		for (r = 0; r<(int)as.Count() && r < m_grid->GetNumberRows(); r++)
 		{
 			m_grid->SetRowLabelValue(r, as[r]);
 		}
@@ -2264,7 +2264,7 @@ void AFDataMatrixCtrl::MatrixToGrid()
 	if (m_showColLabels)
 	{
 		wxArrayString as = wxStringTokenize(m_colLabels, ",");
-		for (c = 0; c<as.Count() && c < m_grid->GetNumberCols(); c++)
+		for (c = 0; c<(int)as.Count() && c < m_grid->GetNumberCols(); c++)
 		{
 			m_grid->SetColLabelValue(c, as[c]);
 			m_grid->AutoSizeColLabelSize(c);
@@ -2361,13 +2361,13 @@ public:
 
 		Grid->ResizeGrid( data.nrows(), data.ncols() );
 
-		for (int r=0;r<data.nrows();r++)
-			for (int c=0;c<data.ncols();c++)
+		for (size_t r=0;r<data.nrows();r++)
+			for (size_t c=0;c<data.ncols();c++)
 				Grid->SetCellValue( r, c, wxString::Format("%g", data.at(r,c)) );
 
 		if (collabels != NULL)
 		{
-			for (int i=0;i<data.ncols() && i < collabels->Count();i++)
+			for (size_t i=0;i<data.ncols() && i < collabels->Count();i++)
 				Grid->SetColLabelValue( i, collabels->Item(i) );
 		}
 
@@ -2535,7 +2535,7 @@ void AFValueMatrixButton::SetColLabels(const wxArrayString &labels)
 		mColLabels[i].Replace("\\n", "\n");
 }
 
-void AFValueMatrixButton::OnResize(wxSizeEvent &evt)
+void AFValueMatrixButton::OnResize(wxSizeEvent &)
 {
 	int cw, ch;
 	GetClientSize(&cw,&ch);
@@ -2543,7 +2543,7 @@ void AFValueMatrixButton::OnResize(wxSizeEvent &evt)
 	mBtnEditTable->SetSize(m_switchWidth,0,cw-m_switchWidth,ch);
 }
 
-void AFValueMatrixButton::OnPaint(wxPaintEvent &evt)
+void AFValueMatrixButton::OnPaint(wxPaintEvent &)
 {
 	wxAutoBufferedPaintDC pdc(this);
 
@@ -2575,7 +2575,7 @@ void AFValueMatrixButton::OnClick(wxMouseEvent &evt)
 	DispatchEvent();
 }
 
-void AFValueMatrixButton::OnEditTable(wxCommandEvent &evt)
+void AFValueMatrixButton::OnEditTable(wxCommandEvent &)
 {
 	DataGridDialog dlg(this, "Edit Tabular Data");
 	dlg.SetData( mTable, &mColLabels );
@@ -2586,7 +2586,7 @@ void AFValueMatrixButton::OnEditTable(wxCommandEvent &evt)
 	}
 }
 
-void AFValueMatrixButton::OnValChanged(wxCommandEvent &evt)
+void AFValueMatrixButton::OnValChanged(wxCommandEvent &)
 {
 	DispatchEvent();
 }
@@ -2760,9 +2760,9 @@ wxString AFMonthByHourFactorCtrl::GetLegend()
 
 void AFMonthByHourFactorCtrl::SetData(const matrix_t<float> &data)
 {
-	for (int r=0;r<SFROWS;r++)
+	for (size_t r=0;r<SFROWS;r++)
 	{
-		for (int c=0;c<SFCOLS;c++)
+		for (size_t c=0;c<SFCOLS;c++)
 		{
 			double val = 0;
 			if (r < data.nrows() && c < data.ncols())
@@ -2900,12 +2900,12 @@ void AFMonthByHourFactorCtrl::OnGridRangeSelect(wxGridRangeSelectEvent &evt)
 	evt.Skip();
 }
 
-void AFMonthByHourFactorCtrl::OnGridEditorShown(wxGridEvent &evt)
+void AFMonthByHourFactorCtrl::OnGridEditorShown(wxGridEvent &)
 {
 	bSkipSelect = true;
 }
 
-void AFMonthByHourFactorCtrl::OnGridEditorHidden(wxGridEvent &evt)
+void AFMonthByHourFactorCtrl::OnGridEditorHidden(wxGridEvent &)
 {
 	bSkipSelect = false;
 }
@@ -2928,7 +2928,7 @@ void AFMonthByHourFactorCtrl::OnGridCellSelect(wxGridEvent &evt)
 	evt.Skip();
 }
 
-void AFMonthByHourFactorCtrl::OnApply(wxCommandEvent &evt)
+void AFMonthByHourFactorCtrl::OnApply(wxCommandEvent &)
 {
 	double sf = mShadingVal->Value();
 	if (sf <= -1)
@@ -2950,7 +2950,7 @@ void AFMonthByHourFactorCtrl::OnApply(wxCommandEvent &evt)
 	ApplyVal(-1,-1,sf);
 }
 
-void AFMonthByHourFactorCtrl::OnImport(wxCommandEvent &evt)
+void AFMonthByHourFactorCtrl::OnImport(wxCommandEvent &)
 {
 	wxFileDialog fdlg(this, "Import Shading Factors", "", "",
 		"CSV Files (*.csv)|*.csv|All Files (*.*)|*.*", wxFD_OPEN );
@@ -2973,8 +2973,8 @@ void AFMonthByHourFactorCtrl::OnImport(wxCommandEvent &evt)
 		matrix_t<float> grid;
 		grid.resize_fill( csv.NumRows(), csv.NumCols(), 0.0f );
 
-		for (int r=0;r<grid.nrows();r++)
-			for (int c=0;c<grid.ncols();c++)
+		for (size_t r=0;r<grid.nrows();r++)
+			for (size_t c=0;c<grid.ncols();c++)
 				grid.at(r,c) = (float)wxAtof( csv(r,c) );
 
 		SetData( grid );
@@ -2982,13 +2982,13 @@ void AFMonthByHourFactorCtrl::OnImport(wxCommandEvent &evt)
 	}
 }
 
-void AFMonthByHourFactorCtrl::OnCopy(wxCommandEvent &evt)
+void AFMonthByHourFactorCtrl::OnCopy(wxCommandEvent &)
 {
 	wxBusyCursor busycurs;
 	wxString sdata;
-	for (int r=0;r<mData.nrows();r++)
+	for (size_t r=0;r<mData.nrows();r++)
 	{
-		for (int c=0;c<mData.ncols();c++)
+		for (size_t c=0;c<mData.ncols();c++)
 		{
 			sdata += wxString::Format("%g", mData(r,c) );
 			if ( c < mData.ncols()-1 ) sdata += '\t';
@@ -3003,7 +3003,7 @@ void AFMonthByHourFactorCtrl::OnCopy(wxCommandEvent &evt)
 	}
 }
 
-void AFMonthByHourFactorCtrl::OnPaste(wxCommandEvent &evt)
+void AFMonthByHourFactorCtrl::OnPaste(wxCommandEvent &)
 {
 	wxBusyCursor busycurs;
 	// resize rows per data pasted
@@ -3030,15 +3030,15 @@ void AFMonthByHourFactorCtrl::OnPaste(wxCommandEvent &evt)
 			matrix_t<float> grid;
 			grid.resize_fill(mData.nrows(), mData.ncols(), 0.0f);
 
-			for (int r = 0; r < grid.nrows(); r++)
-				for (int c = 0; c < grid.ncols(); c++)
+			for (size_t r = 0; r < grid.nrows(); r++)
+				for (size_t c = 0; c < grid.ncols(); c++)
 					grid.at(r, c) = (float)mData.at(r, c);
 
-			for (int r = 0; r < mData.nrows() && r < lines.Count(); r++)
+			for (size_t r = 0; r < mData.nrows() && r < lines.Count(); r++)
 			{
 				wxArrayString vals = wxStringTokenize(lines[r], "\t", ::wxTOKEN_RET_EMPTY_ALL);
 				ncols = vals.Count();
-				for (int c = 0; c < mData.ncols() && c < ncols; c++)
+				for (int c = 0; c < (int)mData.ncols() && c < ncols; c++)
 					grid.at(r, c) = (float)wxAtof(vals[c].c_str());
 			}
 
@@ -3051,7 +3051,7 @@ void AFMonthByHourFactorCtrl::OnPaste(wxCommandEvent &evt)
 
 
 
-void AFMonthByHourFactorCtrl::OnExport(wxCommandEvent &evt)
+void AFMonthByHourFactorCtrl::OnExport(wxCommandEvent &)
 {
 	wxFileDialog fdlg(this, "Export Shading Factors", "", "shading_factors.csv",
 		"CSV Files (*.csv)|*.csv|All Files (*.*)|*.*", wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
@@ -3059,8 +3059,8 @@ void AFMonthByHourFactorCtrl::OnExport(wxCommandEvent &evt)
 	if (fdlg.ShowModal() == wxID_OK)
 	{
 		wxCSVData csv;
-		for (int r=0;r<mData.nrows();r++)
-			for (int c=0;c<mData.ncols();c++)
+		for (size_t r=0;r<mData.nrows();r++)
+			for (size_t c=0;c<mData.ncols();c++)
 				csv.Set( r,c, wxString::Format("%g", mData(r,c) ) );
 
 		if ( !csv.WriteFile( fdlg.GetPath() ) )

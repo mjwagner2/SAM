@@ -148,7 +148,7 @@ void P50P90Form::OnSimulate( wxCommandEvent & )
 
 	SimulationDialog tpd( "Scanning...", nthread );
 		
-	for (int i=0;i<list.Count();i++)
+	for (int i=0;i<(int)list.Count();i++)
 	{
 		tpd.Update( 0, (float)i/ (float)list.size() * 100.0f, wxString::Format("%d of %d", (int)(i+1), (int)list.size()  ) );
 		wxYield();	
@@ -386,7 +386,6 @@ void P50P90Form::OnSimulate( wxCommandEvent & )
 		// update results
 		m_grid->Freeze();
 		m_grid->ResizeGrid( save_list.size(), output_stats.ncols() );
-		int row = 0;
 		for( size_t i=0;i<save_list.size();i++ )
 		{
 			int index = save_list[i];

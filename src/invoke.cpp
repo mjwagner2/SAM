@@ -1403,9 +1403,9 @@ void fcall_ssc_dump( lk::invoke_t &cxt )
 }
 
 
-static ssc_bool_t ssc_exec_handler( ssc_module_t p_mod, ssc_handler_t p_handler,
-	int action_type, float f0, float f1, 
-	const char *s0, const char *s1,
+static ssc_bool_t ssc_exec_handler( ssc_module_t, ssc_handler_t,
+	int action_type, float f0, float, 
+	const char *s0, const char *,
 	void *user_data )
 {
 	wxThreadProgressDialog *tpd = (wxThreadProgressDialog*) user_data;
@@ -1706,7 +1706,7 @@ void fcall_nsrdbquery(lk::invoke_t &cxt)
 {
 	LK_DOC("nsrdbquery", "Creates the NSRDB data download dialog box, lists all avaialble resource files, downloads multiple solar resource files, and returns local file name for weather file", "(none) : string");
 	//Create the wind data object
-	NSRDBDialog dlgNSRDB(SamApp::Window(), "Download Solar Resource File");
+	NSRDBDialog dlgNSRDB(SamApp::Window(), "Choose Weather Files to Download from NSRDB");
 	dlgNSRDB.CenterOnParent();
 	int code = dlgNSRDB.ShowModal(); //shows the dialog and makes it so you can't interact with other parts until window is closed
 
@@ -1924,7 +1924,7 @@ void fcall_group_write(lk::invoke_t &cxt)
 			}
 		}
 	}
-	cxt.result().assign(csv.WriteFile(filename.Lower()) ? 1.0 : 0.0);
+	cxt.result().assign(csv.WriteFile(filename) ? 1.0 : 0.0);
 }
 
 
@@ -1940,7 +1940,7 @@ void fcall_group_read(lk::invoke_t &cxt)
 
 	wxCSVData csv;
 	int row = 0;
-	bool ret_val = csv.ReadFile(filename.Lower());
+	bool ret_val = csv.ReadFile(filename);
 	if (ret_val)
 	{
 		wxArrayString errors;
@@ -2081,15 +2081,15 @@ void fcall_urdb_read(lk::invoke_t &cxt)
 			bool overwrite = true;
 			ndx = upgrade_list.Index("ur_enable_net_metering");
 			int nm = 1; // default to net metering
-			if (ndx > -1 && ndx < upgrade_value.Count())
+			if (ndx > -1 && ndx < (int)upgrade_value.Count())
 				nm = (int)atof(upgrade_value[ndx].c_str());
 			double flat_buy_rate = 0;
 			double flat_sell_rate = 0;
 			ndx = upgrade_list.Index("ur_flat_buy_rate");
-			if (ndx > -1 && ndx < upgrade_value.Count())
+			if (ndx > -1 && ndx < (int)upgrade_value.Count())
 				flat_buy_rate = atof(upgrade_value[ndx].c_str());
 			ndx = upgrade_list.Index("ur_flat_sell_rate");
-			if (ndx > -1 && ndx < upgrade_value.Count())
+			if (ndx > -1 && ndx < (int)upgrade_value.Count())
 				flat_sell_rate = atof(upgrade_value[ndx].c_str());
 			if (nm > 0) flat_sell_rate = flat_buy_rate;
 			// energy charge matrix inputs
@@ -2103,18 +2103,18 @@ void fcall_urdb_read(lk::invoke_t &cxt)
 					ub = -1;
 					per_tier = wxString::Format("ur_ec_p%d_t%d_", per, tier);
 					ndx = upgrade_list.Index(per_tier + "br");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						br = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
 					ndx = upgrade_list.Index(per_tier + "sr");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						sr = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
 					if (nm > 0) sr = br;
 					ndx = upgrade_list.Index(per_tier + "ub");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						ub = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
@@ -2140,12 +2140,12 @@ void fcall_urdb_read(lk::invoke_t &cxt)
 					ub = -1;
 					per_tier = wxString::Format("ur_dc_p%d_t%d_", per, tier);
 					ndx = upgrade_list.Index(per_tier + "dc");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						dc = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
 					ndx = upgrade_list.Index(per_tier + "ub");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						ub = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
@@ -2163,12 +2163,12 @@ void fcall_urdb_read(lk::invoke_t &cxt)
 					ub = -1;
 					per_tier = wxString::Format("ur_dc_%s_t%d_", months[per - 1], tier);
 					ndx = upgrade_list.Index(per_tier + "dc");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						dc = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
 					ndx = upgrade_list.Index(per_tier + "ub");
-					if (ndx > -1 && ndx < upgrade_value.Count())
+					if (ndx > -1 && ndx < (int)upgrade_value.Count())
 						ub = atof(upgrade_value[ndx].c_str());
 					else
 						overwrite = false;
@@ -2397,7 +2397,7 @@ void fcall_openeiutilityrateform(lk::invoke_t &cxt)
 	// interact with data returned and apply to current case
 	cxt.result().assign(openei.GetCurrentRateData().Header.GUID);
 }
-
+/*
 static void copy_mxh( lk::vardata_t &val, matrix_t<float> &mxh )
 {
 	if ( mxh.nrows() == 12 && mxh.ncols() == 24 )
@@ -2414,7 +2414,7 @@ static void copy_mxh( lk::vardata_t &val, matrix_t<float> &mxh )
 		}
 	}
 }
-
+*/
 static void copy_matts(lk::vardata_t &val, matrix_t<float> &mts)
 {
 	if (((mts.nrows() % 8760) == 0) && (mts.ncols() >0))

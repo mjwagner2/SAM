@@ -295,7 +295,6 @@ __pycache__/
 *.lib
 *.dll
 *.d
-*.bin
 *.mod
 *.run
 
@@ -311,3 +310,31 @@ resource/splash*
 
 
 
+
+build_linux/sam\.deploy/libraries/
+
+build_linux/sam\.deploy/linux_64/GtkTheme/gtk-2\.0/
+
+build_linux/sam\.deploy/runtime/
+
+build_linux/sam\.deploy/solar_resource/
+
+build_linux/sam\.deploy/wind_resource/
+
+deploy/linux_64/GtkTheme/gtk-2\.0/
+
+build_linux/sam\.bin
+
+deploy/linux_64/
+
+build_linux/install0
+
+build_linux/sam\.deploy\.tar\.gz
+
+build_linux/sam\.deploy/linux_64/sam\.bin
+
+build_osx/SAM
+
+build_osx/SAM\.app/Contents/Frameworks/
+
+build_osx/SAM\.app/Contents/

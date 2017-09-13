@@ -2,7 +2,7 @@
 *  Copyright 2017 Alliance for Sustainable Energy, LLC
 *
 *  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
-*  (�Alliance�) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  ("Alliance") under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
 *  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
 *  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
 *  copies to the public, perform publicly and display publicly, and to permit others to do so.
@@ -26,8 +26,8 @@
 *  4. Redistribution of this software, without modification, must refer to the software by the same
 *  designation. Redistribution of a modified version of this software (i) may not refer to the modified
 *  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
-*  the underlying software originally provided by Alliance as �System Advisor Model� or �SAM�. Except
-*  to comply with the foregoing, the terms �System Advisor Model�, �SAM�, or any confusingly similar
+*  the underlying software originally provided by Alliance as "System Advisor Model" or "SAM". Except
+*  to comply with the foregoing, the terms "System Advisor Model", "SAM", or any confusingly similar
 *  designation may not be used to refer to any modified version of this software or any modified
 *  version of the underlying software originally provided by Alliance without the prior written consent
 *  of Alliance.
@@ -111,6 +111,43 @@
 
 // application globals
 static SamApp::ver releases[] = {
+//intermediate version numbers are required in this list in order for the version upgrade script (versions.lk) to work correctly
+//please clarify the reason for the new version in a comment. Examples: public release, variable changes, internal release, public beta release, etc.
+//the top version should always be the current working version
+	{ 2017, 9, 5 }, // public Labor Day release !
+		{ 2017, 8, 28 }, // Beta release candidate - expires 12/30/17
+		{ 2017, 8, 18 }, // Beta release - expires 12/30/17
+        { 2017, 8, 11 }, // Beta release - expires 12/30/17
+		{ 2017, 7, 28 }, // Beta release - expires 12/30/17
+		{ 2017, 5, 15 }, // Beta release - expires 7/31/17
+		{ 2017, 5, 11 }, // Beta release - no expiration
+		{ 2017, 4, 11 }, // Beta release
+		{ 2017, 2, 28 }, // Beta release
+		{ 2017, 2, 14 }, // Beta release
+	{ 2017, 1, 17 }, // public 'ones and sevens' release !
+		{ 2016, 12, 29 }, // Beta release - expires 2/28/17 
+		{ 2016, 10, 25 }, // Beta release
+		{ 2016, 7, 21 }, // Beta release - expires 12/31/16
+		{ 2016, 5, 4 }, //dc adjustment factor added, internal release
+	{ 2016, 3, 14 }, // public pi-day release!
+		{ 2016, 3, 2 }, // Beta release - expires 4/15/16
+		{ 2016, 2, 29 }, // internal release
+		{ 2016, 2, 26 }, // utility rate changes
+		{ 2016, 2, 22 }, // self-shading update
+		{ 2016, 2, 19 }, // PV variable changes 
+		{ 2016, 2, 16 }, // new versioning scheme
+		{ 2016, 1, 21 }, // internal release
+		{ 2015, 11, 16 }, // utility rate variable changes
+		{ 2015, 10, 29 }, // battery model variable changes
+		{ 2015, 10, 16 }, // internal release
+		{ 2015, 9, 30 }, // internal release
+		{ 2015, 9, 9 }, // CSP and net metering changes
+		{ 2015, 8, 17 }, // CSP variable changes
+	{ 2015, 6, 30 }, // public release
+		{ 2015, 5, 27 }, // CSP variable changes
+		{ 2015, 4, 10 }, // CSP variable changes
+	{ 2015, 1, 30 }, // public release
+	{ 2014, 11, 24 }, // public release
 	{    0,  0,  0 } };
 
 static wxArrayString g_appArgs;
@@ -128,7 +165,7 @@ public:
 		GetFrame()->SetPosition( wxPoint( 5, 5 ) );
 		GetFrame()->SetClientSize( wxScaleSize(1000,200) );
 	}
-	virtual bool OnFrameClose( wxFrame *frame ) {
+	virtual bool OnFrameClose( wxFrame *) {
 		g_logWindow = 0; // clear the global pointer, then delete the frame
 		return true;
 	}
@@ -200,7 +237,7 @@ BEGIN_EVENT_TABLE( MainWindow, wxFrame )
 END_EVENT_TABLE()
 
 MainWindow::MainWindow()
-	: wxFrame( 0, wxID_ANY, wxT("SAM") + wxString(" (Open Source) "), 
+	: wxFrame( 0, wxID_ANY, wxT("SAM") + wxString(" (Open Source) ") + SamApp::VersionStr(), 
 		wxDefaultPosition, wxScaleSize( 1100, 700 ) )
 {
 #ifdef __WXMSW__
@@ -615,7 +652,7 @@ void MainWindow::OnInternalCommand( wxCommandEvent &evt )
 		if (Case *cc = GetCurrentCase())
 		{
 			//CaseVarGrid(cases);
-			VariableGridFrame *var_frame = new VariableGridFrame(this, &m_project, cc);
+			new VariableGridFrame(this, &m_project, cc);
 		}
 		break;
 	case ID_SAVE_CASE_DEFAULTS:
@@ -689,7 +726,6 @@ void MainWindow::CaseVarGrid(std::vector<Case*> &cases)
 		}
 
 		grid->CreateGrid(num_rows, num_cols);
-		size_t idx = 0;
 		grid->Freeze();
 		// wxGrid only support 6500 characters per cell (empirically determined) - use 1024 for display
 		size_t col = 0, row=0;
@@ -1059,7 +1095,7 @@ void MainWindow::OnCaseTabChange( wxCommandEvent &evt )
 	//wxMessageBox( wxString::Format("Case tab changed: %d", evt.GetSelection() ) );
 }
 
-void MainWindow::OnCaseTabButton( wxCommandEvent &evt )
+void MainWindow::OnCaseTabButton( wxCommandEvent & )
 {
 	wxMetroPopupMenu menu;
 	menu.Append( ID_CASE_SIMULATE, "Simulate\tF5" );
@@ -1222,7 +1258,7 @@ void MainWindow::OnClose( wxCloseEvent &evt )
 
 void MainWindow::UpdateFrameTitle()
 {
-	wxString title = wxT("SAM") + wxString(" (Open Source) ");
+	wxString title = wxT("SAM") + wxString(" (Open Source) ") + SamApp::VersionStr();
 	if ( !m_projectFileName.IsEmpty() )	title += ": " + m_projectFileName;
 	SetTitle( title );
 }
@@ -1253,17 +1289,18 @@ public:
 
 		int width, height;
 		GetClientSize( &width, &height );
-
+		 
 		
 		// dc.SetBackground( wxBrush( wxMetroTheme::Colour( wxMT_ACCENT ) ) ); // metro blue
-		// dc.SetBackground( wxBrush( wxColour(219, 192, 4) ) ); // bright yellow/orange
-		// dc.SetBackground( wxBrush( wxColour(2, 152, 152) ) ); // bright teal <- obviously not the best color ever.
+		// dc.SetBackground( wxBrush( wxColour(219, 192, 4) ) ); // bright yellowish orange
+		// dc.SetBackground( wxBrush( wxColour(2, 152, 152) ) ); // bright teal
 		// dc.SetBackground( wxBrush( wxColour(120, 67, 163) ) ); // violet
 		// dc.SetBackground( wxBrush( wxColour(191, 38, 96) ) ); // reddish pink
-		//dc.SetBackground( wxBrush( wxColour(15,79,34) ) ); // dark forest green	
+		// dc.SetBackground( wxBrush( wxColour(15,79,34) ) ); // dark forest green	
 		// dc.SetBackground( wxBrush( wxColour(130,186,0) ) ); // pale lime green		
-		dc.SetBackground(wxBrush(wxColour(241, 47, 144))); // hot pink, making development more fun for everyone!
-		//dc.SetBackground(wxBrush(wxColour(23, 26, 33))); // nick's gray/black "blackish/gunbarrel gray"
+		// dc.SetBackground(wxBrush(wxColour(241, 47, 144))); // hot pink, making development more fun for everyone!
+		// dc.SetBackground(wxBrush(wxColour(23, 26, 33))); // dark gray
+		dc.SetBackground(wxBrush(wxColour(23, 26, 33)));
 
 		dc.Clear();
 
@@ -1279,7 +1316,7 @@ public:
 		dc.DrawText( "System Advisor Model", wxScalePoint( wxPoint(35, 65), scaleX, scaleY ) );
 		
 		dc.SetFont( wxMetroTheme::Font( wxMT_LIGHT, 18 ) );
-		dc.DrawText( "(Open Source)", wxScalePoint(wxPoint(35, 135),scaleX,scaleY));
+		dc.DrawText( "(Open Source) " + SamApp::VersionStr(), wxScalePoint(wxPoint(35, 135),scaleX,scaleY));
 		dc.DrawText( m_message, wxScalePoint( wxPoint(35, 275), scaleX, scaleY) );
 
 	}
@@ -1437,7 +1474,7 @@ bool InputPageData::Read( wxInputStream &is )
 {
 	wxDataInputStream in(is);
 	wxUint8 code = in.Read8();
-	wxUint8 ver = in.Read8();
+	in.Read8(); // wxUint8 ver
 
 	bool ok = true; 
 	ok = ok && m_form.Read( is );
@@ -1862,6 +1899,24 @@ extern void RegisterReportObjectTypes();
 	// so that script windows are specialized to SAM, not the base generic one
 	SamScriptWindow::SetFactory( new SamScriptWindowFactory );
 	
+	bool first_load = true;
+	wxString fl_key = wxString::Format("first_load_%d", VersionMajor()*10000+VersionMinor()*100+VersionMicro() );
+	Settings().Read(fl_key, &first_load, true);
+		
+	if ( first_load )
+	{
+		// register the first load
+		Settings().Write(fl_key, false);
+
+		// enable web update app 
+		wxConfig cfg("SamUpdate3", "NREL");
+		cfg.Write("allow_web_updates", true);
+				
+		// after installing a new version, always show the reminders again until the user turns them off
+		Settings().Write( "show_reminder", true );
+	}
+	else
+	{
 		// restore window position
 		bool b_maximize = false;
 		int f_x,f_y,f_width,f_height;
@@ -1886,6 +1941,7 @@ extern void RegisterReportObjectTypes();
 			else // place default here...
 				g_mainWindow->Maximize();
 		}
+	}
 
 	if ( argc > 1 )
 		g_mainWindow->LoadProject( argv[1] );
@@ -2183,7 +2239,7 @@ public:
 		if ( patch > 0 )
 			patchStr.Printf( ", updated to revision %d", patch );
 
-		int nbit = (sizeof(void*) == 8) ? 64 : 32;
+		// int nbit = (sizeof(void*) == 8) ? 64 : 32;
 		m_aboutHtml = "<html><body bgcolor=#ffffff>"
 			"<font color=#a9a9a9 face=\"Segoe UI Light\" size=10>System Advisor Model (Open Source)</font><br><p>"
 				"Copyright 2017 Alliance for Sustainable Energy, LLC<br>"
@@ -2507,7 +2563,7 @@ bool SamApp::LoadAndRunScriptFile( const wxString &script_file, wxArrayString *e
 	{
 		if ( errors )
 		{
-			for( size_t i=0;i<parse.error_count();i++ )
+			for( int i=0;i<parse.error_count();i++ )
 				errors->Add( parse.error(i) );
 			errors->Add( "parsing did not reach end of input" );
 		}
@@ -2635,7 +2691,7 @@ void ConfigDialog::GetConfiguration(wxString &t, wxString &f)
 }
 
 
-void ConfigDialog::OnDoubleClick(wxCommandEvent &evt)
+void ConfigDialog::OnDoubleClick(wxCommandEvent &)
 {
 	EndModal( wxID_OK );
 }
@@ -2671,13 +2727,13 @@ void ConfigDialog::UpdateFinTree()
 	m_pFin->Invalidate();
 }
 
-void ConfigDialog::OnTechTree( wxCommandEvent &evt )
+void ConfigDialog::OnTechTree( wxCommandEvent & )
 {
-	UpdateFinTree();
+	UpdateFinTree(); 
 }
 
 
-void ConfigDialog::OnHelp(wxCommandEvent &evt)
+void ConfigDialog::OnHelp(wxCommandEvent &)
 {
 	SamApp::ShowHelp( "choose_models" );
 }

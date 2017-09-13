@@ -143,7 +143,7 @@ int SamReportTemplate::GetPageCount()
 
 void SamReportTemplate::Clear()
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		delete m_pages[i];
 	m_pages.clear();
 	m_description.Empty();
@@ -217,7 +217,7 @@ bool SamReportTemplate::Write( const wxString &file )
 	ds.WriteString( m_footer ); // footer text (with escapes)
 	ds.Write32( m_pages.size() ); // number of pages
 
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		if (!m_pages[i]->Write( fout ))
 			return false;
 
@@ -235,7 +235,7 @@ bool SamReportTemplate::Read( const wxString &file )
 	Clear();
 	wxDataInputStream ds( fin );
 	unsigned short start_code = ds.Read16();
-	unsigned char ver = ds.Read8();
+	ds.Read8(); // unsigned char ver;
 	m_description = ds.ReadString();
 	m_author = ds.ReadString();
 	m_meta1 = ds.ReadString();
@@ -262,7 +262,7 @@ bool SamReportTemplate::Read( const wxString &file )
 
 void SamReportTemplate::SetCaseName( const wxString &cn )
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 	{
 		int count = 0;
 		wxPageObject **children = m_pages[i]->GetObjects( &count );
@@ -274,7 +274,7 @@ void SamReportTemplate::SetCaseName( const wxString &cn )
 
 void SamReportTemplate::SetMetaData( VarValue *meta )
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 	{
 		int count = 0;
 		wxPageObject **children = m_pages[i]->GetObjects( &count );
@@ -289,7 +289,7 @@ bool SamReportTemplate::RenderPdf( const wxString &file, Case *c, VarValue *meta
 	if ( c != 0 ) SetCaseName( SamApp::Project().GetCaseName( c ) );
 	if ( meta != 0 ) SetMetaData( meta );
 	wxPagePdfRenderer pdf;
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		pdf.AddPage( m_pages[i], EscapeHF(m_header), EscapeHF(m_footer) );
 
 
@@ -734,7 +734,7 @@ static wxString InsertVariable( wxWindow *parent, bool with_curly = true )
 		return wxEmptyString;
 	}
 	
-	for (int i=0;i<cur_cases.size();i++)
+	for (int i=0;i<(int)cur_cases.size();i++)
 	{
 		wxString case_name( SamApp::Project().GetCaseName( cur_cases[i] ) );
 		wxArrayString output_names, output_labels, output_groups;
@@ -1021,16 +1021,16 @@ wxString SamReportEscapeString( const wxString &input, Case *c, VarValue *meta )
 					{
 						int idx = wxAtoi( args["index"] );
 						if (idx < 0) idx = 0;
-						if (idx >= vals.size()) idx = vals.size()-1;
+						if (idx >= (int)vals.size()) idx = vals.size()-1;
 
 						text += SamReportFormatVariable( vals[idx]*scaling, format );
 					}
 					else
 					{
-						for (int k=0;k<vals.size();k++)
+						for (int k=0;k<(int)vals.size();k++)
 						{
 							text += SamReportFormatVariable( vals[k]*scaling, format );
-							if (k < vals.size()-1) text+= ", ";
+							if (k < (int)vals.size()-1) text+= ", ";
 						}
 					}
 				}
@@ -1505,7 +1505,7 @@ bool SamReportTableObject::ReadData( wxInputStream &is )
 {
 	wxDataInputStream in(is);
 	unsigned short code = in.Read16();
-	unsigned char ver = in.Read8();
+	in.Read8(); // unsigned char ver 
 	size_t nrows = in.Read32();
 	size_t ncols = in.Read32();
 	m_table.resize_fill( nrows, ncols, wxEmptyString );
@@ -2122,10 +2122,10 @@ public:
 			m_editor->InsertText( m_editor->GetCurrentPos(), text );
 	}
 
-	void OnSpin( wxSpinEvent &e ) { InvalidateObject(); }
-	void OnColour( wxColourPickerEvent &e ) { InvalidateObject(); }
+	void OnSpin( wxSpinEvent & ) { InvalidateObject(); }
+	void OnColour( wxColourPickerEvent & ) { InvalidateObject(); }
 	
-	void OnScriptChanged( wxStyledTextEvent &e )
+	void OnScriptChanged( wxStyledTextEvent & )
 	{
 		m_timer.Start( 700, true );
 	}
@@ -2468,7 +2468,7 @@ void SamReportScriptObject::RenderTable( const matrix_t<wxString> &tab )
 
 		col_widths[c] *= 1.2f;
 
-		if ( c < m_colSizes.size()
+		if ( c < (int)m_colSizes.size()
 			&& m_colSizes[c] > 0)
 			col_widths[c] = m_colSizes[c];
 
@@ -2485,7 +2485,7 @@ void SamReportScriptObject::RenderTable( const matrix_t<wxString> &tab )
 
 		row_heights[r] *= 1.2f;
 
-		if ( r < m_rowSizes.size()
+		if ( r < (int)m_rowSizes.size()
 			&& m_rowSizes[r] > 0)
 			row_heights[r] = m_rowSizes[r];
 
@@ -2595,7 +2595,7 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	double ymin = 0;
 	double ymax = 0;
 
-	for (int i=0;i<values.size();i++)
+	for (int i=0;i<(int)values.size();i++)
 	{
 		if (values[i] < ymin) ymin = values[i];
 		if (values[i] > ymax) ymax = values[i];
@@ -2699,7 +2699,7 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	wxArrayString yvaltext_labels;
 	if (show_values)
 	{
-		for (int i=0;i<values.size();i++)
+		for (int i=0;i<(int)values.size();i++)
 		{
 			wxString label;
 			if (decimals <= 0 && fabs(values[i])>999)
@@ -2832,7 +2832,7 @@ bool SamReportScriptObject::ReadData( wxInputStream &is )
 {
 	wxDataInputStream in( is );
 	unsigned short id_code = in.Read16(); // ID CODE.
-	unsigned char ver = in.Read8();// version
+	in.Read8();// unsigned char version
 	m_script = in.ReadString();
 	return id_code == in.Read16();
 }

@@ -58,8 +58,7 @@ class wxCheckListBox;
 class wxButton;
 class wxTextCtrl;
 class wxCheckbox;
-//class wxDirPickerCtrl;
-//class wxFileDirPickerEvent;
+class wxSearchCtrl;
 
 class NSRDBDialog : public wxDialog
 {
@@ -78,41 +77,87 @@ public:
 
 	struct LinkInfo
 	{
-		wxString name;
+		wxString name; // dataset - e.g. psm
 		wxString displayName;
-		wxString type;
+		wxString type;  // e.g. satellite
 		wxString year; // number or "tmy"
 		wxString URL;
-		wxString interval;
-		wxString location;
+		wxString interval; // 30 or 60 
+		wxString location; // lat and lon
 		wxString display;
-		LinkInfo(wxString &_n, wxString &_dn, wxString &_t, wxString &_y, wxString &_u, wxString &_i, wxString &_l)
-			: name(_n), displayName(_dn), type(_t), year(_y), URL(_u), interval(_i), location(_l)
+		wxString attributes; // limit coumn and file size to SAM specific per NSRDB
+		bool is_selected;
+		bool is_visible;
+		LinkInfo(wxString &_n, wxString &_dn, wxString &_t, wxString &_y, wxString &_u, wxString &_i, wxString &_l, wxString &_a)
+			: name(_n), displayName(_dn), type(_t), year(_y), URL(_u), interval(_i), location(_l), attributes(_a)
 		{
 			display = location + "_" + name + "_" + type + "_" + interval + "_" + year;
+			is_visible = true;
+			is_selected = false;
+		}
+		// for sorting
+		bool operator < (const LinkInfo &li) const
+		{
+			// Sort per name (psm, mts3, mts2, mts1, suny) and year (tmy, yyyy) and interval 60, 30
+			if (name == li.name)
+			{
+				if (year == li.year)
+					return ( atoi(interval.c_str()) > atoi(li.interval.c_str()));
+				else if (year.Contains("tmy"))
+					return true;
+				else if (li.year.Contains("tmy"))
+					return false;
+				else
+					return ( atoi(year.c_str()) > atoi(li.year.c_str()));
+			}
+			else if (name.Lower() == "psm")
+				return true;
+			else if (li.name.Lower() == "psm")
+				return false;
+			else if (name.Lower() == "mts3")
+				return true;
+			else if (li.name.Lower() == "mts3")
+				return false;
+			// not sure why mts2-tmy and mts2 are two separate types.
+			else if (name.Lower() == "mts2-tmy")
+				return true;
+			else if (li.name.Lower() == "mts2-tmy")
+				return false;
+			else if (name.Lower() == "mts2")
+				return true;
+			else if (li.name.Lower() == "mts2")
+				return false;
+			else if (name.Lower() == "mts1")
+				return true;
+			else if (li.name.Lower() == "mts1")
+				return false;
+			else if (name.Lower() == "suny")
+				return true;
+			else if (li.name.Lower() == "suny")
+				return false;
+			else
+				return true;
 		}
 	};
 
 
 private:
 	void OnEvt(wxCommandEvent &);
-//	void OnDir(wxFileDirPickerEvent &);
 
 	void GetResources();
+	void RefreshList();
 
 	std::vector<LinkInfo> m_links;
 	wxString m_weatherFile;
 	wxString m_weatherFolder;
 	wxString m_addFolder;
-	//	wxComboBox *m_cboFilter;
 	wxComboBox *m_cboWeatherFile;
 	wxCheckListBox *m_chlResources;
-//	wxButton *m_btnChkAll, *m_btnChkFiltered, *m_btnChkNone, *m_btnResources, *m_btnFolder, *m_btnDownload;
-	wxButton *m_btnChkAll, *m_btnChkNone, *m_btnResources, *m_btnFolder;
+	wxButton *m_btnChkAll, *m_btnChkNone,*m_btnUnselectFiltered, *m_btnSelectFiltered, *m_btnResources, *m_btnFolder, *m_btnChkPsm30, *m_btnChkPsm60, *m_btnDownload; 
 	wxTextCtrl *m_txtFolder;
 	wxTextCtrl *m_txtAddress;
 	wxCheckBox *m_chkFolder;
-//	wxDirPickerCtrl *m_dirpicker;
+	wxSearchCtrl *m_search;
 
 	DECLARE_EVENT_TABLE()
 };

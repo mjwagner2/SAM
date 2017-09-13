@@ -85,7 +85,7 @@ public:
 		m_counter = 0;
 	}
 
-	virtual bool on_run( int line )
+	virtual bool on_run( int  )
 	{
 		// expression & (constant-1) is equivalent to expression % constant where 
 		// constant is a power of two: so use bitwise operator for better performance
@@ -104,7 +104,7 @@ class my_vm : public lk::vm
 	size_t m_counter;
 public:
 	my_vm( MacroEngine *me ) : m_me(me) { }
-	virtual bool on_run( const lk::srcpos_t &sp )
+	virtual bool on_run( const lk::srcpos_t & )
 	{
 		wxGetApp().Yield( true );
 		return !m_me->IsStopFlagSet();
@@ -652,7 +652,7 @@ public:
 		if ( sld.ShowModal() == wxID_OK )
 		{
 			int isel = sld.GetSelection();
-			if ( isel >= 0 && isel < m_names.size() )
+			if ( isel >= 0 && isel < (int)m_names.size() )
 			{
 				m_curName = m_names[isel];
 				m_text->ChangeValue( m_labels[isel] );
@@ -1147,7 +1147,7 @@ void MacroPanel::OnCommand( wxCommandEvent &evt )
 			{
 				wxMessageBox("Error loading macro data file:\n\n" + dlg.GetPath() );
 			}
-			else if ( ivals < m_ui.size() )
+			else if ( ivals < (int)m_ui.size() )
 			{
 				wxMessageBox("Only some of the loaded macro data was applicable to the currently selected macro.");
 			}

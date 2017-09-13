@@ -588,7 +588,7 @@ void CaseWindow::OnCommand( wxCommandEvent &evt )
 			menu.SetFont( m_exclPageButton->GetFont() );
 			for( size_t i=0;i<m_currentGroup->Pages.size();i++)
 				if ( m_currentGroup->Pages[i].size() > 0 )
-					menu.AppendCheckItem( ID_EXCL_OPTION+i, m_currentGroup->Pages[i][0].Caption, i == (int)sel );
+					menu.AppendCheckItem( ID_EXCL_OPTION+i, m_currentGroup->Pages[i][0].Caption, (int)i == sel );
 
 			wxPoint pos( 0, m_exclPageButton->GetClientSize().GetHeight() );
 			pos = m_exclPageButton->ClientToScreen( pos );
@@ -1155,7 +1155,7 @@ bool CaseWindow::HasPageNote(const wxString &id)
 	return !id.IsEmpty() && !m_case->RetrieveNote(id).IsEmpty();
 }
 
-void CaseWindow::OnSubNotebookPageChanged( wxNotebookEvent &evt )
+void CaseWindow::OnSubNotebookPageChanged( wxNotebookEvent & )
 {
 	// common event handler for notebook page events to update the page note
 	UpdatePageNote();
@@ -1276,7 +1276,7 @@ SelectVariableDialog::SelectVariableDialog(wxWindow *parent, const wxString &tit
 	SetEscapeId( wxID_CANCEL );
 }
 
-void SelectVariableDialog::OnSearch( wxCommandEvent & evt)
+void SelectVariableDialog::OnSearch( wxCommandEvent & )
 {
 	wxString filter = txtSearch->GetValue().Lower();
 
@@ -1435,14 +1435,14 @@ wxArrayString SelectVariableDialog::GetCheckedNames()
 	return list;
 }
 	
-void SelectVariableDialog::OnExpandAll(wxCommandEvent &evt)
+void SelectVariableDialog::OnExpandAll(wxCommandEvent &)
 {
 	tree->ExpandAll();
 	if (m_root.IsOk())
 		tree->EnsureVisible(m_root);
 }
 
-void SelectVariableDialog::OnUncheckAll(wxCommandEvent &evt)
+void SelectVariableDialog::OnUncheckAll(wxCommandEvent &)
 {
 	for (size_t i=0;i<m_items.size();i++)
 		m_items[i].checked = false;

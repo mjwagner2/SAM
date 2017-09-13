@@ -86,14 +86,16 @@
 #include "invoke.h"
 #include "lossdiag.h"
 
+#pragma warning(disable: 4996) // deprecated code warnings from wxWidgets
+
 static wxString UnsplitCells(const matrix_t<wxString> &table, char colsep, char rowsep, bool quote_colsep)
 {
 	wxString result = "";
 	int r, c;
 
-	for (r = 0; r<table.nrows(); r++)
+	for (r = 0; r<(int)table.nrows(); r++)
 	{
-		for (c = 0; c<table.ncols(); c++)
+		for (c = 0; c<(int)table.ncols(); c++)
 		{
 			if (quote_colsep && table.at(r, c).Find(colsep) != wxNOT_FOUND)
 			{
@@ -104,13 +106,13 @@ static wxString UnsplitCells(const matrix_t<wxString> &table, char colsep, char 
 				result = result + table.at(r, c);
 			}
 
-			if (c < table.ncols() - 1)
+			if (c < (int)table.ncols() - 1)
 			{
 				result = result + colsep;
 			}
 		}
 
-		if (r < table.nrows() - 1)
+		if (r < (int)table.nrows() - 1)
 		{
 			result = result + rowsep;
 		}
@@ -151,7 +153,7 @@ void PopulateSelectionList( wxDVSelectionListCtrl *sel, wxArrayString *names, Si
 		bool lifetime = false;
 		int steps_per_hour_lt = -1;
 		int steps_per_hour = row_length / 8760;
-		if (steps_per_hour * 8760 != row_length)
+		if (steps_per_hour * 8760 != (int)row_length)
 			steps_per_hour = -1;
 
 		if (VarValue *lftm = sim->GetValue("system_use_lifetime_output"))
@@ -160,7 +162,7 @@ void PopulateSelectionList( wxDVSelectionListCtrl *sel, wxArrayString *names, Si
 			{
 				steps_per_hour_lt = steps_per_hour / (an_period - 1);
 				lifetime = true;
-				if (steps_per_hour_lt * 8760 * (an_period - 1) != row_length)
+				if (steps_per_hour_lt * 8760 * (an_period - 1) != (int)row_length)
 					steps_per_hour_lt = -1;
 			}
 		}
@@ -176,11 +178,11 @@ void PopulateSelectionList( wxDVSelectionListCtrl *sel, wxArrayString *names, Si
 			group = "Monthly Data";
 		else if (row_length == 8760 && col_length == 1)
 			group = "Hourly Data";
-		else if (row_length == an_period && col_length == 1)
+		else if ((int)row_length == an_period && col_length == 1)
 			group = "Annual Data";
-		else if ((row_length == (an_period - 1) * 12) && (lifetime) && (col_length == 1))
+		else if (((int)row_length == (an_period - 1) * 12) && (lifetime) && (col_length == 1))
 			group = "Lifetime Monthly Data";
-		else if ((row_length == (an_period - 1) * 8760) && (lifetime) && (col_length == 1))
+		else if (((int)row_length == (an_period - 1) * 8760) && (lifetime) && (col_length == 1))
 			group = "Lifetime Hourly Data";
 		else if ((steps_per_hour_lt >= 2 && steps_per_hour_lt <= 60) && (lifetime) && col_length == 1)
 			group = wxString::Format("Lifetime %d Minute Data", 60 / (steps_per_hour_lt));
@@ -830,14 +832,14 @@ void ResultsViewer::Setup( Simulation *sim )
 				size_t n = 0;
 				float *p = vv->Array( &n );
 				
-				size_t steps_per_hour = n / 8760; 
-				if (steps_per_hour * 8760 != n)
+				int steps_per_hour = (int)n / 8760; 
+				if (steps_per_hour * 8760 != (int)n)
 					steps_per_hour = -1;
-				size_t steps_per_hour_lt = 0;
+				int steps_per_hour_lt = 0;
 				if (use_lifetime)
 				{
 					steps_per_hour_lt = steps_per_hour / (an_period - 1);
-					if (steps_per_hour_lt * 8760 * (an_period - 1) != n)
+					if (steps_per_hour_lt * 8760 * (an_period - 1) != (int)n)
 							steps_per_hour_lt = -1;
 				}
 
@@ -849,7 +851,7 @@ void ResultsViewer::Setup( Simulation *sim )
 					group = "Hourly Data";
 					time_step = 1;
 				}
-				else if ((n == (an_period - 1) * 8760) && (use_lifetime))
+				else if (((int)n == (an_period - 1) * 8760) && (use_lifetime))
 				{
 					group = "Lifetime Hourly Data";
 					time_step = 1;
@@ -919,8 +921,8 @@ void ResultsViewer::Setup( Simulation *sim )
 		if (nyears < 1) nyears = 1; // grid resizing for analysis periods less than 15 years
 		if (nyears > 100) nyears = 100;
 		m_cashFlowTable->ResizeGrid(400, nyears);
-		for (size_t c = 0; c<nyears; c++)
-			m_cashFlowTable->SetColLabelValue( c, wxString::Format("%d", (int)c) );
+		for (int c = 0; c<nyears; c++)
+			m_cashFlowTable->SetColLabelValue( c, wxString::Format("%d", c) );
 
 		size_t cashflow_row = 0, depreciation_row = 0;
 		for( size_t r=0;r<m_cashflow.size() && r < 400;r++ )
@@ -938,7 +940,7 @@ void ResultsViewer::Setup( Simulation *sim )
 				if ( cl.scale == 1.0 )
 				{
 					wxColour bgcol( m_cashFlowTable->GetGridRowLabelWindow()->GetBackgroundColour() );
-					for( size_t c=0;c<nyears;c++ )
+					for( int c=0;c<nyears;c++ )
 						m_cashFlowTable->SetCellBackgroundColour( cashflow_row, c, bgcol );
 				}
 				cashflow_row++;
@@ -962,7 +964,7 @@ void ResultsViewer::Setup( Simulation *sim )
 					if (vv->Type() == VV_ARRAY) p = vv->Array(&n);
 					else if (vv->Type() == VV_NUMBER) _val = vv->Value();
 
-					for (size_t i = 0; i < n && i+cl.coloff < nyears; i++)
+					for (int i = 0; i < (int)n && i+(int)cl.coloff < nyears; i++)
 					{
 						float fval = p[i] * cl.scale;
 						wxString sval;
@@ -988,7 +990,7 @@ void ResultsViewer::Setup( Simulation *sim )
 					n = 1;
 				}
 				m_depreciationTable->SetRowLabelValue(depreciation_row, list[0]);
-				for (size_t i = 1; i < n && i < nyears; i++)
+				for (int i = 1; i < (int)n && i < nyears; i++)
 				{
 					m_depreciationTable->SetCellValue( depreciation_row, i - 1, list[i] );
 				}
@@ -1003,7 +1005,7 @@ void ResultsViewer::Setup( Simulation *sim )
 					list.Add(""); // handle empty string
 					n = 1;
 				}
-				for (size_t i = 0; i < n && i < nyears; i++)
+				for (int i = 0; i < (int)n && i < nyears; i++)
 				{
 					m_depreciationTable->SetColLabelValue(i, list[i]);
 				}
@@ -1019,7 +1021,7 @@ void ResultsViewer::Setup( Simulation *sim )
 					n = 1;
 				}
 				m_depreciationTable->SetRowLabelValue(depreciation_row, list[0]);
-				for (size_t i = 1; i < n && i < nyears; i++)
+				for (int i = 1; i < (int)n && i < nyears; i++)
 				{
 					if (VarValue *vv = m_sim->GetValue(list[i]))
 					{
@@ -1031,7 +1033,7 @@ void ResultsViewer::Setup( Simulation *sim )
 						else if (vv->Type() == VV_NUMBER) _val = vv->Value();
 
 						wxString sval;
-						for (size_t j = 0; j < m && j < nyears; j++)
+						for (int j = 0; j < (int)m && j < nyears; j++)
 						{
 							float fval = p[j] * cl.scale;
 							if (cl.digits > 0 && fval != 0.0f)
@@ -1040,7 +1042,7 @@ void ResultsViewer::Setup( Simulation *sim )
 								sval += wxString::Format("%d", (int)fval);
 							else
 								sval += wxString::Format("%g", fval);
-							if (j < m-1) sval += ";";
+							if (j < (int)m-1) sval += ";";
 						}
 						m_depreciationTable->SetCellValue( depreciation_row, i - 1, sval );
 					}
@@ -1421,7 +1423,7 @@ void ResultsViewer::RemoveAllDataSets()
 	//m_durationCurve->RemoveAllDataSets();
 	//m_scatterPlot->RemoveAllDataSets();
 	
-	for (int i=0; i<m_tsDataSets.size(); i++)
+	for (int i=0; i<(int)m_tsDataSets.size(); i++)
 		delete m_tsDataSets[i];
 
 	m_tsDataSets.clear();
@@ -1436,7 +1438,7 @@ void ResultsViewer::SavePerspective( StringHash &map )
 void ResultsViewer::LoadPerspective( StringHash &map )
 {
 	int nnav = wxAtoi( map["navigation"] );
-	if ( nnav >= 0 && nnav < GetPageCount() )
+	if ( nnav >= 0 && nnav < (int)GetPageCount() )
 		SetSelection( nnav );
 }
 
@@ -1490,9 +1492,9 @@ void MetricsTable::OnContextMenu(wxCommandEvent &evt)
 	wxString sep = evt.GetId() == ID_METRICS_COPY_CSV ? "," : "\t";
 
 	wxString tdat;
-	for (int r=0;r<m_table.nrows();r++)
-		for (int c=0;c<m_table.ncols();c++)
-			tdat += m_table.at(r,c) + (c==m_table.ncols()-1 ? "\n" : sep);
+	for (int r=0;r<(int)m_table.nrows();r++)
+		for (int c=0;c<(int)m_table.ncols();c++)
+			tdat += m_table.at(r,c) + (c==(int)m_table.ncols()-1 ? "\n" : sep);
 
 	if (wxTheClipboard->Open())
 	{
@@ -1563,19 +1565,19 @@ wxSize MetricsTable::DoGetBestSize() const
 }
 
 
-void MetricsTable::OnPaint(wxPaintEvent &evt)
+void MetricsTable::OnPaint(wxPaintEvent &)
 {
 	wxAutoBufferedPaintDC dc(this);
 	int cwidth, cheight;
 	GetClientSize(&cwidth, &cheight);
 	
 	dc.SetPen( wxPen( wxColour(50,50,50), 1) );
-	dc.SetBrush( wxBrush( wxColour(50,50,50), wxSOLID ) );
+	dc.SetBrush( wxBrush( wxColour(50,50,50), wxSOLID ) ); 
 	dc.DrawRectangle(0,0,cwidth,cheight);
 
 	dc.SetFont( GetFont() );
 
-	int ch = dc.GetCharHeight();
+//	int ch = dc.GetCharHeight();
 
 	int nrows = m_table.nrows();
 	int ncols = m_table.ncols();
@@ -1586,13 +1588,13 @@ void MetricsTable::OnPaint(wxPaintEvent &evt)
 
 	dc.SetTextForeground( *wxWHITE );
 
-	for (int i=0;i<m_table.ncols();i++)
+	for (int i=0;i<(int)m_table.ncols();i++)
 	{
 		if (m_table.at(0,i).IsEmpty())
 			continue;
 
 		int xpos = MT_BORDER;
-		for (int k=0;k<i && k<m_colxsz.size();k++)
+		for (int k=0;k<i && k<(int)m_colxsz.size();k++)
 			xpos += m_colxsz[k];
 
 		dc.DrawText(m_table.at(0,i), xpos+MT_SPACE, MT_BORDER+1 );
@@ -1633,7 +1635,7 @@ void MetricsTable::OnPaint(wxPaintEvent &evt)
 	dc.DestroyClippingRegion();
 }
 
-void MetricsTable::OnResize(wxSizeEvent &evt)
+void MetricsTable::OnResize(wxSizeEvent &)
 {
 	Refresh();
 }
@@ -1723,8 +1725,8 @@ public:
 		{
 			if (Table.size() == 0 && row == 0 && col == 0) return false;
 
-			return (col < 0 || col >= Table.size()
-				|| row >= Table[col]->N || row < 0);
+			return (col < 0 || col >= (int)Table.size()
+				|| row >= (int)Table[col]->N || row < 0);
 		}
 		else
 			return false;
@@ -1734,7 +1736,7 @@ public:
 	{
 
 		if (!IsMatrix && !IsSingleValues){
-			if (col >= 0 && col < Table.size() && row >= 0 && row < Table[col]->N)
+			if (col >= 0 && col < (int)Table.size() && row >= 0 && row < (int)Table[col]->N)
 			{
 				if (std::isnan(Table[col]->Values[row]))
 					return "NaN";
@@ -1744,7 +1746,7 @@ public:
 		}
 		else if (IsMatrix)
 		{
-			if (col >= 0 && col < Matrix.ncols() && row >= 0 && row < Matrix.nrows())
+			if (col >= 0 && col < (int)Matrix.ncols() && row >= 0 && row < (int)Matrix.nrows())
 			{
 				if (std::isnan(Matrix.at(row, col)))
 					return "NaN";
@@ -1756,7 +1758,7 @@ public:
 		}
 		else if (IsSingleValues)
 		{
-			if (col == 0 && row >= 0 && row < Table.size())
+			if (col == 0 && row >= 0 && row < (int)Table.size())
 			{
 				if (std::isnan(Table[row]->SingleValue))
 					return "NaN";
@@ -1768,7 +1770,7 @@ public:
 		return wxEmptyString;
 	}
 
-    virtual void SetValue( int row, int col, const wxString &)
+    virtual void SetValue( int , int , const wxString &)
 	{
 		// nothing to do
 	}
@@ -1782,14 +1784,14 @@ public:
 				IsSingleValue = true;
 
 			if (!IsSingleValue)
-				if (col >= 0 && col < Table.size())	return Table[col]->Label;
+				if (col >= 0 && col < (int)Table.size())	return Table[col]->Label;
 			
 			return wxEmptyString;
 		}
 		else
 		{			
-			if (col >= 0 && col < Matrix.ncols()
-					&& MatrixColLabels.size() > 0 && col < MatrixColLabels.size())
+			if (col >= 0 && col < (int)Matrix.ncols()
+					&& MatrixColLabels.size() > 0 && col < (int)MatrixColLabels.size())
 				return MatrixColLabels[col];
 			else return wxEmptyString;
 		}
@@ -1808,7 +1810,7 @@ public:
 			if (N == StepsPerHour*Years * 8760 && UseLifetime)
 				lifetime_variable = true;
 
-			if (MinCount == MaxCount && MaxCount >= 8760 && MaxCount <= 8760 * Years * 60 && !lifetime_variable)
+			if (MinCount == MaxCount && MaxCount >= 8760 && MaxCount <= (size_t)(8760 * Years * 60) && !lifetime_variable)
 				ret_code = true;
 		}
 		return ret_code;
@@ -1829,8 +1831,8 @@ public:
 		}
 		else
 		{
-			if (row >= 0 && row < Matrix.nrows()
-					&& MatrixRowLabels.size() > 0 && row < MatrixRowLabels.size())
+			if (row >= 0 && row < (int)Matrix.nrows()
+					&& MatrixRowLabels.size() > 0 && row < (int)MatrixRowLabels.size())
 				return MatrixRowLabels[row];
 		}
 
@@ -1840,7 +1842,7 @@ public:
 			return wxString::Format("%d", row + 1);
 	}
 
-    virtual wxString GetTypeName( int row, int col )
+    virtual wxString GetTypeName( int , int  )
 	{
 		return wxGRID_VALUE_STRING;
 	}
@@ -2053,7 +2055,7 @@ public:
 
 					if (write_label)
 					{
-						for (int jj = 0; jj != nc; jj++)
+						for (int jj = 0; jj != (int)nc; jj++)
 							MatrixColLabels.push_back(wxString::Format("%d", jj));
 					}
 
@@ -2380,7 +2382,7 @@ void TabularBrowser::UpdateNotebook(ArraySizeKey grid_size, wxString var_name)
 		wxString group = group_by_name[var_name];
 		if (grid_size.n_cols == 1)
 		{
-			m_notebook->AddPage(m_gridMap[grid_size], group, wxID_ANY);
+			m_notebook->AddPage(m_gridMap[grid_size], group, (bool)wxID_ANY);
 			m_tabLabelsMap[grid_size] = group;
 		}
 		else
@@ -2389,7 +2391,7 @@ void TabularBrowser::UpdateNotebook(ArraySizeKey grid_size, wxString var_name)
 			wxString units = m_sim->GetUnits(var_name);
 			if (!units.IsEmpty())
 				label = label + " (" + units + ")";
-			m_notebook->AddPage(m_gridMap[grid_size], label , wxID_ANY);
+			m_notebook->AddPage(m_gridMap[grid_size], label , (bool)wxID_ANY);
 			m_tabLabelsMap[grid_size] = label;
 		}
 		m_numberOfTabs++;
@@ -2444,7 +2446,7 @@ void TabularBrowser::UpdateGridSpecific(wxExtGridCtrl*& grid, ResultsTable*& gri
 
 		if (!gridTable->IsMatrix && !gridTable->IsSingleValues)
 		{
-			for (int i = 0; i < gridTable->Table.size(); i++)
+			for (int i = 0; i < (int)gridTable->Table.size(); i++)
 			{
 				wxArrayString lines = wxSplit(gridTable->Table[i]->Label, '\n');
 				int w = 40;
@@ -2460,7 +2462,7 @@ void TabularBrowser::UpdateGridSpecific(wxExtGridCtrl*& grid, ResultsTable*& gri
 		}
 		else if (gridTable->IsMatrix)
 		{
-			for (int i = 0; i < gridTable->Matrix.ncols(); i++)
+			for (int i = 0; i < (int)gridTable->Matrix.ncols(); i++)
 			{
 				wxArrayString lines = wxSplit(gridTable->MatrixColLabels[i], '\n');
 				int w = 40;
@@ -2525,10 +2527,10 @@ void TabularBrowser::ProcessRemovedAll(ArraySizeKey removed_size)
 	wxArrayString vars = m_selectedVarsMap[removed_size];
 
 	// remove all will remove all variables on the current grid
-	for (int i = 0; i != vars.size(); i++)
+	for (int i = 0; i != (int)vars.size(); i++)
 	{
 		m_selectedVarsBySizeMap.erase(vars[i]);
-		for (int j = 0; j != m_selectedVars.size(); j++)
+		for (int j = 0; j != (int)m_selectedVars.size(); j++)
 		{
 			if (vars[i] == m_selectedVars[j])
 			{
@@ -2579,7 +2581,7 @@ void TabularBrowser::ProcessAdded(wxString name)
 	// check selected variables map
 	wxArrayString vars = m_selectedVarsMap[var_size];
 	add = true;
-	for (int j = 0; j != vars.size(); j++)
+	for (int j = 0; j != (int)vars.size(); j++)
 	{
 		if (!vars[j].Cmp(m_selectedVars[i]))
 		{
@@ -2625,7 +2627,7 @@ void TabularBrowser::RemoveUnusedVariables()
 	{
 		ArraySizeKey var_size = it->first;
 		wxArrayString vars = it->second;
-		for (int i = 0; i != vars.size(); i++)
+		for (int i = 0; i != (int)vars.size(); i++)
 		{
 			wxString name = vars[i];
 			VarValue *vv = m_sim->GetValue(name);
@@ -2680,7 +2682,7 @@ ArraySizeKey TabularBrowser::GetStoredVariableSize(int index, bool &stored)
 	for (ArrayIterator it = m_selectedVarsMap.begin(); it != m_selectedVarsMap.end(); it++)
 	{
 		wxArrayString vars = it->second;
-		for (int j = 0; j != vars.size(); j++)
+		for (int j = 0; j != (int)vars.size(); j++)
 		{
 			if (!vars[j].Cmp(m_selectedVars[index]))
 			{
@@ -2751,7 +2753,7 @@ void TabularBrowser::UpdateSelectionList(int &vsx, int &vsy, bool select_in_list
 	
 	if (select_in_list)
 	{
-		for (int i = 0; i != m_selectedVars.size(); i++)
+		for (int i = 0; i != (int)m_selectedVars.size(); i++)
 			m_varSel->SelectRowInCol(m_names.Index(m_selectedVars[i]));
 	}
 }
@@ -2772,7 +2774,7 @@ void TabularBrowser::UpdateAll()
 	wxArrayString tmp = m_selectedVars;
 	size_t n = tmp.size();
 
-	for (int i = 0; i != n; i++)
+	for (int i = 0; i != (int)n; i++)
 	{
 		int idx = m_names.Index(tmp[i]);
 
@@ -2802,7 +2804,7 @@ void TabularBrowser::OnCommand(wxCommandEvent &evt)
 			for (GridIterator it = m_gridMap.begin(); it != m_gridMap.end(); it++)
 				sizes.push_back(it->first);
 
-			for (int i = 0; i != sizes.size(); i++)
+			for (int i = 0; i != (int)sizes.size(); i++)
 				ProcessRemovedAll(sizes[i]);
 				
 			UpdateAll();
@@ -2847,7 +2849,7 @@ void TabularBrowser::OnCommand(wxCommandEvent &evt)
 				
 				for (ResultsIterator it = m_gridTableMap.begin(); it != m_gridTableMap.end(); it++)
 				{
-					if (it->first.n_rows > excel_max_rows)
+					if ((int)(it->first.n_rows) > excel_max_rows)
 					{
 						busy.~wxBusyInfo();
 						wxString message;
@@ -2891,7 +2893,7 @@ void TabularBrowser::OnCommand(wxCommandEvent &evt)
 						worksheet_name.Replace("[", "(");
 						worksheet_name.Replace("]", ")");
 
-						if (worksheet_name.length() > max_worksheet_name_length)
+						if ((int)worksheet_name.length() > max_worksheet_name_length)
 							worksheet_name = worksheet_name.Mid(0, max_worksheet_name_length);
 
 						xl.SetWorksheetName(worksheet_name);
@@ -2932,7 +2934,7 @@ void TabularBrowser::OnCommand(wxCommandEvent &evt)
 				return;
 			}
 
-			if (m_lastSize.n_rows > excel_max_rows)
+			if ((int)m_lastSize.n_rows > excel_max_rows)
 			{
 				wxString message;
 				message.Printf(wxT("Excel supports max of 1048576 rows.\nLifetime data contains %d rows\nPlease copy and paste Lifetime data to a text file"), m_lastSize.n_rows);
@@ -2977,8 +2979,6 @@ void TabularBrowser::OnVarSel( wxCommandEvent & )
 	{
 		wxString name = m_names[ row ];
 
-		VarValue *var_value = m_sim->GetOutput(name);
-
 		if (checked && m_selectedVars.Index(name) == wxNOT_FOUND)
 			ProcessAdded(name);
 		
@@ -2988,7 +2988,7 @@ void TabularBrowser::OnVarSel( wxCommandEvent & )
 		SetLastSelection();
 	}
 }
-void TabularBrowser::OnPageChanged(wxAuiNotebookEvent& event)
+void TabularBrowser::OnPageChanged(wxAuiNotebookEvent& )
 {
 	ArraySizeKey current_size = GetVariableSizeByPage();
 	if (m_gridMap.find(current_size) != m_gridMap.end())
@@ -3000,7 +3000,7 @@ void TabularBrowser::OnPageChanged(wxAuiNotebookEvent& event)
 	// wxMessageBox("Changed");
 }
 
-void TabularBrowser::OnPageClosed(wxAuiNotebookEvent& event)
+void TabularBrowser::OnPageClosed(wxAuiNotebookEvent& )
 {
 	int page_count = m_notebook->GetPageCount();
 	for (GridIterator it = m_gridMap.begin(); it != m_gridMap.end(); it++)
@@ -3084,7 +3084,7 @@ void TabularBrowser::GetTextData(wxString &dat, char sep)
 			{
 				int N = (IsMatrix ? m_gridTable->Matrix.nrows() : m_gridTable->Table[c]->N);
 				float value = (IsMatrix ? m_gridTable->Matrix.at(r, c) : m_gridTable->Table[c]->Values[r]);
-				if (r < N)
+				if ((int)r < N)
 					dat += wxString::Format("%g", value);
 
 				if (c < columns - 1)
