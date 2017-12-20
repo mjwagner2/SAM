@@ -414,7 +414,7 @@ static void fcall_vuc_config( lk::invoke_t &cxt )
 			if ( cxt.arg_count() > 2 ) reason = cxt.arg(2).as_string();
 			vuc->GetLog( vuc->GetName() ).push_back( VersionUpgrade::log( 
 				VersionUpgrade::CONFIG_CHANGE, "Updated internal configuration name from " + tech + "/" + fin + " to " + tech1 + "/" + fin1 + ".", reason ) );
-			cxt.result().assign( vuc->GetCase()->SetConfiguration( tech1, fin1 ) );
+			cxt.result().assign( vuc->GetCase()->SetConfiguration( tech1, tech1, fin1 ) );
 		}
 	}
 

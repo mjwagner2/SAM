@@ -74,13 +74,18 @@ static void fcall_open_project( lk::invoke_t &cxt )
 
 static void fcall_create_case( lk::invoke_t &cxt )
 {
-	LK_DOC( "create_case", "Create a new case.", "(string:technology, string:financing, [string:name]):boolean" );
-	wxString name;
-	if ( cxt.arg_count() == 3 )
-		name = cxt.arg(2).as_string();
+	LK_DOC( "create_case", "Create a new case.", "(string:technology, string:financing, [string:system option], [string:name]):boolean" );
+	wxString sysOpt, name;
+	if (cxt.arg_count() >= 3)
+	{
+		sysOpt = cxt.arg(2).as_string();
+		if (cxt.arg_count() == 4)
+			name = cxt.arg(3).as_string();
+	}
 
 	cxt.result().assign( SamApp::Window()->CreateNewCase( name, 
 			cxt.arg(0).as_string(), 
+			sysOpt.Length() > 1 ? sysOpt : cxt.arg(0).as_string(), 
 			cxt.arg(1).as_string() ) ? 1.0 : 0.0 );
 }
 
@@ -336,7 +341,7 @@ static void fcall_configuration( lk::invoke_t &cxt )
 		wxArrayString finlist = SamApp::Config().GetFinancingForTech( tech );
 		if ( finlist.Index( fin ) == wxNOT_FOUND ) return;
 
-		cxt.result().assign( cc->SetConfiguration( tech, fin, true, 0 ) ? 1.0 : 0.0 ); // invoke silently - do not show error messages
+		cxt.result().assign( cc->SetConfiguration( tech, tech, fin, true, 0 ) ? 1.0 : 0.0 ); // invoke silently - do not show error messages
 	}
 	else
 	{
@@ -664,7 +669,7 @@ void SamScriptWindow::OnVariables( wxCommandEvent & )
 	if ( Case *c = SamApp::Window()->GetCurrentCase() )
 	{
 		wxString tech, fin;
-		c->GetConfiguration(&tech, &fin);
+		c->GetConfiguration(&tech, &tech, &fin);
 		dlg.SetConfiguration( tech, fin );
 	}
 

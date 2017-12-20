@@ -668,9 +668,7 @@ void CaseWindow::OnCaseEvent( Case *, CaseEvent &evt )
 				{
 					UICallbackContext cbcxt( ipage, obj->GetName() + "->on_change" );
 					if ( cbcxt.Invoke( root, &m_case->CallbackEnvironment() ) )
-					  {
 						wxLogStatus("callback script " + obj->GetName() + "->on_change succeeded");
-					  }
 				}
 			}
 
@@ -1166,8 +1164,8 @@ void CaseWindow::OnSubNotebookPageChanged( wxNotebookEvent & )
 wxString CaseWindow::GetCurrentContext()
 {
 	wxString id = "about";
-	wxString tech, fin;
-	m_case->GetConfiguration( &tech, &fin );
+	wxString tech, sys, fin;
+	m_case->GetConfiguration( &tech, &sys, &fin );
 	int page = m_pageFlipper->GetSelection();
 
 	switch( page )
@@ -1525,7 +1523,7 @@ void VarSelectDialog::UpdateVariables()
 
 void VarSelectDialog::SetConfiguration( const wxString &tech, const wxString &fin )
 {
-	if ( ConfigInfo *ci = SamApp::Config().Find( tech, fin ) )
+	if ( ConfigInfo *ci = SamApp::Config().Find( tech, tech, fin ) )
 	{
 		wxArrayString names, labels;
 		for( VarInfoLookup::iterator it = ci->Variables.begin();

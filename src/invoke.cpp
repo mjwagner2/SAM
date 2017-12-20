@@ -149,9 +149,9 @@ static void fcall_dview(lk::invoke_t &cxt)
 }
 
 struct wfvec {
-	char const *name;
-	char const *label;
-	char const *units;
+	char *name;
+	char *label;
+	char *units;
 };
 
 static void fcall_dview_solar_data_file( lk::invoke_t &cxt )
@@ -268,32 +268,59 @@ static void fcall_userlocaldatadir( lk::invoke_t &cxt )
 
 static void fcall_addconfig( lk::invoke_t &cxt )
 {
-	LK_DOC("addconfig", "Add a technology+financing options", "( string:tech, array:financings ):none" );
+	LK_DOC("addconfig", "Add a technology+financing options", "( string:tech, array:financings ):none");
 
 	wxArrayString finlist;
 	lk::vardata_t &fins = cxt.arg(1);
 	for( size_t i=0;i<fins.length();i++ )
 		finlist.Add( fins.index(i)->as_string() );
 	
-	SamApp::Config().Add( cxt.arg(0).as_string(), finlist );
+	SamApp::Config().Add(cxt.arg(0).as_string(), wxArrayString(), finlist);
 
 	wxLogStatus( "Configuration: " + cxt.arg(0).as_string() + "  -> [ " + wxJoin(finlist,';') + " ]" );
+}
+static void fcall_addconfigtree(lk::invoke_t &cxt)
+{
+	LK_DOC("addconfigtree", "Add a technology+financing option with subsystem options", "( string:Tech, array:subsystem, string:Financing):none");
+
+	wxArrayString syslist;
+	lk::vardata_t &sysOpts = cxt.arg(0);
+	for (size_t i = 0; i < sysOpts.length(); i++){
+		syslist.Add(sysOpts.index(i)->as_string());
+	}
+
+	wxArrayString finlist;
+	lk::vardata_t &fins = cxt.arg(1);
+	for (size_t i = 0; i<fins.length(); i++)
+		finlist.Add(fins.index(i)->as_string());
+
+	SamApp::Config().Add(sysOpts.index(0)->as_string(), syslist, finlist);
+
+	wxLogStatus("Configuration: " + cxt.arg(0).as_string() + "  -> [ " + wxJoin(finlist, ';') + " ]");
 }
 
 static void fcall_setconfig( lk::invoke_t &cxt )
 {
-	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(string:Tech, string:Financing):none");
-	SamApp::Config().SetConfig( cxt.arg(0).as_string(), cxt.arg(1).as_string() );
+	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(array:Tech, System, string:Financing):none");
+	lk::vardata_t &sysOpts = cxt.arg(0);
+	SamApp::Config().SetConfig(sysOpts.index(0)->as_string(), (sysOpts.length() > 1) ? sysOpts.index(1)->as_string() : sysOpts.index(0)->as_string() , cxt.arg(1).as_string());
 }
 
 static void fcall_configopt( lk::invoke_t &cxt )
 {
 	LK_DOC("configopt", "Sets configuration options, such as long_name, short_name, description, etc.", "(string:config name, table:options):none");
-	ConfigOptions &opt = SamApp::Config().Options( cxt.arg(0).as_string() );
-
 	lk::vardata_t &tab = cxt.arg(1).deref();
-	if( lk::vardata_t *vv = tab.lookup( "long_name" ) )
-		opt.LongName = vv->as_string();
+	wxString longName = tab.lookup("long_name")->as_string();
+
+	ConfigOptions &opt = SamApp::Config().Options(longName);
+	wxString configName = cxt.arg(0).as_string();
+
+	wxArrayString TechSystemOpt = wxSplit(configName, ',');
+	if (TechSystemOpt.size() > 1){
+		opt.SubSystemOf = TechSystemOpt[0];
+	}
+	opt.LongName = longName;
+	opt.ConfigName = configName;
 	if( lk::vardata_t *vv = tab.lookup( "short_name") ) 
 		opt.ShortName = vv->as_string();
 	if( lk::vardata_t *vv = tab.lookup( "description" ) )
@@ -917,7 +944,7 @@ static void fcall_macrocall( lk::invoke_t &cxt )
 	if ( !c ) return;
 
 	wxString tech, fin;
-	c->GetConfiguration( &tech, &fin );
+	c->GetConfiguration( &tech, &tech, &fin );
 	wxArrayString macros = MacroEngine::ListMacrosForConfiguration( tech, fin );
 	
 	wxString name = cxt.arg(0).as_string();
@@ -3074,6 +3101,7 @@ lk::fcall_t* invoke_config_funcs()
 {
 	static const lk::fcall_t vec[] = {
 		fcall_addconfig,
+		fcall_addconfigtree,
 		fcall_setconfig,
 		fcall_configopt,
 		fcall_addpage,

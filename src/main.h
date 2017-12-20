@@ -2,7 +2,7 @@
 *  Copyright 2017 Alliance for Sustainable Energy, LLC
 *
 *  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
-*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  ("Alliance") under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
 *  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
 *  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
 *  copies to the public, perform publicly and display publicly, and to permit others to do so.
@@ -26,8 +26,8 @@
 *  4. Redistribution of this software, without modification, must refer to the software by the same
 *  designation. Redistribution of a modified version of this software (i) may not refer to the modified
 *  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
-*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
-*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  the underlying software originally provided by Alliance as "System Advisor Model" or "SAM". Except
+*  to comply with the foregoing, the terms "System Advisor Model", "SAM", or any confusingly similar
 *  designation may not be used to refer to any modified version of this software or any modified
 *  version of the underlying software originally provided by Alliance without the prior written consent
 *  of Alliance.
@@ -108,6 +108,7 @@ public:
 	wxString GetUniqueCaseName( wxString base = wxEmptyString );
 	bool CreateNewCase( const wxString &name = wxEmptyString, 
 		wxString tech = wxEmptyString, 
+		wxString sys = wxEmptyString,
 		wxString fin = wxEmptyString );
 
 	CaseWindow *GetCaseWindow( Case *c );
@@ -259,6 +260,7 @@ public:
 	~ConfigInfo();
 
 	wxString Technology;
+	wxString SystemOption;
 	wxString Financing;
 	wxArrayString Simulations;
 	std::vector<InputPageGroup*> InputPageGroups;
@@ -277,9 +279,11 @@ public:
 
 struct ConfigOptions
 {
+	wxString ConfigName;
 	wxString LongName;
 	wxString ShortName;
 	wxString Description;
+	wxString SubSystemOf = wxEmptyString;
 };
 
 class ConfigDatabase
@@ -289,8 +293,8 @@ public:
 	~ConfigDatabase();
 
 	void Clear();
-	void Add( const wxString &tech, const wxArrayString &fin );
-	void SetConfig( const wxString &t, const wxString &f );
+	void Add(const wxString &tech, const wxArrayString &sys, const wxArrayString &fin);
+	void SetConfig(const wxString &t, const wxString &s, const wxString &f);
 	ConfigInfo *CurrentConfig() { return m_curConfig; }
 	
 	void SetModules( const wxArrayString &list );
@@ -302,6 +306,7 @@ public:
 		bool excl_tabs );
 
 	wxArrayString GetTechnologies();
+	wxArrayString GetSystemOptionsForTech(const wxString& tech);
 	wxArrayString GetFinancingForTech(const wxString &tech);
 	
 /*
@@ -313,13 +318,14 @@ public:
 	void CachePagesInConfiguration( std::vector<PageInfo> &Pages, ConfigInfo *ci );
 	void RebuildCaches();
 
-	ConfigInfo *Find( const wxString &t, const wxString &f );
+	ConfigInfo *Find(const wxString &t, const wxString &s, const wxString &f);
 
 	static ConfigOptions &Options( const wxString &name );
+	//bool IsTechSubSystem( const wxString )
 
 
 private:
-	struct TechInfo { wxString Name; wxArrayString FinancingOptions; };
+	struct TechInfo { wxString Name; wxArrayString SystemOptions; wxArrayString FinancingOptions; };
 	std::vector<TechInfo> m_techList;
 	std::vector<ConfigInfo*> m_configList;
 	ConfigInfo *m_curConfig;
@@ -392,9 +398,10 @@ public:
 	virtual void EndModal( int retCode );
 
 private:
-	void PopulateTech();
+	void PopulateTech(const wxString& techToBranch = wxEmptyString);
 	bool ValidateSelections();
 	void OnTechTree(wxCommandEvent &evt);
+	void BranchTechTree(const wxString &tech);
 	void OnDoubleClick(wxCommandEvent &evt);
 
 	void UpdateFinTree();

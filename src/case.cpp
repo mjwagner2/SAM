@@ -2,7 +2,7 @@
 *  Copyright 2017 Alliance for Sustainable Energy, LLC
 *
 *  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
-*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  (ï¿½Allianceï¿½) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
 *  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
 *  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
 *  copies to the public, perform publicly and display publicly, and to permit others to do so.
@@ -26,8 +26,8 @@
 *  4. Redistribution of this software, without modification, must refer to the software by the same
 *  designation. Redistribution of a modified version of this software (i) may not refer to the modified
 *  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
-*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
-*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  the underlying software originally provided by Alliance as ï¿½System Advisor Modelï¿½ or ï¿½SAMï¿½. Except
+*  to comply with the foregoing, the terms ï¿½System Advisor Modelï¿½, ï¿½SAMï¿½, or any confusingly similar
 *  designation may not be used to refer to any modified version of this software or any modified
 *  version of the underlying software originally provided by Alliance without the prior written consent
 *  of Alliance.
@@ -303,7 +303,7 @@ bool Case::Copy( Object *obj )
 	{
 		m_config = 0;
 		if ( rhs->m_config )
-			SetConfiguration( rhs->m_config->Technology, rhs->m_config->Financing );
+			SetConfiguration( rhs->m_config->Technology, rhs->m_config->SystemOption, rhs->m_config->Financing );
 
 		m_vals.Copy( rhs->m_vals );
 		m_baseCase.Copy( rhs->m_baseCase );
@@ -378,10 +378,8 @@ bool Case::Read( wxInputStream &_i )
 	wxString tech = in.ReadString();
 	wxString fin = in.ReadString();
 
-	if ( !SetConfiguration( tech, fin ) )
-	  {
+	if ( !SetConfiguration( tech, tech, fin ) )
 		wxLogStatus( "Notice: errors occurred while setting configuration during project file read.  Continuing...\n\n" + tech + "/" + fin );
-	  }
 
 	// read in the variable table
 	m_oldVals.clear();
@@ -614,14 +612,14 @@ bool Case::LoadDefaults( wxString *pmsg )
 
 
 
-bool Case::SetConfiguration( const wxString &tech, const wxString &fin, bool silent, wxString *message )
+bool Case::SetConfiguration( const wxString &tech, const wxString &sys, const wxString &fin, bool silent, wxString *message )
 {
 	wxArrayString notices;
 
 	// erase results
 	m_baseCase.Clear();
 
-	m_config = SamApp::Config().Find( tech, fin );
+	m_config = SamApp::Config().Find( tech, sys, fin );
 			
 	if ( !m_config )
 		notices.Add("Case error: could not find configuration " + tech + ", " + fin );
@@ -796,11 +794,12 @@ lk::node_t *Case::QueryCallback( const wxString &method, const wxString &object 
 	return p_define->right;
 }
 
-void Case::GetConfiguration( wxString *tech, wxString *fin )
+void Case::GetConfiguration( wxString *tech, wxString *sys, wxString *fin )
 {
 	if ( m_config )
 	{
 		if ( tech ) *tech = m_config->Technology;
+		if (sys) *sys = m_config->SystemOption;
 		if ( fin ) *fin = m_config->Financing;
 	}
 }
@@ -820,6 +819,11 @@ static EqnFastLookup sg_emptyEqns;
 wxString Case::GetTechnology() const
 {
 	return m_config ? m_config->Technology : wxEmptyString;
+}
+
+wxString Case::GetSystemOpt() const
+{
+	return m_config ? m_config->SystemOption : wxEmptyString;
 }
 
 wxString Case::GetFinancing() const

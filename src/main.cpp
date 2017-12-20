@@ -520,16 +520,16 @@ wxString MainWindow::GetUniqueCaseName( wxString base )
 	return base + suffix;
 }
 
-bool MainWindow::CreateNewCase( const wxString &_name, wxString tech, wxString fin )
+bool MainWindow::CreateNewCase( const wxString &_name, wxString tech, wxString sys, wxString fin )
 {
-	if ( tech.IsEmpty() || fin.IsEmpty() )
+	if ( tech.IsEmpty() || sys.IsEmpty() || fin.IsEmpty() )
 	{
 		bool reset = false;
 		if (!ShowConfigurationDialog( this, &tech, &fin, &reset ))
 			return false;
 	}
 	
-	if ( 0 == SamApp::Config().Find( tech, fin ) )
+	if ( 0 == SamApp::Config().Find( tech, sys, fin ) )
 	{
 		wxMessageBox("Internal error: could not locate configuration information for " + tech + "/" + fin );
 		return false;
@@ -539,7 +539,7 @@ bool MainWindow::CreateNewCase( const wxString &_name, wxString tech, wxString f
 		m_topBook->SetSelection( 1 ); // switch to cases view if currently in welcome window
 
 	Case *c = m_project.AddCase( GetUniqueCaseName(_name ) );
-	c->SetConfiguration( tech, fin );
+	c->SetConfiguration( tech, tech, fin );
 	c->LoadDefaults();
 	CreateCaseWindow( c );
 	return true;
@@ -1149,11 +1149,11 @@ void MainWindow::OnCaseMenu( wxCommandEvent &evt )
 	case ID_CASE_CONFIG:
 		{
 			wxString tech, fin;
-			c->GetConfiguration( &tech, &fin );
+			c->GetConfiguration( &tech, &tech, &fin );
 			wxString t2(tech), f2(fin);
 			if( ShowConfigurationDialog( this, &t2, &f2, NULL ) 
 				&& (t2 != tech || f2 != fin) )
-				c->SetConfiguration( t2, f2 ); // this will cause case window to update accordingly
+				c->SetConfiguration( t2, t2, f2 ); // this will cause case window to update accordingly
 		}
 		break;
 	case ID_CASE_RENAME:
@@ -1593,28 +1593,32 @@ void ConfigDatabase::Clear()
 	m_curConfig = 0;
 }
 
-void ConfigDatabase::Add( const wxString &tech, const wxArrayString &fin )
+void ConfigDatabase::Add( const wxString &tech, const wxArrayString &sys, const wxArrayString &fin )
 {
 	TechInfo x;
 	x.Name = tech;
+	x.SystemOptions = sys;
 	x.FinancingOptions = fin;
 	m_techList.push_back( x );
 
-	for( size_t i=0;i<fin.size();i++ )
-	{
-		if ( !Find( tech, fin[i] ) )
+	for (size_t j = 0; j < sys.size(); j++){
+		for (size_t i = 0; i < fin.size(); i++)
 		{
-			ConfigInfo *ci = new ConfigInfo;
-			ci->Technology = tech;
-			ci->Financing = fin[i];
-			m_configList.push_back( ci );
+			if (!Find(tech, sys[j], fin[i]))
+			{
+				ConfigInfo *ci = new ConfigInfo;
+				ci->Technology = tech;
+				ci->SystemOption = sys[j];
+				ci->Financing = fin[i];
+				m_configList.push_back(ci);
+			}
 		}
 	}
 }
 
-void ConfigDatabase::SetConfig( const wxString &t, const wxString &f )
+void ConfigDatabase::SetConfig(const wxString &t, const wxString &s, const wxString &f)
 {
-	m_curConfig = Find( t, f );
+	m_curConfig = Find( t, s, f );
 }
 
 void ConfigDatabase::SetModules( const wxArrayString &list )
@@ -1737,6 +1741,15 @@ wxArrayString ConfigDatabase::GetTechnologies()
 	return list;
 }
 
+wxArrayString ConfigDatabase::GetSystemOptionsForTech(const wxString &tech)
+{
+	for (size_t i = 0; i < m_techList.size(); i++)
+		if (m_techList[i].Name == tech)
+			return m_techList[i].SystemOptions;
+	
+	return wxArrayString();
+}
+
 wxArrayString ConfigDatabase::GetFinancingForTech(const wxString &tech)
 {
 	for( size_t i=0;i<m_techList.size();i++ )
@@ -1747,10 +1760,11 @@ wxArrayString ConfigDatabase::GetFinancingForTech(const wxString &tech)
 
 }
 		
-ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &f )
+ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &s, const wxString &f )
 {
 	for( size_t i=0;i<m_configList.size();i++ )
 		if ( m_configList[i]->Technology == t
+			&& m_configList[i]->SystemOption == s
 			&& m_configList[i]->Financing == f )
 			return m_configList[i];
 
@@ -2029,9 +2043,7 @@ void SamApp::Restart()
 		{
 			wxLogStatus( "loading .ui: " + wxFileName(file).GetName() );
 			if (!SamApp::InputPages().LoadFile( SamApp::GetRuntimePath() + "/ui/" + file ))
-			  {
 				wxLogStatus( " --> error loading .ui for " + wxFileName(file).GetName() );
-			  }
 			
 			has_more = dir.GetNext( &file );
 		}
@@ -2071,25 +2083,17 @@ void SamApp::Restart()
 
 
 	g_globalCallbacks.ClearAll();
-	if ( !g_globalCallbacks.LoadFile( SamApp::GetRuntimePath() + "/metrics.lk" ))
-	  {
+	if ( !g_globalCallbacks.LoadFile( SamApp::GetRuntimePath() + "/metrics.lk" )) 
 		wxLogStatus( "error loading metrics.lk" );
-	  }
 
 	if ( !g_globalCallbacks.LoadFile( SamApp::GetRuntimePath() + "/cashflow.lk" ))
-	  {
 		wxLogStatus( "error loading cashflow.lk" );
-	  }
 
 	if ( !g_globalCallbacks.LoadFile( SamApp::GetRuntimePath() + "/autographs.lk" ))
-	  {
 		wxLogStatus( "error loading autographs.lk" );
-	  }
 
 	if ( !g_globalCallbacks.LoadFile( SamApp::GetRuntimePath() + "/lossdiag.lk" ))
-	  {
 		wxLogStatus( "error loading lossdiag.lk" );
-	  }
 
 	wxString solar_resource_db = SamApp::GetUserLocalDataDir() + "/SolarResourceData.csv";
 	if ( !wxFileExists( solar_resource_db ) ) ScanSolarResourceData( solar_resource_db );
@@ -2706,27 +2710,44 @@ void ConfigDialog::OnDoubleClick(wxCommandEvent &)
 	EndModal( wxID_OK );
 }
 
-void ConfigDialog::PopulateTech()
+void ConfigDialog::PopulateTech(const wxString& techToBranch)
 {
 	m_pTech->Clear();
 
 	m_tnames = SamApp::Config().GetTechnologies();
-	
+
 	for( size_t i=0;i<m_tnames.Count();i++)
 	{
 		wxString L( SamApp::Config().Options( m_tnames[i] ).LongName );
 		if ( L.IsEmpty() ) L = m_tnames[i];
 		m_pTech->Add( L );
+		if (m_tnames[i] == techToBranch)
+		{
+			BranchTechTree(techToBranch);
+		}
 	}
 	
 	m_pTech->Invalidate();
 }
 
+void ConfigDialog::BranchTechTree(const wxString& tech){
+	wxArrayString sysOpts = SamApp::Config().GetSystemOptionsForTech(tech);
+	wxString spacing = wxString("     ");
+	for (size_t i = 1; i < sysOpts.size(); i++){
+		wxString nameWithSysOptAppended = tech + wxString(" ") + sysOpts[i];
+		wxString L(SamApp::Config().Options(nameWithSysOptAppended).LongName);
+		if (L.IsEmpty()) L = sysOpts[i];
+		m_pTech->Add(spacing + L);
+	}
+}
+
 void ConfigDialog::UpdateFinTree()
 {
 	m_pFin->Clear();
-	int tsel = m_pTech->GetSelection();
-	m_fnames = SamApp::Config().GetFinancingForTech( tsel >= 0 && tsel < (int)m_tnames.size() ? m_tnames[tsel] : wxEmptyString );
+	wxString tsel = m_pTech->GetSelectionString();
+
+
+	m_fnames = SamApp::Config().GetFinancingForTech( !tsel.empty() ? tsel : wxEmptyString );
 	for( size_t i=0;i<m_fnames.Count();i++)
 	{
 		wxString L( SamApp::Config().Options( m_fnames[i] ).LongName );
@@ -2739,7 +2760,22 @@ void ConfigDialog::UpdateFinTree()
 
 void ConfigDialog::OnTechTree( wxCommandEvent & )
 {
-	UpdateFinTree(); 
+	wxString selectionName = m_pTech->GetSelectionString();
+
+	bool isBranchedSelection = true;
+	wxArrayString allTechs = SamApp::Config().GetTechnologies();
+	for (size_t i = 0; i < allTechs.size(); i++){
+		if (selectionName == allTechs[i]) isBranchedSelection = false;
+	}
+
+	if (isBranchedSelection)
+		UpdateFinTree();
+	else if (SamApp::Config().GetSystemOptionsForTech(selectionName).size() > 1)
+		PopulateTech(selectionName);
+	else{
+		PopulateTech();
+		UpdateFinTree(); 
+	}
 }
 
 
