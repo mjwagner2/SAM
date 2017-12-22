@@ -520,18 +520,21 @@ wxString MainWindow::GetUniqueCaseName( wxString base )
 	return base + suffix;
 }
 
-bool MainWindow::CreateNewCase( const wxString &_name, wxString tech, wxString sys, wxString fin )
+bool MainWindow::CreateNewCase( const wxString &_name, wxString config, wxString fin )
 {
-	if ( tech.IsEmpty() || sys.IsEmpty() || fin.IsEmpty() )
+	if (config.IsEmpty() || fin.IsEmpty() )
 	{
 		bool reset = false;
-		if (!ShowConfigurationDialog( this, &tech, &fin, &reset ))
+		if (!ShowConfigurationDialog( this, &config, &fin, &reset ))
 			return false;
 	}
 	
-	if ( 0 == SamApp::Config().Find( tech, sys, fin ) )
+	wxArrayString TechSystem = wxSplit(config, '-');
+	wxString tech = TechSystem[0];
+	wxString sys = TechSystem.GetCount() > 1 ? TechSystem[1] : wxEmptyString;
+	if ( 0 == SamApp::Config().Find( tech, fin, sys ) )
 	{
-		wxMessageBox("Internal error: could not locate configuration information for " + tech + "/" + fin );
+		wxMessageBox("Internal error: could not locate configuration information for " + config + "/" + fin );
 		return false;
 	}
 
@@ -539,7 +542,7 @@ bool MainWindow::CreateNewCase( const wxString &_name, wxString tech, wxString s
 		m_topBook->SetSelection( 1 ); // switch to cases view if currently in welcome window
 
 	Case *c = m_project.AddCase( GetUniqueCaseName(_name ) );
-	c->SetConfiguration( tech, tech, fin );
+	c->SetConfiguration( tech, fin, sys );
 	c->LoadDefaults();
 	CreateCaseWindow( c );
 	return true;
@@ -1790,7 +1793,7 @@ ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &f , const w
 {
 	for (size_t i = 0; i < m_configList.size(); i++) {
 		if (m_configList[i]->Technology == t && m_configList[i]->Financing == f && m_configList[i]->SystemOpt == s) {
-			m_configList[i];
+			return m_configList[i];
 		}
 	}
 	return nullptr;
@@ -2704,9 +2707,9 @@ bool ConfigDialog::ResetToDefaults()
 }
 
 // need to update this -darice
-void ConfigDialog::SetConfiguration(const wxString &t, const wxString &f)
+void ConfigDialog::SetConfiguration(const wxString &c, const wxString &f)
 {
-	int sel = m_IndexOfSelections.Index( t );
+	int sel = m_IndexOfSelections.Index( c );
 	m_pTech->SetSelection( sel );
 	m_pTech->Invalidate();
 
@@ -2794,13 +2797,13 @@ void ConfigDialog::OnTechTree( wxCommandEvent & )
 	if (SamApp::Config().GetSystemOptionsForTech(selectionConfigName).GetCount() > 1)
 		PopulateTech(selectionConfigName);
 	else{
-		if (wxSplit(selectionConfigName, '-').GetCount() > 1) UpdateFinTree(); 
-		else {
+		if (wxSplit(selectionConfigName, '-').GetCount() == 1)
+		{
 			PopulateTech();
 			m_pTech->SetSelection(m_IndexOfSelections.Index(selectionConfigName));
-			UpdateFinTree();
 		}
 	}
+	UpdateFinTree();
 }
 
 

@@ -106,10 +106,9 @@ public:
 	void ImportCases();
 
 	wxString GetUniqueCaseName( wxString base = wxEmptyString );
-	bool CreateNewCase( const wxString &name = wxEmptyString, 
-		wxString tech = wxEmptyString, 
-		wxString sys = wxEmptyString,
-		wxString fin = wxEmptyString );
+	bool CreateNewCase( const wxString &caseName = wxEmptyString, 
+		wxString configName = wxEmptyString, 
+		wxString finName = wxEmptyString );
 
 	CaseWindow *GetCaseWindow( Case *c );
 	CaseWindow *CreateCaseWindow( Case *c );
@@ -395,7 +394,7 @@ class ConfigDialog : public wxDialog
 public:
 	ConfigDialog( wxWindow *parent, const wxSize &size = wxScaleSize(700,570) );
 
-	void SetConfiguration(const wxString &t, const wxString &f);
+	void SetConfiguration(const wxString &c, const wxString &f);
 	void GetConfiguration(wxString &t, wxString &f);
 
 	void ShowResetCheckbox(bool b);

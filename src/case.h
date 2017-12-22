@@ -141,7 +141,7 @@ public:
 	bool LoadDefaults( wxString *error_msg = 0 );
 	bool SaveDefaults( bool quiet = false );
 
-	bool SetConfiguration( const wxString &tech, const wxString &sys, const wxString &fin, bool silent=false, wxString *message = 0 );
+	bool SetConfiguration( const wxString &tech, const wxString &fin, const wxString &sys = wxEmptyString, bool silent=false, wxString *message = 0 );
 	void GetConfiguration( wxString *tech, wxString *sys, wxString *fin );	
 	ConfigInfo *GetConfiguration() { return m_config; }
 	VarTable &Values() { return m_vals; }

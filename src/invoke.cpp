@@ -302,8 +302,8 @@ static void fcall_addconfigtree(lk::invoke_t &cxt)
 static void fcall_setconfig( lk::invoke_t &cxt ) // not sure about deref - darice
 {
 	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(string: Tech+System, string: Financing):none");
-	wxString &configName = cxt.arg(0).as_string();
-	wxString &financing = cxt.arg(1).as_string();
+	wxString configName = cxt.arg(0).as_string();
+	wxString financing = cxt.arg(1).as_string();
 	wxArrayString techSystem = wxSplit(configName, '-');
 	SamApp::Config().SetConfig(techSystem[0], financing, techSystem.GetCount() > 1? techSystem[1] : wxEmptyString);
 }
