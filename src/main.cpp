@@ -2761,8 +2761,8 @@ void ConfigDialog::PopulateTech(const wxString& techToBranch)
 void ConfigDialog::BranchTechTree(const wxString& techToBranch){
 	wxArrayString sysOpts = SamApp::Config().GetSystemOptionsForTech(techToBranch);
 	wxString spacing = wxString("     ");
-	for (size_t i = 1; i < sysOpts.size(); i++){
-		wxString nameWithSysOptAppended = techToBranch + wxString(", ") + sysOpts[i];
+	for (size_t i = 0; i < sysOpts.size(); i++){
+		wxString nameWithSysOptAppended = techToBranch + wxString("-") + sysOpts[i];
 		wxString L(SamApp::Config().Options(nameWithSysOptAppended).LongName);
 		if (L.IsEmpty()) L = sysOpts[i];
 		m_pTech->Add(spacing + L);
@@ -2774,7 +2774,7 @@ void ConfigDialog::UpdateFinTree()
 {
 	m_pFin->Clear();
 	wxString selectedConfig = m_IndexOfSelections[m_pTech->GetSelection()];
-	wxArrayString techName = wxSplit(selectedConfig, ', ');
+	wxArrayString techName = wxSplit(selectedConfig, '-');
 
 	m_finNames = SamApp::Config().GetFinancingForTech( techName[0] );
 	for( size_t i=0;i<m_finNames.Count();i++)
@@ -2791,10 +2791,15 @@ void ConfigDialog::OnTechTree( wxCommandEvent & )
 {
 	wxString selectionConfigName = m_IndexOfSelections[m_pTech->GetSelection()];
 	
-	if (SamApp::Config().GetSystemOptionsForTech(selectionConfigName).size() > 1)
+	if (SamApp::Config().GetSystemOptionsForTech(selectionConfigName).GetCount() > 1)
 		PopulateTech(selectionConfigName);
 	else{
-		UpdateFinTree(); 
+		if (wxSplit(selectionConfigName, '-').GetCount() > 1) UpdateFinTree(); 
+		else {
+			PopulateTech();
+			m_pTech->SetSelection(m_IndexOfSelections.Index(selectionConfigName));
+			UpdateFinTree();
+		}
 	}
 }
 
