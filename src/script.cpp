@@ -74,7 +74,7 @@ static void fcall_open_project( lk::invoke_t &cxt )
 
 static void fcall_create_case( lk::invoke_t &cxt )
 {
-	LK_DOC( "create_case", "Create a new case.", "(string:technology+system option, string:financing, [string:name]):boolean" );
+	LK_DOC( "create_case", "Create a new case.", "(string:technology-system option, string:financing, [string:name]):boolean" );
 	wxString caseName;
 	if (cxt.arg_count() == 3) caseName = cxt.arg(3).as_string();
 

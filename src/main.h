@@ -259,6 +259,8 @@ class ConfigInfo
 public:
 	ConfigInfo();
 	~ConfigInfo();
+	
+	wxString GetConfigName() { return Technology + SystemOpt + "_" + Financing;	}
 
 	wxString Technology;
 	wxString SystemOpt;

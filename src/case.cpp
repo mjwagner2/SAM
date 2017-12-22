@@ -147,6 +147,13 @@ static void fcall_technology_pCase( lk::invoke_t &cxt )
 		cxt.result().assign( cc->GetTechnology() );
 }
 
+static void fcall_systemOption_pCase(lk::invoke_t &cxt)
+{
+	LK_DOC("system option", "Return the current system option name", "(void):string");
+	if (Case *cc = static_cast<Case*>(cxt.user_data()))
+		cxt.result().assign(cc->GetSystemOpt());
+}
+
 static void fcall_financing_pCase( lk::invoke_t &cxt )
 {
 	LK_DOC( "financing", "Return the current financing option name", "(void):string" );
@@ -167,6 +174,7 @@ void CaseEvaluator::SetupEnvironment( lk::env_t &env )
 	EqnEvaluator::SetupEnvironment( env );
 
 	env.register_func( fcall_technology_pCase, m_case );
+	env.register_func(fcall_systemOption_pCase, m_case );
 	env.register_func( fcall_financing_pCase, m_case );
 	env.register_funcs( invoke_ssc_funcs() );
 	env.register_funcs( invoke_equation_funcs() );
@@ -338,15 +346,17 @@ void Case::Write( wxOutputStream &_o )
 	out.Write8( 0x9b );
 	out.Write8( 6 );
 
-	wxString tech, fin;
+	wxString tech, fin, sys;
 	if ( m_config != 0 )
 	{
 		tech = m_config->Technology;
+		sys = m_config->SystemOpt;
 		fin = m_config->Financing;
 	}
 
 	// write data
 	out.WriteString( tech );
+	out.WriteString(sys);
 	out.WriteString( fin );
 	m_vals.Write( _o );
 	m_baseCase.Write( _o );
@@ -477,11 +487,10 @@ bool Case::Read( wxInputStream &_i )
 bool Case::SaveDefaults( bool quiet )
 {
 	if (!m_config) return false;
-	wxString file = SamApp::GetRuntimePath() + "/defaults/"
-		+ m_config->Technology + "_" + m_config->Financing;
+
+	wxString file = SamApp::GetRuntimePath() + "/defaults/" + m_config->GetConfigName();
 	
-	if ( !quiet && wxNO == wxMessageBox("Save defaults for configuration:\n\n" 
-		+ m_config->Technology + " / " + m_config->Financing, 
+	if ( !quiet && wxNO == wxMessageBox("Save defaults for configuration:\n\n" + m_config->GetConfigName(),
 		"Save Defaults", wxYES_NO) )
 		return false;
 
@@ -547,9 +556,8 @@ bool Case::LoadValuesFromExternalSource( wxInputStream &in,
 bool Case::LoadDefaults( wxString *pmsg )
 {
 	if (!m_config) return false;
-
-	wxString file = SamApp::GetRuntimePath() + "/defaults/" 
-		+ m_config->Technology + "_" + m_config->Financing;
+	
+	wxString file = SamApp::GetRuntimePath() + "/defaults/" + m_config->GetConfigName();
 	
 	LoadStatus di;
 	wxString message;
@@ -621,9 +629,9 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wx
 	m_baseCase.Clear();
 
 	m_config = SamApp::Config().Find( tech, fin, sys );
-			
+
 	if ( !m_config )
-		notices.Add("Case error: could not find configuration " + tech + (sys.size() > 0? "-" + sys : wxEmptyString) +", " + fin );
+		notices.Add("Case error: could not find configuration " + m_config->GetConfigName() );
 
 	// erase all input variables that are no longer in the current configuration
 	wxArrayString to_remove;
@@ -637,8 +645,7 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wx
 
 	// load the default values for the current
 	// configuration from the external data file
-	wxString file = SamApp::GetRuntimePath() + "/defaults/" 
-		+ tech + (sys.size() > 0 ? "-" + sys : wxEmptyString) + "_" +fin;
+	wxString file = SamApp::GetRuntimePath() + "/defaults/" + m_config->GetConfigName();
 	VarTable vt_defaults;
 	if ( wxFileExists(file))
 	{
@@ -648,8 +655,7 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wx
 	}
 
 	if (vt_defaults.size() == 0)
-		notices.Add("No external default values located for case when setting configuration: " +
-			tech + (sys.size() > 0 ? "-" + sys : wxEmptyString) + "_" + fin);
+		notices.Add("No external default values located for case when setting configuration: " + m_config->GetConfigName());
 	
 	// set up any remaining new variables with default values
 	for( VarInfoLookup::iterator it = vars.begin(); it != vars.end(); ++it )
@@ -663,7 +669,7 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wx
 		VarValue *val_default = vt_defaults.Get( it->first );
 		if ( val_default == 0 )
 		{
-			notices.Add( "No default value found for '" + it->first + "' in external file (" + m_config->Technology + "/" + fin + "), using internal default" );
+			notices.Add( "No default value found for '" + it->first + "' in external file (" + m_config->GetConfigName() );
 			val_default = &( it->second->DefaultValue );
 		}
 		else if ( val_default->Type() != it->second->DefaultValue.Type()
@@ -743,7 +749,7 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wx
 	}
 	
 	// update UI
-	SendEvent( CaseEvent( CaseEvent::CONFIG_CHANGED, m_config->Technology, fin ) );
+	SendEvent( CaseEvent( CaseEvent::CONFIG_CHANGED, m_config->GetConfigName() ) );
 
 	
 	wxString mm(  wxJoin( notices, wxChar('\n') ) );
