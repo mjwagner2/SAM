@@ -1336,7 +1336,7 @@ void ResultsViewer::CreateAutoGraphs()
 		return;
 	}
 
-	m_autographs.clear();
+	m_autographs.clear(); //look at this-darice
 	ResultsCallbackContext cc(this, "Create autographs callback: " + cfg->Technology);
 
 	if (lk::node_t *cfcb = SamApp::GlobalCallbacks().Lookup("autographs", cfg->Technology + "|" + cfg->Financing))

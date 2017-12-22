@@ -392,7 +392,7 @@ static void fcall_vuc_case_name( lk::invoke_t &cxt )
 		cxt.result().assign( vuc->GetName() );
 }
 
-static void fcall_vuc_config( lk::invoke_t &cxt )
+static void fcall_vuc_config( lk::invoke_t &cxt ) //look at this -darice
 {
 	LK_DOC( "config", "Set or get the current case's configuration", "(string:tech, string:fin, [string:reason]):boolean or (none):table");
 	if ( VersionUpgrade *vuc = static_cast<VersionUpgrade*>(cxt.user_data()) )

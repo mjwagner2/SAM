@@ -260,7 +260,7 @@ public:
 	ConfigInfo();
 	~ConfigInfo();
 	
-	wxString GetConfigName() { return Technology + SystemOpt + "_" + Financing;	}
+	wxString GetConfigName() { return Technology + (SystemOpt.size() > 0? "-" + SystemOpt : wxEmptyString) + "_" + Financing;	}
 
 	wxString Technology;
 	wxString SystemOpt;

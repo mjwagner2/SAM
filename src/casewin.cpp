@@ -1080,7 +1080,7 @@ void CaseWindow::UpdateConfiguration()
 	ConfigInfo *cfg = m_case->GetConfiguration();
 	if ( !cfg ) return;
 
-	wxString Ts( SamApp::Config().Options( cfg->Technology ).ShortName );
+	wxString Ts( SamApp::Config().Options( cfg->Technology + (cfg->SystemOpt.size() > 0? "-" + cfg->SystemOpt : wxEmptyString) ).ShortName );
 	if ( Ts.IsEmpty() ) Ts = cfg->Technology;
 	wxString Fs( SamApp::Config().Options( cfg->Financing ).ShortName );
 	if ( Fs.IsEmpty() ) Fs = cfg->Financing;
