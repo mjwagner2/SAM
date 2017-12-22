@@ -297,13 +297,14 @@ Object *Case::Duplicate()
 	return c;
 }
 
+// need to update this -darice
 bool Case::Copy( Object *obj )
 {
 	if ( Case *rhs = dynamic_cast<Case*>( obj ) )
 	{
 		m_config = 0;
 		if ( rhs->m_config )
-			SetConfiguration( rhs->m_config->Technology, rhs->m_config->SystemOption, rhs->m_config->Financing );
+			SetConfiguration( rhs->m_config->Technology, rhs->m_config->SystemOpt, rhs->m_config->Financing );
 
 		m_vals.Copy( rhs->m_vals );
 		m_baseCase.Copy( rhs->m_baseCase );
@@ -619,7 +620,7 @@ bool Case::SetConfiguration( const wxString &tech, const wxString &sys, const wx
 	// erase results
 	m_baseCase.Clear();
 
-	m_config = SamApp::Config().Find( tech, sys, fin );
+	m_config = SamApp::Config().Find( tech, fin, sys );
 			
 	if ( !m_config )
 		notices.Add("Case error: could not find configuration " + tech + ", " + fin );
@@ -799,7 +800,7 @@ void Case::GetConfiguration( wxString *tech, wxString *sys, wxString *fin )
 	if ( m_config )
 	{
 		if ( tech ) *tech = m_config->Technology;
-		if (sys) *sys = m_config->SystemOption;
+		if (sys) *sys = m_config->SystemOpt;
 		if ( fin ) *fin = m_config->Financing;
 	}
 }
@@ -823,7 +824,7 @@ wxString Case::GetTechnology() const
 
 wxString Case::GetSystemOpt() const
 {
-	return m_config ? m_config->SystemOption : wxEmptyString;
+	return m_config ? m_config->SystemOpt : wxEmptyString;
 }
 
 wxString Case::GetFinancing() const

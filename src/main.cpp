@@ -1566,6 +1566,7 @@ InputPageData *InputPageDatabase::Lookup( const wxString &name )
 
 ConfigInfo::ConfigInfo()
 {
+	SystemOpt = wxEmptyString;
 }
 
 ConfigInfo::~ConfigInfo()
@@ -1586,39 +1587,64 @@ ConfigDatabase::~ConfigDatabase()
 
 void ConfigDatabase::Clear()
 {
-	m_techList.clear();
 	for( size_t i=0;i<m_configList.size();i++ )
 		delete m_configList[i];
 	m_configList.clear();
 	m_curConfig = 0;
 }
 
-void ConfigDatabase::Add( const wxString &tech, const wxArrayString &sys, const wxArrayString &fin )
+void ConfigDatabase::Add( const wxString &tech, const wxArrayString &fin )
 {
-	TechInfo x;
-	x.Name = tech;
-	x.SystemOptions = sys;
-	x.FinancingOptions = fin;
-	m_techList.push_back( x );
+	TechInfo techToAdd;
+	techToAdd.name = tech;
+	techToAdd.financingOptions = fin;
+	techToAdd.systemOptions.Clear();
+	m_techList.push_back(techToAdd);
 
-	for (size_t j = 0; j < sys.size(); j++){
-		for (size_t i = 0; i < fin.size(); i++)
+	for (size_t i = 0; i < fin.size(); i++)
+	{
+		if (!Find(tech, fin[i]))
 		{
-			if (!Find(tech, sys[j], fin[i]))
-			{
 				ConfigInfo *ci = new ConfigInfo;
 				ci->Technology = tech;
-				ci->SystemOption = sys[j];
 				ci->Financing = fin[i];
 				m_configList.push_back(ci);
-			}
 		}
 	}
 }
 
-void ConfigDatabase::SetConfig(const wxString &t, const wxString &s, const wxString &f)
+void ConfigDatabase::AddTree(const wxString &tech, const wxArrayString &fin, const wxArrayString &sys) 
 {
-	m_curConfig = Find( t, s, f );
+	TechInfo techToAdd;
+	techToAdd.name = tech;
+	techToAdd.financingOptions = fin;
+	techToAdd.systemOptions = sys;
+	m_techList.push_back(techToAdd);
+
+	for (size_t i = 0; i < fin.size(); i++)
+	{
+		ConfigInfo* parentTech = new ConfigInfo;
+		parentTech->Technology = tech;
+		parentTech->Financing = fin[i];
+		m_configList.push_back(parentTech);
+		for (size_t j = 0; j < sys.size(); j++) {
+			if (!Find(tech, fin[i], sys[j]))
+			{
+				ConfigInfo *subSystem = new ConfigInfo;
+				subSystem->Technology = tech;
+				subSystem->Financing = fin[i];
+				subSystem->SystemOpt = sys[j];
+				//parentTech->SystemOptions.push_back(*subSystem); delete later - darice
+				m_configList.push_back(subSystem);
+			}
+		}
+	}
+	
+}
+
+void ConfigDatabase::SetConfig(const wxString &t, const wxString &f, const wxString &s)
+{
+	m_curConfig = Find( t, f, s );
 }
 
 void ConfigDatabase::SetModules( const wxArrayString &list )
@@ -1736,16 +1762,17 @@ void ConfigDatabase::RebuildCaches()
 wxArrayString ConfigDatabase::GetTechnologies()
 {
 	wxArrayString list;
-	for( size_t i=0;i<m_techList.size();i++ )
-		list.Add( m_techList[i].Name );
+	for (size_t i = 0; i < m_techList.size(); i++) {
+		list.Add(m_techList[i].name );
+	}
 	return list;
 }
 
 wxArrayString ConfigDatabase::GetSystemOptionsForTech(const wxString &tech)
 {
 	for (size_t i = 0; i < m_techList.size(); i++)
-		if (m_techList[i].Name == tech)
-			return m_techList[i].SystemOptions;
+		if (m_techList[i].name == tech)
+			return m_techList[i].systemOptions;
 	
 	return wxArrayString();
 }
@@ -1753,28 +1780,26 @@ wxArrayString ConfigDatabase::GetSystemOptionsForTech(const wxString &tech)
 wxArrayString ConfigDatabase::GetFinancingForTech(const wxString &tech)
 {
 	for( size_t i=0;i<m_techList.size();i++ )
-		if ( m_techList[i].Name == tech )
-			return m_techList[i].FinancingOptions;
+		if (m_techList[i].name == tech )
+			return m_techList[i].financingOptions;
 
 	return wxArrayString();
-
 }
 		
-ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &s, const wxString &f )
+ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &f , const wxString &s)
 {
-	for( size_t i=0;i<m_configList.size();i++ )
-		if ( m_configList[i]->Technology == t
-			&& m_configList[i]->SystemOption == s
-			&& m_configList[i]->Financing == f )
-			return m_configList[i];
-
-	return 0;
+	for (size_t i = 0; i < m_configList.size(); i++) {
+		if (m_configList[i]->Technology == t && m_configList[i]->Financing == f && m_configList[i]->SystemOpt == s) {
+			m_configList[i];
+		}
+	}
+	return nullptr;
 }
 
-ConfigOptions &ConfigDatabase::Options( const wxString &name )
+ConfigOptions &ConfigDatabase::Options( const wxString &configName )
 {
 static unordered_map<wxString,ConfigOptions, wxStringHash, wxStringEqual> m_opts;
-	return m_opts[name];
+	return m_opts[configName];
 }
 
 SamApp::SamApp()
@@ -2678,16 +2703,17 @@ bool ConfigDialog::ResetToDefaults()
 	return m_pChkUseDefaults->GetValue();
 }
 
+// need to update this -darice
 void ConfigDialog::SetConfiguration(const wxString &t, const wxString &f)
 {
-	int sel = m_tnames.Index( t );
+	int sel = m_IndexOfSelections.Index( t );
 	m_pTech->SetSelection( sel );
 	m_pTech->Invalidate();
 
 	if ( sel >= 0 )
 		UpdateFinTree();
 	
-	m_pFin->SetSelection( m_fnames.Index(f) );
+	m_pFin->SetSelection( m_finNames.Index(f) );
 	m_pFin->Invalidate();
 }
 
@@ -2700,8 +2726,8 @@ void ConfigDialog::GetConfiguration(wxString &t, wxString &f)
 {
 	int tsel = m_pTech->GetSelection();
 	int fsel = m_pFin->GetSelection();
-	t = tsel >= 0 && tsel < (int)m_tnames.size() ? m_tnames[tsel] : wxEmptyString;
-	f = fsel >= 0 && fsel < (int)m_fnames.size() ? m_fnames[fsel] : wxEmptyString;
+	t = tsel >= 0 && tsel < (int)m_IndexOfSelections.GetCount() ? m_IndexOfSelections[tsel] : wxEmptyString;
+	f = fsel >= 0 && fsel < (int)m_finNames.GetCount() ? m_finNames[fsel] : wxEmptyString;
 }
 
 
@@ -2713,15 +2739,17 @@ void ConfigDialog::OnDoubleClick(wxCommandEvent &)
 void ConfigDialog::PopulateTech(const wxString& techToBranch)
 {
 	m_pTech->Clear();
+	m_IndexOfSelections.clear();
 
-	m_tnames = SamApp::Config().GetTechnologies();
+	m_techNames = SamApp::Config().GetTechnologies();
 
-	for( size_t i=0;i<m_tnames.Count();i++)
+	for( size_t i=0;i<m_techNames.Count();i++)
 	{
-		wxString L( SamApp::Config().Options( m_tnames[i] ).LongName );
-		if ( L.IsEmpty() ) L = m_tnames[i];
+		wxString L( SamApp::Config().Options( m_techNames[i] ).LongName);
+		if ( L.IsEmpty() ) L = m_techNames[i];
 		m_pTech->Add( L );
-		if (m_tnames[i] == techToBranch)
+		m_IndexOfSelections.Add(m_techNames[i]);
+		if (m_techNames[i] == techToBranch)
 		{
 			BranchTechTree(techToBranch);
 		}
@@ -2730,28 +2758,29 @@ void ConfigDialog::PopulateTech(const wxString& techToBranch)
 	m_pTech->Invalidate();
 }
 
-void ConfigDialog::BranchTechTree(const wxString& tech){
-	wxArrayString sysOpts = SamApp::Config().GetSystemOptionsForTech(tech);
+void ConfigDialog::BranchTechTree(const wxString& techToBranch){
+	wxArrayString sysOpts = SamApp::Config().GetSystemOptionsForTech(techToBranch);
 	wxString spacing = wxString("     ");
 	for (size_t i = 1; i < sysOpts.size(); i++){
-		wxString nameWithSysOptAppended = tech + wxString(" ") + sysOpts[i];
+		wxString nameWithSysOptAppended = techToBranch + wxString(", ") + sysOpts[i];
 		wxString L(SamApp::Config().Options(nameWithSysOptAppended).LongName);
 		if (L.IsEmpty()) L = sysOpts[i];
 		m_pTech->Add(spacing + L);
+		m_IndexOfSelections.Add(nameWithSysOptAppended);
 	}
 }
 
 void ConfigDialog::UpdateFinTree()
 {
 	m_pFin->Clear();
-	wxString tsel = m_pTech->GetSelectionString();
+	wxString selectedConfig = m_IndexOfSelections[m_pTech->GetSelection()];
+	wxArrayString techName = wxSplit(selectedConfig, ', ');
 
-
-	m_fnames = SamApp::Config().GetFinancingForTech( !tsel.empty() ? tsel : wxEmptyString );
-	for( size_t i=0;i<m_fnames.Count();i++)
+	m_finNames = SamApp::Config().GetFinancingForTech( techName[0] );
+	for( size_t i=0;i<m_finNames.Count();i++)
 	{
-		wxString L( SamApp::Config().Options( m_fnames[i] ).LongName );
-		if ( L.IsEmpty() ) L = m_fnames[i];
+		wxString L( SamApp::Config().Options( m_finNames[i] ).LongName );
+		if ( L.IsEmpty() ) L = m_finNames[i];
 		m_pFin->Add( L );
 	}
 
@@ -2760,20 +2789,11 @@ void ConfigDialog::UpdateFinTree()
 
 void ConfigDialog::OnTechTree( wxCommandEvent & )
 {
-	wxString selectionName = m_pTech->GetSelectionString();
-
-	bool isBranchedSelection = true;
-	wxArrayString allTechs = SamApp::Config().GetTechnologies();
-	for (size_t i = 0; i < allTechs.size(); i++){
-		if (selectionName == allTechs[i]) isBranchedSelection = false;
-	}
-
-	if (isBranchedSelection)
-		UpdateFinTree();
-	else if (SamApp::Config().GetSystemOptionsForTech(selectionName).size() > 1)
-		PopulateTech(selectionName);
+	wxString selectionConfigName = m_IndexOfSelections[m_pTech->GetSelection()];
+	
+	if (SamApp::Config().GetSystemOptionsForTech(selectionConfigName).size() > 1)
+		PopulateTech(selectionConfigName);
 	else{
-		PopulateTech();
 		UpdateFinTree(); 
 	}
 }

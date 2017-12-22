@@ -210,7 +210,6 @@ wxString InputPageList::GetStringSelection()
 		return wxEmptyString;
 }
 
-
 #define MYFONT wxMetroTheme::Font( wxMT_LIGHT, 13 )
 
 void InputPageList::Invalidate()

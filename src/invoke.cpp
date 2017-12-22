@@ -275,52 +275,49 @@ static void fcall_addconfig( lk::invoke_t &cxt )
 	for( size_t i=0;i<fins.length();i++ )
 		finlist.Add( fins.index(i)->as_string() );
 	
-	SamApp::Config().Add(cxt.arg(0).as_string(), wxArrayString(), finlist);
+	SamApp::Config().Add(cxt.arg(0).as_string(), finlist);
 
 	wxLogStatus( "Configuration: " + cxt.arg(0).as_string() + "  -> [ " + wxJoin(finlist,';') + " ]" );
 }
 static void fcall_addconfigtree(lk::invoke_t &cxt)
 {
-	LK_DOC("addconfigtree", "Add a technology+financing option with subsystem options", "( string:Tech, array:subsystem, string:Financing):none");
+	LK_DOC("addconfigtree", "Add a technology+financing option with subsystem options", "( string:Tech, array:System, string:Financing):none");
 
 	wxArrayString syslist;
-	lk::vardata_t &sysOpts = cxt.arg(0);
+	lk::vardata_t &sysOpts = cxt.arg(1);
 	for (size_t i = 0; i < sysOpts.length(); i++){
 		syslist.Add(sysOpts.index(i)->as_string());
 	}
 
 	wxArrayString finlist;
-	lk::vardata_t &fins = cxt.arg(1);
+	lk::vardata_t &fins = cxt.arg(2);
 	for (size_t i = 0; i<fins.length(); i++)
 		finlist.Add(fins.index(i)->as_string());
 
-	SamApp::Config().Add(sysOpts.index(0)->as_string(), syslist, finlist);
+	SamApp::Config().AddTree(sysOpts.index(0)->as_string(), finlist, syslist);
 
 	wxLogStatus("Configuration: " + cxt.arg(0).as_string() + "  -> [ " + wxJoin(finlist, ';') + " ]");
 }
 
-static void fcall_setconfig( lk::invoke_t &cxt )
+static void fcall_setconfig( lk::invoke_t &cxt ) // not sure about deref - darice
 {
-	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(array:Tech, System, string:Financing):none");
-	lk::vardata_t &sysOpts = cxt.arg(0);
-	SamApp::Config().SetConfig(sysOpts.index(0)->as_string(), (sysOpts.length() > 1) ? sysOpts.index(1)->as_string() : sysOpts.index(0)->as_string() , cxt.arg(1).as_string());
+	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(string: Tech+System, string: Financing):none");
+	wxString &configName = cxt.arg(0).as_string();
+	wxString &financing = cxt.arg(1).as_string();
+	wxArrayString techSystem = wxSplit(configName, ', ');
+	SamApp::Config().SetConfig(techSystem[0], financing, techSystem.GetCount() > 0? techSystem[1] : wxEmptyString);
 }
 
 static void fcall_configopt( lk::invoke_t &cxt )
 {
 	LK_DOC("configopt", "Sets configuration options, such as long_name, short_name, description, etc.", "(string:config name, table:options):none");
+	wxString configName = cxt.arg(0).as_string();
 	lk::vardata_t &tab = cxt.arg(1).deref();
 	wxString longName = tab.lookup("long_name")->as_string();
 
-	ConfigOptions &opt = SamApp::Config().Options(longName);
-	wxString configName = cxt.arg(0).as_string();
-
-	wxArrayString TechSystemOpt = wxSplit(configName, ',');
-	if (TechSystemOpt.size() > 1){
-		opt.SubSystemOf = TechSystemOpt[0];
-	}
-	opt.LongName = longName;
+	ConfigOptions &opt = SamApp::Config().Options(configName);
 	opt.ConfigName = configName;
+	opt.LongName = longName;
 	if( lk::vardata_t *vv = tab.lookup( "short_name") ) 
 		opt.ShortName = vv->as_string();
 	if( lk::vardata_t *vv = tab.lookup( "description" ) )

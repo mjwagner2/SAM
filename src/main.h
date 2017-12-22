@@ -252,7 +252,9 @@ struct InputPageGroup
 	bool ExclusiveTabs;
 };
 
-	
+/**
+ * ConfigInfo is unique for each technology/financing/subsystem option.
+ */
 class ConfigInfo
 { 
 public:
@@ -260,7 +262,7 @@ public:
 	~ConfigInfo();
 
 	wxString Technology;
-	wxString SystemOption;
+	wxString SystemOpt;
 	wxString Financing;
 	wxArrayString Simulations;
 	std::vector<InputPageGroup*> InputPageGroups;
@@ -277,13 +279,18 @@ public:
 	VarDatabase AutoVariables;
 };
 
+/**
+ * Meta-data for each Tech+SystemOption group or Financing type. ConfigName is ("tech name") if no 
+ * system option, ("tech name", "system name") for a group, and ("financing name") for a financing 
+ * configuration. LongName is displayed in GUI. 
+ */
+
 struct ConfigOptions
 {
 	wxString ConfigName;
 	wxString LongName;
 	wxString ShortName;
 	wxString Description;
-	wxString SubSystemOf = wxEmptyString;
 };
 
 class ConfigDatabase
@@ -293,8 +300,9 @@ public:
 	~ConfigDatabase();
 
 	void Clear();
-	void Add(const wxString &tech, const wxArrayString &sys, const wxArrayString &fin);
-	void SetConfig(const wxString &t, const wxString &s, const wxString &f);
+	void Add(const wxString &tech, const wxArrayString &fin);
+	void AddTree(const wxString &tech, const wxArrayString &fin, const wxArrayString &sys);
+	void SetConfig(const wxString &t, const wxString &f, const wxString &s);
 	ConfigInfo *CurrentConfig() { return m_curConfig; }
 	
 	void SetModules( const wxArrayString &list );
@@ -318,14 +326,13 @@ public:
 	void CachePagesInConfiguration( std::vector<PageInfo> &Pages, ConfigInfo *ci );
 	void RebuildCaches();
 
-	ConfigInfo *Find(const wxString &t, const wxString &s, const wxString &f);
+	ConfigInfo *Find(const wxString &t, const wxString &f, const wxString &s = wxEmptyString);
 
-	static ConfigOptions &Options( const wxString &name );
-	//bool IsTechSubSystem( const wxString )
+	static ConfigOptions &Options( const wxString &configName );
 
 
 private:
-	struct TechInfo { wxString Name; wxArrayString SystemOptions; wxArrayString FinancingOptions; };
+	struct TechInfo { wxString name; wxArrayString financingOptions; wxArrayString systemOptions; };
 	std::vector<TechInfo> m_techList;
 	std::vector<ConfigInfo*> m_configList;
 	ConfigInfo *m_curConfig;
@@ -399,15 +406,17 @@ public:
 
 private:
 	void PopulateTech(const wxString& techToBranch = wxEmptyString);
-	bool ValidateSelections();
+	// bool ValidateSelections(); unused -darice
 	void OnTechTree(wxCommandEvent &evt);
 	void BranchTechTree(const wxString &tech);
 	void OnDoubleClick(wxCommandEvent &evt);
 
 	void UpdateFinTree();
 
+	/// ConfigNames of items in ListBox in order
+	wxArrayString m_IndexOfSelections;
 	wxMetroListBox *m_pTech, *m_pFin;
-	wxArrayString m_tnames, m_fnames;
+	wxArrayString m_techNames, m_finNames;
 
 	void OnOk( wxCommandEvent & );
 	void OnCancel( wxCommandEvent & );
