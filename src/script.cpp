@@ -315,7 +315,7 @@ static void fcall_simulate( lk::invoke_t &cxt )
 
 static void fcall_configuration( lk::invoke_t &cxt )
 {
-	LK_DOC( "configuration", "Change the current active case's technology/market configuration, or return the current configuration.", "(string:technology, string:financing):boolean or (none):array");
+	LK_DOC( "configuration", "Change the current active case's technology/market configuration/system option, or return the current configuration.", "(string:technology, string:financing, [string:system option]):boolean or (none):array");
 
 	Case *cc = CurrentCase();
 	if ( !cc )
@@ -324,24 +324,32 @@ static void fcall_configuration( lk::invoke_t &cxt )
 		return;
 	}
 
-	if ( cxt.arg_count() == 2 )
+	if ( cxt.arg_count() > 1 )
 	{
 		wxString tech = cxt.arg(0).as_string();
 		wxString fin = cxt.arg(1).as_string();
+		wxString sys = wxEmptyString;
+		if (cxt.arg_count() > 2) sys = cxt.arg(2).as_string();
 
 		cxt.result().assign( 0.0 );
 		wxArrayString techlist = SamApp::Config().GetTechnologies();
 		if ( techlist.Index( tech ) == wxNOT_FOUND ) return;
+		if (sys != wxEmptyString) {
+			wxArrayString sysList = SamApp::Config().GetSystemOptionsForTech(tech);
+			if ( sysList.Index( tech ) == wxNOT_FOUND) return;
+		}
 		wxArrayString finlist = SamApp::Config().GetFinancingForTech( tech );
 		if ( finlist.Index( fin ) == wxNOT_FOUND ) return;
 
-		cxt.result().assign( cc->SetConfiguration( tech, tech, fin, true, 0 ) ? 1.0 : 0.0 ); // invoke silently - do not show error messages
+		cxt.result().assign( cc->SetConfiguration( tech + sys, fin, true, 0 ) ? 1.0 : 0.0 ); // invoke silently - do not show error messages
 	}
 	else
 	{
 		cxt.result().empty_vector();
-		cxt.result().vec_append( cc->GetTechnology() );
+		wxArrayString techSysArray = wxSplit(cc->GetTechAndSystem(), '-');
+		cxt.result().vec_append( techSysArray[0] );
 		cxt.result().vec_append( cc->GetFinancing() );
+		if (techSysArray.GetCount() > 1) cxt.result().vec_append(techSysArray[1]);
 	}
 }
 
@@ -379,6 +387,15 @@ static void fcall_list_technologies( lk::invoke_t &cxt )
 	cxt.result().empty_vector();
 	for( size_t i=0;i<list.size();i++ )
 		cxt.result().vec_append( list[i] );
+}
+
+static void fcall_list_system_options(lk::invoke_t &cxt)
+{
+	LK_DOC( "list_system_options", "List available system options for a particular technology.", "(string:technology):array" );
+	wxArrayString list = SamApp::Config().GetSystemOptionsForTech( cxt.arg(0).as_string() );
+	cxt.result().empty_vector();
+	for (size_t i = 0; i < list.size(); i++)
+		cxt.result().vec_append(list[i]);
 }
 
 static void fcall_list_financing( lk::invoke_t &cxt )
@@ -604,6 +621,7 @@ lk::fcall_t *sam_functions() {
 		fcall_load_defaults,
 		fcall_overwrite_defaults,
 		fcall_list_technologies,
+		fcall_list_system_options,
 		fcall_list_financing,
 		fcall_group_read,
 		fcall_group_write,
@@ -662,9 +680,9 @@ void SamScriptWindow::OnVariables( wxCommandEvent & )
 	VarSelectDialog dlg( this, "Browse Variables" );
 	if ( Case *c = SamApp::Window()->GetCurrentCase() )
 	{
-		wxString tech, fin;
-		c->GetConfiguration(&tech, &tech, &fin);
-		dlg.SetConfiguration( tech, fin );
+		wxString techAndSysOpt, fin;
+		c->GetConfiguration(&techAndSysOpt, &fin);
+		dlg.SetConfiguration( techAndSysOpt, fin );
 	}
 
 	dlg.CenterOnParent();

@@ -107,7 +107,7 @@ public:
 
 	wxString GetUniqueCaseName( wxString base = wxEmptyString );
 	bool CreateNewCase( const wxString &caseName = wxEmptyString, 
-		wxString configName = wxEmptyString, 
+		wxString techAndSys = wxEmptyString,
 		wxString finName = wxEmptyString );
 
 	CaseWindow *GetCaseWindow( Case *c );
@@ -329,7 +329,7 @@ public:
 
 	ConfigInfo *Find(const wxString &t, const wxString &f, const wxString &s = wxEmptyString);
 
-	static ConfigOptions &Options( const wxString &configName );
+	static ConfigOptions &Options( const wxString &techAndSysOpt);
 
 
 private:
@@ -391,13 +391,17 @@ class wxCheckBox;
 class wxMetroButton;
 class wxMetroListBox;
 
+/**
+ * Allows user to choose configuration. ConfigDialog displays Technology and Financing configurations,
+ * with System Option branches; active when creating a new project or changing the model.
+ */
 class ConfigDialog : public wxDialog
 {
 public:
 	ConfigDialog( wxWindow *parent, const wxSize &size = wxScaleSize(700,570) );
 
-	void SetConfiguration(const wxString &c, const wxString &f);
-	void GetConfiguration(wxString &t, wxString &f);
+	void SetConfiguration(const wxString &techAndSys, const wxString &fin);
+	void GetConfiguration(wxString &techAndSys, wxString &fin);
 
 	void ShowResetCheckbox(bool b);
 	bool ResetToDefaults();
@@ -428,7 +432,7 @@ private:
 	DECLARE_EVENT_TABLE();
 };
 
-bool ShowConfigurationDialog( wxWindow *parent, wxString *tech, wxString *fin, bool *reset );
+bool ShowConfigurationDialog( wxWindow *parent, wxString *techAndSys, wxString *fin, bool *reset );
 
 
 

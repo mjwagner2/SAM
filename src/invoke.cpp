@@ -454,9 +454,9 @@ static void fcall_setting( lk::invoke_t &cxt )
 
 static void fcall_technology( lk::invoke_t &cxt )
 {
-	LK_DOC( "technology", "Return the current technology option name", "(void):string" );
+	LK_DOC( "technology", "Return the current technology + system option name", "(void):string" );
 	CaseCallbackContext &cc = *static_cast<CaseCallbackContext*>( cxt.user_data() ); 
-	cxt.result().assign( cc.GetCase().GetTechnology() );
+	cxt.result().assign( cc.GetCase().GetTechAndSystem() );
 }
 
 static void fcall_financing( lk::invoke_t &cxt )
@@ -940,8 +940,9 @@ static void fcall_macrocall( lk::invoke_t &cxt )
 	Case *c = SamApp::Window()->GetCurrentCase();
 	if ( !c ) return;
 
-	wxString tech, fin;
-	c->GetConfiguration( &tech, &tech, &fin );
+	wxString techAndSysOpt, fin;
+	c->GetConfiguration( &techAndSysOpt, &fin );
+	wxString tech = wxSplit(techAndSysOpt, '-')[0];
 	wxArrayString macros = MacroEngine::ListMacrosForConfiguration( tech, fin );
 	
 	wxString name = cxt.arg(0).as_string();

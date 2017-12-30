@@ -141,15 +141,14 @@ public:
 	bool LoadDefaults( wxString *error_msg = 0 );
 	bool SaveDefaults( bool quiet = false );
 
-	bool SetConfiguration( const wxString &tech, const wxString &fin, const wxString &sys = wxEmptyString, bool silent=false, wxString *message = 0 );
-	void GetConfiguration( wxString *tech, wxString *sys, wxString *fin );	
+	bool SetConfiguration( const wxString &techAndSys, const wxString &fin, bool silent=false, wxString *message = 0 );
+	void GetConfiguration( wxString *techAndSys, wxString *fin );
 	ConfigInfo *GetConfiguration() { return m_config; }
 	VarTable &Values() { return m_vals; }
 	VarTable &OldValues() { return m_oldVals; }
 	VarInfoLookup &Variables();
 	EqnFastLookup &Equations();
-	wxString GetTechnology() const;
-	wxString GetSystemOpt() const;
+	wxString GetTechAndSystem() const;
 	wxString GetFinancing() const;
 	lk::env_t &CallbackEnvironment();
 	lk::node_t *QueryCallback( const wxString &method, const wxString &object );

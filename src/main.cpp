@@ -520,21 +520,21 @@ wxString MainWindow::GetUniqueCaseName( wxString base )
 	return base + suffix;
 }
 
-bool MainWindow::CreateNewCase( const wxString &_name, wxString config, wxString fin )
+bool MainWindow::CreateNewCase( const wxString &_name, wxString techAndSys, wxString fin )
 {
-	if (config.IsEmpty() || fin.IsEmpty() )
+	if (techAndSys.IsEmpty() || fin.IsEmpty() )
 	{
 		bool reset = false;
-		if (!ShowConfigurationDialog( this, &config, &fin, &reset ))
+		if (!ShowConfigurationDialog( this, &techAndSys, &fin, &reset ))
 			return false;
 	}
 	
-	wxArrayString TechSystem = wxSplit(config, '-');
-	wxString tech = TechSystem[0];
-	wxString sys = TechSystem.GetCount() > 1 ? TechSystem[1] : wxEmptyString;
+	wxArrayString techSystem = wxSplit(techAndSys, '-');
+	wxString tech = techSystem[0];
+	wxString sys = techSystem.GetCount() > 1 ? techSystem[1] : wxEmptyString;
 	if ( 0 == SamApp::Config().Find( tech, fin, sys ) )
 	{
-		wxMessageBox("Internal error: could not locate configuration information for " + config + "/" + fin );
+		wxMessageBox("Internal error: could not locate configuration information for " + techAndSys + "/" + fin );
 		return false;
 	}
 
@@ -542,7 +542,7 @@ bool MainWindow::CreateNewCase( const wxString &_name, wxString config, wxString
 		m_topBook->SetSelection( 1 ); // switch to cases view if currently in welcome window
 
 	Case *c = m_project.AddCase( GetUniqueCaseName(_name ) );
-	c->SetConfiguration( tech, fin, sys );
+	c->SetConfiguration(techAndSys, fin );
 	c->LoadDefaults();
 	CreateCaseWindow( c );
 	return true;
@@ -1151,12 +1151,12 @@ void MainWindow::OnCaseMenu( wxCommandEvent &evt )
 	{
 	case ID_CASE_CONFIG:
 		{
-			wxString tech, fin;
-			c->GetConfiguration( &tech, &tech, &fin );
-			wxString t2(tech), f2(fin);
-			if( ShowConfigurationDialog( this, &t2, &f2, NULL ) 
-				&& (t2 != tech || f2 != fin) )
-				c->SetConfiguration( t2, t2, f2 ); // this will cause case window to update accordingly
+			wxString techAndSys, fin;
+			c->GetConfiguration( &techAndSys, &fin );
+			wxString ts2(techAndSys), f2(fin);
+			if( ShowConfigurationDialog( this, &ts2, &f2, NULL ) 
+				&& (ts2 != techAndSys || f2 != fin ) )
+				c->SetConfiguration( ts2, f2 ); // this will cause case window to update accordingly
 		}
 		break;
 	case ID_CASE_RENAME:
@@ -1799,10 +1799,10 @@ ConfigInfo *ConfigDatabase::Find( const wxString &t, const wxString &f , const w
 	return nullptr;
 }
 
-ConfigOptions &ConfigDatabase::Options( const wxString &configName )
+ConfigOptions &ConfigDatabase::Options( const wxString &techAndSysOpt )
 {
 static unordered_map<wxString,ConfigOptions, wxStringHash, wxStringEqual> m_opts;
-	return m_opts[configName];
+	return m_opts[techAndSysOpt];
 }
 
 SamApp::SamApp()
@@ -2706,17 +2706,20 @@ bool ConfigDialog::ResetToDefaults()
 	return m_pChkUseDefaults->GetValue();
 }
 
-// need to update this -darice
-void ConfigDialog::SetConfiguration(const wxString &c, const wxString &f)
+void ConfigDialog::SetConfiguration(const wxString &techAndSys, const wxString &fin)
 {
-	int sel = m_IndexOfSelections.Index( c );
+	wxArrayString techAndSysArray = wxSplit(techAndSys, '-');
+	if (techAndSysArray.GetCount() > 1) {
+		PopulateTech(techAndSysArray[0]);
+	}
+	int sel = m_IndexOfSelections.Index(techAndSys);
 	m_pTech->SetSelection( sel );
 	m_pTech->Invalidate();
 
 	if ( sel >= 0 )
 		UpdateFinTree();
 	
-	m_pFin->SetSelection( m_finNames.Index(f) );
+	m_pFin->SetSelection( m_finNames.Index(fin) );
 	m_pFin->Invalidate();
 }
 
@@ -2725,12 +2728,12 @@ void ConfigDialog::ShowResetCheckbox(bool b)
 	m_pChkUseDefaults->Show(b);
 }
 
-void ConfigDialog::GetConfiguration(wxString &t, wxString &f)
+void ConfigDialog::GetConfiguration(wxString &techAndSys, wxString &fin)
 {
 	int tsel = m_pTech->GetSelection();
 	int fsel = m_pFin->GetSelection();
-	t = tsel >= 0 && tsel < (int)m_IndexOfSelections.GetCount() ? m_IndexOfSelections[tsel] : wxEmptyString;
-	f = fsel >= 0 && fsel < (int)m_finNames.GetCount() ? m_finNames[fsel] : wxEmptyString;
+	techAndSys = tsel >= 0 && tsel < (int)m_IndexOfSelections.GetCount() ? m_IndexOfSelections[tsel] : wxEmptyString;
+	fin = fsel >= 0 && fsel < (int)m_finNames.GetCount() ? m_finNames[fsel] : wxEmptyString;
 }
 
 
@@ -2861,7 +2864,7 @@ void ConfigDialog::OnCharHook( wxKeyEvent &evt )
 	}
 }
 
-bool ShowConfigurationDialog( wxWindow *parent, wxString *tech, wxString *fin, bool *reset )
+bool ShowConfigurationDialog( wxWindow *parent, wxString *techAndSys, wxString *fin, bool *reset )
 {
 	if ( parent == 0 ) return false;
 
@@ -2876,15 +2879,15 @@ bool ShowConfigurationDialog( wxWindow *parent, wxString *tech, wxString *fin, b
 	if ( reset != 0 ) dlg->ShowResetCheckbox( *reset );
 	else dlg->ShowResetCheckbox( false );
 
-	if ( !tech->IsEmpty() && !fin->IsEmpty() )
-		dlg->SetConfiguration( *tech, *fin );
+	if ( !techAndSys->IsEmpty() && !fin->IsEmpty() )
+		dlg->SetConfiguration( *techAndSys, *fin );
     	
 	dlg->Raise();
 
 	bool result = false;
 	if ( dlg->ShowModal() == wxID_OK )
 	{
-		dlg->GetConfiguration( *tech, *fin );
+		dlg->GetConfiguration( *techAndSys, *fin );
 
 		if ( reset != 0 ) *reset = dlg->ResetToDefaults();
 

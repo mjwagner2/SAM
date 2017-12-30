@@ -168,7 +168,7 @@ void PopulateSelectionList( wxDVSelectionListCtrl *sel, wxArrayString *names, Si
 		}
 
 		// I know we do not want to start this again but wanted lifetime subhourly output
-		if (sim->GetCase()->GetTechnology() == "Geothermal")
+		if (sim->GetCase()->GetTechAndSystem() == "Geothermal")
 			steps_per_hour = -1; // don't report geothermal system output as minute data depending on analysis period
 
 		wxString group;

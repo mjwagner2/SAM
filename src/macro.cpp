@@ -1064,10 +1064,10 @@ wxArrayString MacroEngine::ListMacrosForConfiguration( const wxString &tech, con
 
 void MacroPanel::ConfigurationChanged()
 {
-	wxString tech, sys, fin;
-	m_case->GetConfiguration( &tech, &sys, &fin );
+	wxString techAndSysOpt, fin;
+	m_case->GetConfiguration( &techAndSysOpt, &fin );
 
-	m_macroList = MacroEngine::ListMacrosForConfiguration( tech, fin );
+	m_macroList = MacroEngine::ListMacrosForConfiguration( wxSplit(techAndSysOpt, '-')[0], fin );
 		
 	m_listbox->Clear();
 	for( size_t i=0;i<m_macroList.size();i++ )

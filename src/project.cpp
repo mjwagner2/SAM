@@ -394,27 +394,27 @@ static void fcall_vuc_case_name( lk::invoke_t &cxt )
 
 static void fcall_vuc_config( lk::invoke_t &cxt ) //look at this -darice
 {
-	LK_DOC( "config", "Set or get the current case's configuration", "(string:tech, string:fin, [string:reason]):boolean or (none):table");
+	LK_DOC( "config", "Set or get the current case's configuration", "(string:tech-sys, string:fin, [string:reason]):boolean or (none):table");
 	if ( VersionUpgrade *vuc = static_cast<VersionUpgrade*>(cxt.user_data()) )
 	{
-		wxString tech( vuc->GetCase()->GetTechnology() );
+		wxString techAndSys( vuc->GetCase()->GetTechAndSystem() );
 		wxString fin( vuc->GetCase()->GetFinancing() );
 
 		if (cxt.arg_count() == 0 )
 		{
 			cxt.result().empty_hash();
-			cxt.result().hash_item("tech").assign( tech );
+			cxt.result().hash_item("tech").assign( techAndSys );
 			cxt.result().hash_item("fin").assign( fin );
 		}
 		else
 		{
-			wxString tech1( cxt.arg(0).as_string() );
+			wxString techAndSys1( cxt.arg(0).as_string() );
 			wxString fin1( cxt.arg(1).as_string() );
 			wxString reason;
 			if ( cxt.arg_count() > 2 ) reason = cxt.arg(2).as_string();
 			vuc->GetLog( vuc->GetName() ).push_back( VersionUpgrade::log( 
-				VersionUpgrade::CONFIG_CHANGE, "Updated internal configuration name from " + tech + "/" + fin + " to " + tech1 + "/" + fin1 + ".", reason ) );
-			cxt.result().assign( vuc->GetCase()->SetConfiguration( tech1, tech1, fin1 ) );
+				VersionUpgrade::CONFIG_CHANGE, "Updated internal configuration name from " + techAndSys + "/" + fin + " to " + techAndSys1 + "/" + fin1 + ".", reason ) );
+			cxt.result().assign( vuc->GetCase()->SetConfiguration(techAndSys1, fin1 ) );
 		}
 	}
 

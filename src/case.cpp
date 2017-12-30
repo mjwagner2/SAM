@@ -142,17 +142,11 @@ bool CaseCallbackContext::Invoke( lk::node_t *root, lk::env_t *parent_env )
 
 static void fcall_technology_pCase( lk::invoke_t &cxt )
 {
-	LK_DOC( "technology", "Return the current technology option name", "(void):string" );
+	LK_DOC( "technology", "Return the current technology and system option name", "(void):string" );
 	if ( Case *cc = static_cast<Case*>( cxt.user_data() ) ) 
-		cxt.result().assign( cc->GetTechnology() );
+		cxt.result().assign( cc->GetTechAndSystem() );
 }
 
-static void fcall_systemOption_pCase(lk::invoke_t &cxt)
-{
-	LK_DOC("system option", "Return the current system option name", "(void):string");
-	if (Case *cc = static_cast<Case*>(cxt.user_data()))
-		cxt.result().assign(cc->GetSystemOpt());
-}
 
 static void fcall_financing_pCase( lk::invoke_t &cxt )
 {
@@ -174,7 +168,6 @@ void CaseEvaluator::SetupEnvironment( lk::env_t &env )
 	EqnEvaluator::SetupEnvironment( env );
 
 	env.register_func( fcall_technology_pCase, m_case );
-	env.register_func(fcall_systemOption_pCase, m_case );
 	env.register_func( fcall_financing_pCase, m_case );
 	env.register_funcs( invoke_ssc_funcs() );
 	env.register_funcs( invoke_equation_funcs() );
@@ -305,14 +298,15 @@ Object *Case::Duplicate()
 	return c;
 }
 
-// need to update this -darice
 bool Case::Copy( Object *obj )
 {
 	if ( Case *rhs = dynamic_cast<Case*>( obj ) )
 	{
 		m_config = 0;
-		if ( rhs->m_config )
-			SetConfiguration( rhs->m_config->Technology, rhs->m_config->SystemOpt, rhs->m_config->Financing );
+		if (rhs->m_config) {
+			wxString techAndSys = rhs->m_config->Technology + (rhs->m_config->SystemOpt.size() > 0 ? "-" + rhs->m_config->SystemOpt : wxEmptyString);
+			SetConfiguration( techAndSys, rhs->m_config->Financing);
+		}
 
 		m_vals.Copy( rhs->m_vals );
 		m_baseCase.Copy( rhs->m_baseCase );
@@ -386,11 +380,11 @@ bool Case::Read( wxInputStream &_i )
 	wxUint8 ver = in.Read8(); // version
 
 	// read data
-	wxString tech = in.ReadString();
+	wxString techAndSys = in.ReadString();
 	wxString fin = in.ReadString();
 
-	if ( !SetConfiguration( tech, tech, fin ) )
-		wxLogStatus( "Notice: errors occurred while setting configuration during project file read.  Continuing...\n\n" + tech + "/" + fin );
+	if ( !SetConfiguration(techAndSys, fin ) )
+		wxLogStatus( "Notice: errors occurred while setting configuration during project file read.  Continuing...\n\n" + techAndSys + "/" + fin );
 
 	// read in the variable table
 	m_oldVals.clear();
@@ -621,14 +615,16 @@ bool Case::LoadDefaults( wxString *pmsg )
 
 
 
-bool Case::SetConfiguration( const wxString &tech, const wxString &fin, const wxString &sys, bool silent, wxString *message )
+bool Case::SetConfiguration( const wxString &techAndSys, const wxString &fin, bool silent, wxString *message )
 {
 	wxArrayString notices;
 
 	// erase results
 	m_baseCase.Clear();
 
-	m_config = SamApp::Config().Find( tech, fin, sys );
+	wxArrayString techAndSysArray = wxSplit(techAndSys, '-');
+
+	m_config = SamApp::Config().Find( techAndSysArray[0], fin, techAndSysArray.GetCount() > 1 ? techAndSysArray[1] : wxEmptyString );
 
 	if ( !m_config )
 		notices.Add("Case error: could not find configuration " + m_config->GetConfigName() );
@@ -802,12 +798,11 @@ lk::node_t *Case::QueryCallback( const wxString &method, const wxString &object 
 	return p_define->right;
 }
 
-void Case::GetConfiguration( wxString *tech, wxString *sys, wxString *fin )
+void Case::GetConfiguration( wxString *techAndSys, wxString *fin )
 {
 	if ( m_config )
 	{
-		if ( tech ) *tech = m_config->Technology;
-		if (sys) *sys = m_config->SystemOpt;
+		if ( techAndSys ) *techAndSys = m_config->Technology + (m_config->SystemOpt.size() > 0 ? "-" + m_config->SystemOpt : wxEmptyString);
 		if ( fin ) *fin = m_config->Financing;
 	}
 }
@@ -824,15 +819,11 @@ static EqnFastLookup sg_emptyEqns;
 	return m_config ? m_config->Equations : sg_emptyEqns;
 }
 
-wxString Case::GetTechnology() const
+wxString Case::GetTechAndSystem() const
 {
-	return m_config ? m_config->Technology : wxEmptyString;
+	return m_config ? m_config->Technology + (m_config->SystemOpt.size() > 0 ? "-" + m_config->SystemOpt : wxEmptyString) : wxEmptyString;
 }
 
-wxString Case::GetSystemOpt() const
-{
-	return m_config ? m_config->SystemOpt : wxEmptyString;
-}
 
 wxString Case::GetFinancing() const
 {

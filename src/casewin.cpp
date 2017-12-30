@@ -1080,7 +1080,8 @@ void CaseWindow::UpdateConfiguration()
 	ConfigInfo *cfg = m_case->GetConfiguration();
 	if ( !cfg ) return;
 
-	wxString Ts( SamApp::Config().Options( cfg->Technology + (cfg->SystemOpt.size() > 0? "-" + cfg->SystemOpt : wxEmptyString) ).ShortName );
+	wxString techAndSysOpt = cfg->Technology + (cfg->SystemOpt.size() > 0 ? "-" + cfg->SystemOpt : wxEmptyString);
+	wxString Ts( SamApp::Config().Options( techAndSysOpt ).ShortName );
 	if ( Ts.IsEmpty() ) Ts = cfg->Technology;
 	wxString Fs( SamApp::Config().Options( cfg->Financing ).ShortName );
 	if ( Fs.IsEmpty() ) Fs = cfg->Financing;
@@ -1164,8 +1165,8 @@ void CaseWindow::OnSubNotebookPageChanged( wxNotebookEvent & )
 wxString CaseWindow::GetCurrentContext()
 {
 	wxString id = "about";
-	wxString tech, sys, fin;
-	m_case->GetConfiguration( &tech, &sys, &fin );
+	wxString techAndSysOpt, fin;
+	m_case->GetConfiguration( &techAndSysOpt, &fin );
 	int page = m_pageFlipper->GetSelection();
 
 	switch( page )
