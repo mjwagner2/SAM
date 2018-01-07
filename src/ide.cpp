@@ -1619,7 +1619,8 @@ bool UIEditorPanel::Write( const wxString &name )
 	m_ipd.CbScript() = m_callbackScript->GetText();
 	m_ipd.EqnScript() = m_equationScript->GetText();
 
-	wxFFileOutputStream ff(  SamApp::GetRuntimePath() + "/ui/" + name + ".ui" );
+//	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".ui");
+	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".ui", "w");
 	if ( ff.IsOk() )
 		m_ipd.Write( ff );
 	else ok = false;

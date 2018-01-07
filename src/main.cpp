@@ -75,6 +75,7 @@
 #include <wx/display.h>
 #include <wx/utils.h>
 #include <wx/platform.h>
+#include <wx/txtstrm.h>
 
 #ifdef __WXMSW__
 #include <wex/mswfatal.h>
@@ -1459,7 +1460,8 @@ void InputPageData::Clear()
 
 void InputPageData::Write( wxOutputStream &os )
 {
-	wxDataOutputStream out( os );
+//	wxDataOutputStream out(os);
+	wxTextOutputStream out(os);
 	out.Write8( 0x48 );
 	out.Write8( 1 );
 

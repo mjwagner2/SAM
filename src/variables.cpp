@@ -57,6 +57,7 @@
 #include <wx/tokenzr.h>
 #include <wx/log.h>
 #include <wx/mstream.h>
+#include <wx/txtstrm.h>
 
 #include <lk/stdlib.h>
 #include <lk/eval.h>
@@ -475,7 +476,8 @@ void VarValue::Copy( const VarValue &rhs )
 
 void VarValue::Write( wxOutputStream &_O )
 {
-	wxDataOutputStream out( _O );
+//	wxDataOutputStream out(_O);
+	wxTextOutputStream out(_O);
 
 	out.Write8( 0xf2 );
 	out.Write8( 1 );
@@ -493,7 +495,8 @@ void VarValue::Write( wxOutputStream &_O )
 		out.Write32( m_val.ncols() );
 		for ( size_t r=0;r<m_val.nrows();r++ )
 			for( size_t c=0;c<m_val.ncols();c++ )
-				out.WriteFloat( m_val(r,c) );
+				out.WriteDouble(m_val(r, c));
+//				out.WriteFloat(m_val(r, c));
 		break;
 	case VV_TABLE:
 		m_tab.Write( _O );
@@ -1108,7 +1111,8 @@ bool VarDatabase::LoadFile( const wxString &file, const wxString &page )
 
 void VarDatabase::Write( wxOutputStream &os )
 {
-	wxDataOutputStream out(os);
+//	wxDataOutputStream out(os);
+	wxTextOutputStream out(os);
 	out.Write8( 0xf8 );
 	out.Write8( 1 );
 	out.Write32( size() );
