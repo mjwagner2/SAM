@@ -1460,8 +1460,7 @@ void InputPageData::Clear()
 
 void InputPageData::Write( wxOutputStream &os )
 {
-//	wxDataOutputStream out(os);
-	wxTextOutputStream out(os);
+	wxDataOutputStream out(os);
 	out.Write8( 0x48 );
 	out.Write8( 1 );
 
@@ -1473,17 +1472,46 @@ void InputPageData::Write( wxOutputStream &os )
 	out.Write8( 0x48 );
 }
 
-bool InputPageData::Read( wxInputStream &is )
+void InputPageData::Write_text(wxOutputStream &os)
+{
+	wxTextOutputStream out(os);
+	out.Write8(0x48);
+	out.Write8(1);
+
+	m_form.Write_text(os);
+	m_vars.Write_text(os);
+	out.WriteString(m_eqnScript);
+	out.WriteString(m_cbScript);
+
+	out.Write8(0x48);
+}
+
+bool InputPageData::Read(wxInputStream &is)
 {
 	wxDataInputStream in(is);
 	wxUint8 code = in.Read8();
 	in.Read8(); // wxUint8 ver
 
-	bool ok = true; 
-	ok = ok && m_form.Read( is );
-	ok = ok && m_vars.Read( is );
+	bool ok = true;
+	ok = ok && m_form.Read(is);
+	ok = ok && m_vars.Read(is);
 	m_eqnScript = in.ReadString();
 	m_cbScript = in.ReadString();
+
+	return in.Read8() == code && ok;
+}
+
+bool InputPageData::Read_text(wxInputStream &is)
+{
+	wxTextInputStream in(is);
+	wxUint8 code = in.Read8();
+	in.Read8(); // wxUint8 ver
+
+	bool ok = true;
+	ok = ok && m_form.Read_text(is);
+	ok = ok && m_vars.Read_text(is);
+	m_eqnScript = in.ReadLine();
+	m_cbScript = in.ReadLine();
 
 	return in.Read8() == code && ok;
 }

@@ -188,8 +188,11 @@ public:
 	InputPageData();
 
 	void Clear();
-	void Write( wxOutputStream &os );
-	bool Read( wxInputStream &is );
+	void Write(wxOutputStream &os);
+	bool Read(wxInputStream &is);
+
+	void Write_text(wxOutputStream &os);
+	bool Read_text(wxInputStream &is);
 
 	wxUIFormData &Form() { return m_form; }
 	VarDatabase &Variables() { return m_vars; }

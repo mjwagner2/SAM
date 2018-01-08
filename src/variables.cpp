@@ -476,8 +476,7 @@ void VarValue::Copy( const VarValue &rhs )
 
 void VarValue::Write( wxOutputStream &_O )
 {
-//	wxDataOutputStream out(_O);
-	wxTextOutputStream out(_O);
+	wxDataOutputStream out(_O);
 
 	out.Write8( 0xf2 );
 	out.Write8( 1 );
@@ -495,8 +494,7 @@ void VarValue::Write( wxOutputStream &_O )
 		out.Write32( m_val.ncols() );
 		for ( size_t r=0;r<m_val.nrows();r++ )
 			for( size_t c=0;c<m_val.ncols();c++ )
-				out.WriteDouble(m_val(r, c));
-//				out.WriteFloat(m_val(r, c));
+				out.WriteFloat(m_val(r, c));
 		break;
 	case VV_TABLE:
 		m_tab.Write( _O );
@@ -513,9 +511,46 @@ void VarValue::Write( wxOutputStream &_O )
 	out.Write8( 0xf2 );
 }
 
-bool VarValue::Read( wxInputStream &_I )
+void VarValue::Write_text(wxOutputStream &_O)
 {
-	wxDataInputStream in( _I );
+	wxTextOutputStream out(_O);
+
+	out.Write8(0xf2);
+	out.Write8(1);
+
+	out.Write8(m_type);
+
+	switch (m_type)
+	{
+	case VV_INVALID:
+		break; // no data to be written
+	case VV_NUMBER:
+	case VV_ARRAY:
+	case VV_MATRIX:
+		out.Write32(m_val.nrows());
+		out.Write32(m_val.ncols());
+		for (size_t r = 0; r<m_val.nrows(); r++)
+			for (size_t c = 0; c<m_val.ncols(); c++)
+				out.WriteDouble(m_val(r, c));
+		break;
+	case VV_TABLE:
+		m_tab.Write(_O);
+		break;
+	case VV_STRING:
+		out.WriteString(m_str);
+		break;
+	case VV_BINARY:
+		out.Write32(m_bin.GetDataLen());
+		_O.Write(m_bin.GetData(), m_bin.GetDataLen());
+		break;
+	}
+
+	out.Write8(0xf2);
+}
+
+bool VarValue::Read(wxInputStream &_I)
+{
+	wxDataInputStream in(_I);
 
 	wxUint8 code = in.Read8();
 	in.Read8(); // ver
@@ -523,7 +558,7 @@ bool VarValue::Read( wxInputStream &_I )
 	m_type = in.Read8();
 
 	size_t nr, nc, len;
-	switch( m_type )
+	switch (m_type)
 	{
 	case VV_INVALID:
 		break;
@@ -532,28 +567,69 @@ bool VarValue::Read( wxInputStream &_I )
 	case VV_MATRIX:
 		nr = in.Read32();
 		nc = in.Read32();
-		if ( nr*nc < 1 ) return false; // big error
-		m_val.resize_fill( nr, nc, 0.0f );
-		for ( size_t r=0;r<nr;r++ )
-			for( size_t c=0;c<nc;c++ )
-				m_val(r,c) = in.ReadFloat();
+		if (nr*nc < 1) return false; // big error
+		m_val.resize_fill(nr, nc, 0.0f);
+		for (size_t r = 0; r<nr; r++)
+			for (size_t c = 0; c<nc; c++)
+				m_val(r, c) = in.ReadFloat();
 		break;
 	case VV_TABLE:
-		m_tab.Read( _I );
+		m_tab.Read(_I);
 		break;
 	case VV_STRING:
 		m_str = in.ReadString();
 		break;
 	case VV_BINARY:
 		len = in.Read32();
-		_I.Read( m_bin.GetWriteBuf( len ), len );
-		m_bin.UngetWriteBuf( len );
+		_I.Read(m_bin.GetWriteBuf(len), len);
+		m_bin.UngetWriteBuf(len);
 		break;
 	}
 
 	return in.Read8() == code;
 }
-	
+
+bool VarValue::Read_text(wxInputStream &_I)
+{
+	wxTextInputStream in(_I);
+
+	wxUint8 code = in.Read8();
+	in.Read8(); // ver
+
+	m_type = in.Read8();
+
+	size_t nr, nc, len;
+	switch (m_type)
+	{
+	case VV_INVALID:
+		break;
+	case VV_NUMBER:
+	case VV_ARRAY:
+	case VV_MATRIX:
+		nr = in.Read32();
+		nc = in.Read32();
+		if (nr*nc < 1) return false; // big error
+		m_val.resize_fill(nr, nc, 0.0f);
+		for (size_t r = 0; r<nr; r++)
+			for (size_t c = 0; c<nc; c++)
+				m_val(r, c) = in.ReadDouble();
+		break;
+	case VV_TABLE:
+		m_tab.Read(_I);
+		break;
+	case VV_STRING:
+		m_str = in.ReadLine();
+		break;
+	case VV_BINARY:
+		len = in.Read32();
+		_I.Read(m_bin.GetWriteBuf(len), len);
+		m_bin.UngetWriteBuf(len);
+		break;
+	}
+
+	return in.Read8() == code;
+}
+
 int VarValue::Type() const { return m_type; }
 void VarValue::ChangeType(int type) { m_type = type; }
 void VarValue::SetType( int ty ) { m_type = ty; }
@@ -1051,44 +1127,86 @@ VarInfo::VarInfo( const VarInfo &copy )
 	DefaultValue.Copy( copy.DefaultValue );
 }
 
-void VarInfo::Write( wxOutputStream &os )
+void VarInfo::Write(wxOutputStream &os)
 {
 	wxDataOutputStream out(os);
-	out.Write8( 0xe1 );
-//	out.Write8(2);
+	out.Write8(0xe1);
+	//	out.Write8(2);
 	out.Write8(3); // change to version 3 after wxString "UIObject" field added
 
-	out.Write32( Type );
-	out.WriteString( Label );
-	out.WriteString( Units );
-	out.WriteString( Group );
-	out.WriteString( wxJoin(IndexLabels, '|') );
-	out.Write32( Flags );
-	DefaultValue.Write( os );
+	out.Write32(Type);
+	out.WriteString(Label);
+	out.WriteString(Units);
+	out.WriteString(Group);
+	out.WriteString(wxJoin(IndexLabels, '|'));
+	out.Write32(Flags);
+	DefaultValue.Write(os);
 	out.WriteString(UIObject);
 
-	out.Write8( 0xe1 );
+	out.Write8(0xe1);
 }
 
-bool VarInfo::Read( wxInputStream &is )
+void VarInfo::Write_text(wxOutputStream &os)
+{
+	wxTextOutputStream out(os);
+	out.Write8(0xe1);
+	//	out.Write8(2);
+	out.Write8(3); // change to version 3 after wxString "UIObject" field added
+
+	out.Write32(Type);
+	out.WriteString(Label);
+	out.WriteString(Units);
+	out.WriteString(Group);
+	out.WriteString(wxJoin(IndexLabels, '|'));
+	out.Write32(Flags);
+	DefaultValue.Write_text(os);
+	out.WriteString(UIObject);
+
+	out.Write8(0xe1);
+}
+
+bool VarInfo::Read(wxInputStream &is)
 {
 	wxDataInputStream in(is);
 	wxUint8 code = in.Read8();
 	int ver = in.Read8(); // ver
 
-	if ( ver < 2 ) in.ReadString(); // formerly, name field
+	if (ver < 2) in.ReadString(); // formerly, name field
 
 	Type = in.Read32();
 	Label = in.ReadString();
 	Units = in.ReadString();
 	Group = in.ReadString();
-	IndexLabels = wxSplit( in.ReadString(), '|' );
+	IndexLabels = wxSplit(in.ReadString(), '|');
 	Flags = in.Read32();
-	bool valok = DefaultValue.Read( is );
-	if (ver < 3) 
+	bool valok = DefaultValue.Read(is);
+	if (ver < 3)
 		UIObject = VUIOBJ_NONE; // wxUIObject associated with variable
 	else
 		UIObject = in.ReadString();
+	wxUint8 lastcode = in.Read8();
+	return  lastcode == code && valok;
+}
+
+bool VarInfo::Read_text(wxInputStream &is)
+{
+	wxTextInputStream in(is);
+	wxUint8 code = in.Read8();
+	int ver = in.Read8(); // ver
+
+	if (ver < 2) in.ReadLine(); // formerly, name field
+
+	Type = in.Read32();
+	Label = in.ReadLine();
+	Units = in.ReadLine();
+	Group = in.ReadLine();
+	IndexLabels = wxSplit(in.ReadLine(), '|');
+	Flags = in.Read32();
+	bool valok = DefaultValue.Read_text(is);
+	if (ver < 3)
+		UIObject = VUIOBJ_NONE; // wxUIObject associated with variable
+	else
+		UIObject = in.ReadLine();
 	wxUint8 lastcode = in.Read8();
 	return  lastcode == code && valok;
 }
@@ -1109,21 +1227,36 @@ bool VarDatabase::LoadFile( const wxString &file, const wxString &page )
 	return Read( ff, page );
 }
 
-void VarDatabase::Write( wxOutputStream &os )
+void VarDatabase::Write(wxOutputStream &os)
 {
-//	wxDataOutputStream out(os);
-	wxTextOutputStream out(os);
-	out.Write8( 0xf8 );
-	out.Write8( 1 );
-	out.Write32( size() );
-	for( VarInfoHash::iterator it = begin();
+	wxDataOutputStream out(os);
+	out.Write8(0xf8);
+	out.Write8(1);
+	out.Write32(size());
+	for (VarInfoHash::iterator it = begin();
 		it != end();
-		++it )
+		++it)
 	{
-		out.WriteString( it->first );
-		it->second->Write( os );
+		out.WriteString(it->first);
+		it->second->Write(os);
 	}
-	out.Write8( 0xf8 );
+	out.Write8(0xf8);
+}
+
+void VarDatabase::Write_text(wxOutputStream &os)
+{
+	wxTextOutputStream out(os);
+	out.Write8(0xf8);
+	out.Write8(1);
+	out.Write32(size());
+	for (VarInfoHash::iterator it = begin();
+		it != end();
+		++it)
+	{
+		out.WriteString(it->first);
+		it->second->Write_text(os);
+	}
+	out.Write8(0xf8);
 }
 
 bool VarDatabase::Read( wxInputStream &is, const wxString &page )
@@ -1151,6 +1284,35 @@ bool VarDatabase::Read( wxInputStream &is, const wxString &page )
 		if ( !page.IsEmpty() ) list.Add( name );
 	}
 	if ( !ok ) return false;
+
+	return in.Read8() == code;
+}
+
+bool VarDatabase::Read_text(wxInputStream &is, const wxString &page)
+{
+	wxTextInputStream in(is);
+	wxUint8 code = in.Read8();
+	in.Read8();
+	size_t n = in.Read32();
+	bool ok = true;
+	wxArrayString list;
+	for (size_t i = 0; i<n; i++)
+	{
+		wxString name = in.ReadLine();
+		VarInfo *vv = 0;
+
+		VarInfoHash::iterator it = find(name);
+		if (it != end())
+			vv = it->second;
+		else
+			vv = new VarInfo;
+
+		ok = ok && vv->Read_text(is);
+
+		(*this)[name] = vv;
+		if (!page.IsEmpty()) list.Add(name);
+	}
+	if (!ok) return false;
 
 	return in.Read8() == code;
 }

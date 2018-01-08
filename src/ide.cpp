@@ -671,7 +671,9 @@ enum {
 	ID_FORM_ADD,
 	ID_FORM_SAVE,
 	ID_FORM_DELETE,
-	
+	ID_FORM_SAVE_TEXT,
+	ID_FORM_LOAD_TEXT,
+
 
 	ID_VAR_REMAP,
 	ID_VAR_SYNC,
@@ -726,7 +728,10 @@ BEGIN_EVENT_TABLE( UIEditorPanel, wxPanel )
 	EVT_BUTTON( ID_FORM_ADD, UIEditorPanel::OnCommand )
 	EVT_BUTTON( ID_FORM_SAVE, UIEditorPanel::OnCommand )
 	EVT_BUTTON( ID_FORM_DELETE, UIEditorPanel::OnCommand )
-	
+
+	EVT_BUTTON(ID_FORM_SAVE_TEXT, UIEditorPanel::OnCommand)
+	EVT_BUTTON(ID_FORM_LOAD_TEXT, UIEditorPanel::OnCommand)
+
 	EVT_BUTTON( ID_VAR_SYNC, UIEditorPanel::OnCommand )
 	EVT_BUTTON( ID_VAR_REMAP, UIEditorPanel::OnCommand )
 	EVT_BUTTON( ID_VAR_ADD, UIEditorPanel::OnCommand )
@@ -787,7 +792,9 @@ UIEditorPanel::UIEditorPanel( wxWindow *parent )
 	sz_form_tools->Add( new wxButton( this, ID_FORM_ADD, "Add...", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
 	sz_form_tools->Add( new wxButton( this, ID_FORM_SAVE, "Save", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
 	sz_form_tools->Add( new wxButton( this, ID_FORM_DELETE, "Delete", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
-	sz_form_tools->AddStretchSpacer();	
+	sz_form_tools->Add(new wxButton(this, ID_FORM_SAVE_TEXT, "Save text", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL | wxEXPAND, 2);
+	sz_form_tools->Add(new wxButton(this, ID_FORM_LOAD_TEXT, "Load text", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL | wxEXPAND, 2);
+	sz_form_tools->AddStretchSpacer();
 	sz_form_tools->Add( new wxButton( this, ID_VAR_REMAP, "Remap", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
 	sz_form_tools->Add( new wxButton( this, ID_VAR_SYNC, "Sync", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
 	sz_form_tools->Add( new wxButton( this, ID_VAR_ADD, "Add", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );
@@ -1180,6 +1187,30 @@ void UIEditorPanel::OnCommand( wxCommandEvent &evt )
 				wxMessageBox("error writing form: " + m_formName, "notice", wxOK, this );
 		}
 		break;
+	case ID_FORM_SAVE_TEXT:
+	{
+		wxBusyInfo info("Saving form and variable data: " + m_formName);
+		wxYield();
+		wxMilliSleep(300);
+
+		SyncFormUIToDataBeforeWriting();
+
+		if (!Write_text(m_formName))
+			wxMessageBox("error writing form: " + m_formName, "notice", wxOK, this);
+	}
+	break;
+	case ID_FORM_LOAD_TEXT:
+	{
+		if (m_formName.IsEmpty())
+			m_formName = m_formList->GetStringSelection();
+		wxBusyInfo info("Loading form and variable data: " + m_formName);
+		wxYield();
+		wxMilliSleep(300);
+
+		if (!Load_text(m_formList->GetStringSelection()))
+			wxMessageBox("error loading form: " + m_formName, "notice", wxOK, this);
+	}
+	break;
 	case ID_VAR_REMAP:
 	{
 		RemapDialog *rdlg = new RemapDialog( this, "Remap variable names", this );
@@ -1619,14 +1650,31 @@ bool UIEditorPanel::Write( const wxString &name )
 	m_ipd.CbScript() = m_callbackScript->GetText();
 	m_ipd.EqnScript() = m_equationScript->GetText();
 
-//	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".ui");
-	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".ui", "w");
+	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".ui");
 	if ( ff.IsOk() )
 		m_ipd.Write( ff );
 	else ok = false;
 
 	return ok;
 }
+
+bool UIEditorPanel::Write_text(const wxString &name)
+{
+	bool ok = true;
+	m_ipd.Form().Copy(m_exForm);
+	m_ipd.Form().SetName(name);
+	// note: ipd.Variables() already up-to-date
+	m_ipd.CbScript() = m_callbackScript->GetText();
+	m_ipd.EqnScript() = m_equationScript->GetText();
+
+	wxFFileOutputStream ff(SamApp::GetRuntimePath() + "/ui/" + name + ".txt", "w");
+	if (ff.IsOk())
+		m_ipd.Write_text(ff);
+	else ok = false;
+
+	return ok;
+}
+
 
 bool UIEditorPanel::Load( const wxString &name )
 {
@@ -1656,6 +1704,45 @@ bool UIEditorPanel::Load( const wxString &name )
 
 			m_callbackScript->SetText( m_ipd.CbScript() );
 			m_equationScript->SetText( m_ipd.EqnScript() );
+		}
+		else ok = false;
+	}
+
+	return ok;
+}
+
+
+bool UIEditorPanel::Load_text(const wxString &name)
+{
+	m_uiFormEditor->SetFormData(0);
+	m_uiFormEditor->Refresh();
+	m_formName.Clear();
+
+	m_ipd.Clear();
+
+	bool ok = true;
+
+	wxString file = SamApp::GetRuntimePath() + "/ui/" + name + ".txt";
+
+	if (wxFileExists(file))
+	{
+		wxFFileInputStream ff(file, "r");
+		bool bff = ff.IsOk();
+		bool bread = m_ipd.Read_text(ff);
+		if (bff && bread)
+		//	if (ff.IsOk() && m_ipd.Read_text(ff))
+		{
+			m_ipd.Form().SetName(name);
+			m_exForm.Copy(m_ipd.Form());
+
+			m_uiFormEditor->SetFormData(&m_exForm);
+			m_uiFormEditor->Refresh();
+			m_formName = name;
+			LoadVarList();
+			VarInfoToForm(wxEmptyString);
+
+			m_callbackScript->SetText(m_ipd.CbScript());
+			m_equationScript->SetText(m_ipd.EqnScript());
 		}
 		else ok = false;
 	}

@@ -132,9 +132,12 @@ public:
 	bool ValueEqual( VarValue &rhs);
 	void Copy( const VarValue &rhs );
 
-	void Write( wxOutputStream & );
-	bool Read( wxInputStream & );
-	
+	void Write(wxOutputStream &);
+	bool Read(wxInputStream &);
+
+	void Write_text(wxOutputStream &);
+	bool Read_text(wxInputStream &);
+
 	int Type() const;
 	void ChangeType(int type);
 	void SetType( int t );
@@ -197,8 +200,11 @@ public:
 	VarInfo();
 	VarInfo( const VarInfo &copy );
 
-	void Write( wxOutputStream & );
-	bool Read( wxInputStream & );
+	void Write(wxOutputStream &);
+	bool Read(wxInputStream &);
+
+	void Write_text(wxOutputStream &);
+	bool Read_text(wxInputStream &);
 
 	int Type;
 	wxString Label;
@@ -252,6 +258,9 @@ public:
 	void Write( wxOutputStream & );
 	bool Read( wxInputStream &, const wxString &page = wxEmptyString );
 	
+	void Write_text(wxOutputStream &);
+	bool Read_text(wxInputStream &, const wxString &page = wxEmptyString);
+
 private:
 	
 	typedef unordered_map<wxString, wxArrayString, wxStringHash, wxStringEqual> StringArrayHash;
