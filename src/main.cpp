@@ -1472,19 +1472,6 @@ void InputPageData::Write( wxOutputStream &os )
 	out.Write8( 0x48 );
 }
 
-void InputPageData::Write_text(wxOutputStream &os)
-{
-	wxTextOutputStream out(os);
-	out.Write8(0x48);
-	out.Write8(1);
-
-	m_form.Write_text(os);
-	m_vars.Write_text(os);
-	out.WriteString(m_eqnScript);
-	out.WriteString(m_cbScript);
-
-	out.Write8(0x48);
-}
 
 bool InputPageData::Read(wxInputStream &is)
 {
@@ -1501,19 +1488,37 @@ bool InputPageData::Read(wxInputStream &is)
 	return in.Read8() == code && ok;
 }
 
+void InputPageData::Write_text(wxOutputStream &os)
+{
+	wxTextOutputStream out(os);
+//	out.Write8(0x48);
+	out.Write8(1);
+	out.PutChar('\t');
+
+	m_form.Write_text(os);
+	m_vars.Write_text(os);
+	out.WriteString(m_eqnScript);
+	out.PutChar('\t');
+	out.WriteString(m_cbScript);
+	out.PutChar('\t');
+
+//	out.Write8(0x48);
+}
+
 bool InputPageData::Read_text(wxInputStream &is)
 {
-	wxTextInputStream in(is);
-	wxUint8 code = in.Read8();
+	wxTextInputStream in(is, "\t");
+	//	wxUint8 code = in.Read8();
 	in.Read8(); // wxUint8 ver
 
 	bool ok = true;
 	ok = ok && m_form.Read_text(is);
 	ok = ok && m_vars.Read_text(is);
-	m_eqnScript = in.ReadLine();
-	m_cbScript = in.ReadLine();
+	m_eqnScript = in.ReadWord();
+	m_cbScript = in.ReadWord();
 
-	return in.Read8() == code && ok;
+	return ok;
+//	return in.Read8() == code && ok;
 }
 
 bool InputPageData::BuildDatabases()

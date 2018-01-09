@@ -105,7 +105,10 @@ public:
 	bool Write( const wxString &file, size_t maxdim= 0);
 	bool Read( wxInputStream & );
 	bool Read( const wxString &file );
-		
+
+	void Write_text(wxOutputStream &, size_t maxdim = 0); // MaxDim specifies the maximum allowable array or matrix dimension when writing.
+	bool Read_text(wxInputStream &);
+
 };
 
 class VarValue
