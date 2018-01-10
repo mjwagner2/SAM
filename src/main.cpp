@@ -1493,21 +1493,21 @@ void InputPageData::Write_text(wxOutputStream &os)
 	wxTextOutputStream out(os);
 //	out.Write8(0x48);
 	out.Write8(1);
-	out.PutChar('\t');
+	out.PutChar('|');;
 
 	m_form.Write_text(os);
 	m_vars.Write_text(os);
 	out.WriteString(m_eqnScript);
-	out.PutChar('\t');
+	out.PutChar('|');;
 	out.WriteString(m_cbScript);
-	out.PutChar('\t');
+	out.PutChar('|');;
 
 //	out.Write8(0x48);
 }
 
 bool InputPageData::Read_text(wxInputStream &is)
 {
-	wxTextInputStream in(is, "\t");
+	wxTextInputStream in(is, "|");
 	//	wxUint8 code = in.Read8();
 	in.Read8(); // wxUint8 ver
 
