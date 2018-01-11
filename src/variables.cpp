@@ -676,21 +676,24 @@ void VarValue::Write_text(wxOutputStream &_O)
 			for (size_t c = 0; c < m_val.ncols(); c++)
 			{
 				out.WriteDouble(m_val(r, c));
-				out.PutChar('|');;
 			}
+		out.PutChar('|');
 		break;
 	case VV_TABLE:
 		m_tab.Write_text(_O);
 		break;
 	case VV_STRING:
-		out.WriteString(m_str);
+		if (m_str.Len() > 0)
+			out.WriteString(m_str);
+		else
+			out.WriteString(" ");
 		out.PutChar('|');;
 		break;
 	case VV_BINARY:
 		out.Write32(m_bin.GetDataLen());
-		out.PutChar('|');;
+		out.PutChar('|');
 		_O.Write(m_bin.GetData(), m_bin.GetDataLen());
-//		out.PutChar('|');;
+//		out.PutChar('|');
 		break;
 	}
 
@@ -1288,22 +1291,37 @@ void VarInfo::Write_text(wxOutputStream &os)
 
 	//	out.Write8(2);
 	out.Write8(3); // change to version 3 after wxString "UIObject" field added
-	out.PutChar('|');;
+	out.PutChar('|');
 	out.Write32(Type);
-	out.PutChar('|');;
-	out.WriteString(Label);
-	out.PutChar('|');;
-	out.WriteString(Units);
-	out.PutChar('|');;
-	out.WriteString(Group);
-	out.PutChar('|');;
-	out.WriteString(wxJoin(IndexLabels, '|'));
-//	out.PutChar('|');;
+	out.PutChar('|');
+	if (Label.Len() > 0)
+		out.WriteString(Label);
+	else 
+		out.WriteString(" ");
+	out.PutChar('|');
+	if (Units.Len() > 0)
+		out.WriteString(Units);
+	else
+		out.WriteString(" ");
+	out.PutChar('|');
+	if (Group.Len() > 0)
+		out.WriteString(Group);
+	else
+		out.WriteString(" ");
+	out.PutChar('|');
+	if (IndexLabels.Count() > 0)
+		out.WriteString(wxJoin(IndexLabels, ','));
+	else
+		out.WriteString(" ");
+	out.PutChar('|');
 	out.Write32(Flags);
-	out.PutChar('|');;
+	out.PutChar('|');
 	DefaultValue.Write_text(os);
-	out.WriteString(UIObject);
-	out.PutChar('|');;
+	if (UIObject.Len() > 0)
+		out.WriteString(UIObject);
+	else
+		out.WriteString(" ");
+	out.PutChar('|');
 
 //	out.Write8(0xe1);
 }
@@ -1322,7 +1340,7 @@ bool VarInfo::Read_text(wxInputStream &is)
 	Label = in.ReadWord();
 	Units = in.ReadWord();
 	Group = in.ReadWord();
-	IndexLabels = wxSplit(in.ReadWord(), '|');
+	IndexLabels = wxSplit(in.ReadWord(), ',');
 	Flags = in.Read32();
 	ok = ok && DefaultValue.Read_text(is);
 	if (ver < 3)
