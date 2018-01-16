@@ -349,8 +349,7 @@ void Case::Write( wxOutputStream &_o )
 	}
 
 	// write data
-	out.WriteString( tech );
-	out.WriteString(sys);
+	out.WriteString( tech + (sys.size() > 0 ? '-' + sys : wxEmptyString) );
 	out.WriteString( fin );
 	m_vals.Write( _o );
 	m_baseCase.Write( _o );

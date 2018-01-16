@@ -411,7 +411,6 @@ public:
 
 private:
 	void PopulateTech(const wxString& techToBranch = wxEmptyString);
-	// bool ValidateSelections(); unused -darice
 	void OnTechTree(wxCommandEvent &evt);
 	void BranchTechTree(const wxString &tech);
 	void OnDoubleClick(wxCommandEvent &evt);

@@ -299,7 +299,7 @@ static void fcall_addconfigtree(lk::invoke_t &cxt)
 	wxLogStatus("Configuration: " + cxt.arg(0).as_string() + "  -> [ " + wxJoin(finlist, ';') + " ]");
 }
 
-static void fcall_setconfig( lk::invoke_t &cxt ) // not sure about deref - darice
+static void fcall_setconfig( lk::invoke_t &cxt )
 {
 	LK_DOC("setconfig", "Sets the currently active configuration for editing", "(string: Tech+System, string: Financing):none");
 	wxString configName = cxt.arg(0).as_string();

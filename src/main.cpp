@@ -1637,7 +1637,6 @@ void ConfigDatabase::AddTree(const wxString &tech, const wxArrayString &fin, con
 				subSystem->Technology = tech;
 				subSystem->Financing = fin[i];
 				subSystem->SystemOpt = sys[j];
-				//parentTech->SystemOptions.push_back(*subSystem); delete later - darice
 				m_configList.push_back(subSystem);
 			}
 		}
