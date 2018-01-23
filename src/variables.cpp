@@ -310,15 +310,15 @@ void VarTable::Write_text(wxOutputStream &_O, size_t maxdim)
 	wxTextOutputStream out(_O);
 //	out.Write8(0xf9);
 	out.Write8(1);
-	out.PutChar('|');;
+	out.PutChar('!');
 	if (maxdim == 0)
 	{
 		out.Write32(size());
-		out.PutChar('|');;
+		out.PutChar('!');
 		for (iterator it = begin(); it != end(); ++it)
 		{
 			out.WriteString(it->first);
-			out.PutChar('|');;
+			out.PutChar('!');
 			it->second->Write_text(_O);
 
 			if (it->second->Type() == VV_BINARY)
@@ -358,12 +358,12 @@ void VarTable::Write_text(wxOutputStream &_O, size_t maxdim)
 		}
 
 		out.Write32(list.size());
-		out.PutChar('|');;
+		out.PutChar('!');
 
 		for (size_t i = 0; i<list.size(); i++)
 		{
 			out.WriteString(names[i]);
-			out.PutChar('|');;
+			out.PutChar('!');
 			list[i]->Write_text(_O);
 			if (list[i]->Type() == VV_BINARY)
 			{
@@ -379,7 +379,7 @@ bool VarTable::Read_text(wxInputStream &_I)
 {
 	clear();
 
-	wxTextInputStream in(_I, "|");
+	wxTextInputStream in(_I, "!");
 //	wxUint8 code = in.Read8();
 	in.Read8(); //ver
 
@@ -657,9 +657,9 @@ void VarValue::Write_text(wxOutputStream &_O)
 
 //	out.Write8(0xf2);
 	out.Write8(1);
-	out.PutChar('|');;
+	out.PutChar('!');
 	out.Write8(m_type);
-	out.PutChar('|');;
+	out.PutChar('!');
 
 	switch (m_type)
 	{
@@ -669,15 +669,15 @@ void VarValue::Write_text(wxOutputStream &_O)
 	case VV_ARRAY:
 	case VV_MATRIX:
 		out.Write32(m_val.nrows());
-		out.PutChar('|');;
+		out.PutChar('!');
 		out.Write32(m_val.ncols());
-		out.PutChar('|');;
+		out.PutChar('!');
 		for (size_t r = 0; r<m_val.nrows(); r++)
 			for (size_t c = 0; c < m_val.ncols(); c++)
 			{
 				out.WriteDouble(m_val(r, c));
 			}
-		out.PutChar('|');
+		out.PutChar('!');
 		break;
 	case VV_TABLE:
 		m_tab.Write_text(_O);
@@ -687,13 +687,13 @@ void VarValue::Write_text(wxOutputStream &_O)
 			out.WriteString(m_str);
 		else
 			out.WriteString(" ");
-		out.PutChar('|');;
+		out.PutChar('!');
 		break;
 	case VV_BINARY:
 		out.Write32(m_bin.GetDataLen());
-		out.PutChar('|');
+		out.PutChar('!');
 		_O.Write(m_bin.GetData(), m_bin.GetDataLen());
-//		out.PutChar('|');
+//		out.PutChar('!')
 		break;
 	}
 
@@ -702,7 +702,7 @@ void VarValue::Write_text(wxOutputStream &_O)
 
 bool VarValue::Read_text(wxInputStream &_I)
 {
-	wxTextInputStream in(_I, "|");
+	wxTextInputStream in(_I, "!");
 
 //	wxUint8 code = in.Read8();
 	in.Read8(); // ver
@@ -1252,7 +1252,7 @@ void VarInfo::Write(wxOutputStream &os)
 	out.WriteString(Label);
 	out.WriteString(Units);
 	out.WriteString(Group);
-	out.WriteString(wxJoin(IndexLabels, '|'));
+	out.WriteString(wxJoin(IndexLabels, ','));
 	out.Write32(Flags);
 	DefaultValue.Write(os);
 	out.WriteString(UIObject);
@@ -1273,7 +1273,7 @@ bool VarInfo::Read(wxInputStream &is)
 	Label = in.ReadString();
 	Units = in.ReadString();
 	Group = in.ReadString();
-	IndexLabels = wxSplit(in.ReadString(), '|');
+	IndexLabels = wxSplit(in.ReadString(), ',');
 	Flags = in.Read32();
 	bool valok = DefaultValue.Read(is);
 	if (ver < 3)
@@ -1291,44 +1291,44 @@ void VarInfo::Write_text(wxOutputStream &os)
 
 	//	out.Write8(2);
 	out.Write8(3); // change to version 3 after wxString "UIObject" field added
-	out.PutChar('|');
+	out.PutChar('!');
 	out.Write32(Type);
-	out.PutChar('|');
+	out.PutChar('!');
 	if (Label.Len() > 0)
 		out.WriteString(Label);
 	else 
 		out.WriteString(" ");
-	out.PutChar('|');
+	out.PutChar('!');
 	if (Units.Len() > 0)
 		out.WriteString(Units);
 	else
 		out.WriteString(" ");
-	out.PutChar('|');
+	out.PutChar('!');
 	if (Group.Len() > 0)
 		out.WriteString(Group);
 	else
 		out.WriteString(" ");
-	out.PutChar('|');
+	out.PutChar('!');
 	if (IndexLabels.Count() > 0)
 		out.WriteString(wxJoin(IndexLabels, ','));
 	else
 		out.WriteString(" ");
-	out.PutChar('|');
+	out.PutChar('!');
 	out.Write32(Flags);
-	out.PutChar('|');
+	out.PutChar('!');
 	DefaultValue.Write_text(os);
 	if (UIObject.Len() > 0)
 		out.WriteString(UIObject);
 	else
 		out.WriteString(" ");
-	out.PutChar('|');
+	out.PutChar('!');
 
 //	out.Write8(0xe1);
 }
 
 bool VarInfo::Read_text(wxInputStream &is)
 {
-	wxTextInputStream in(is, "|");
+	wxTextInputStream in(is, "!");
 //	wxUint8 code = in.Read8();
 	int ver = in.Read8(); // ver
 
@@ -1418,15 +1418,15 @@ void VarDatabase::Write_text(wxOutputStream &os)
 	wxTextOutputStream out(os);
 //	out.Write8(0xf8);
 	out.Write8(1);
-	out.PutChar('|');;
+	out.PutChar('!');
 	out.Write32(size());
-	out.PutChar('|');;
+	out.PutChar('!');
 	for (VarInfoHash::iterator it = begin();
 		it != end();
 		++it)
 	{
 		out.WriteString(it->first);
-		out.PutChar('|');;
+		out.PutChar('!');
 		it->second->Write_text(os);
 	}
 //	out.Write8(0xf8);
@@ -1434,7 +1434,7 @@ void VarDatabase::Write_text(wxOutputStream &os)
 
 bool VarDatabase::Read_text(wxInputStream &is, const wxString &page)
 {
-	wxTextInputStream in(is, "|");
+	wxTextInputStream in(is, "!");
 //	wxUint8 code = in.Read8();
 	in.Read8();
 	size_t n = in.Read32();
