@@ -1502,9 +1502,16 @@ VarSelectDialog::VarSelectDialog( wxWindow *parent, const wxString &title )
 	wxArrayString choices, tech( SamApp::Config().GetTechnologies() );
 	for( size_t i=0;i<tech.size();i++ )
 	{
-		wxArrayString fin( SamApp::Config().GetFinancingForTech( tech[i] ));
-		for( size_t k=0;k<fin.size();k++ )
-			choices.Add( tech[i] + ", " + fin[k] );
+		wxArrayString fin(SamApp::Config().GetFinancingForTech(tech[i]));
+		for (size_t k = 0; k<fin.size(); k++)
+			choices.Add(tech[i] + ", " + fin[k]);
+
+		wxArrayString systemOpts = SamApp::Config().GetSystemOptionsForTech(tech[i]);
+		for (size_t j = 0; j < systemOpts.size(); j++) {
+			wxArrayString fin( SamApp::Config().GetFinancingForTech( tech[i] ));
+			for( size_t k=0;k<fin.size();k++ )
+				choices.Add( tech[i] + "-" + systemOpts[j] + ", " + fin[k] );
+		}
 	}
 	m_cfglist = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, choices );
 	m_sizer->Prepend( m_cfglist, 0, wxALL|wxEXPAND, 4 );
@@ -1515,16 +1522,19 @@ VarSelectDialog::VarSelectDialog( wxWindow *parent, const wxString &title )
 
 void VarSelectDialog::UpdateVariables()
 {
-	wxString tech, fin, sel = m_cfglist->GetStringSelection();
+	wxString techAndSysOpt, fin, sel = m_cfglist->GetStringSelection();
 	int pos = sel.Find( ',' );
-	tech = sel.Mid( 0, pos );
+	techAndSysOpt = sel.Mid( 0, pos );
 	fin = sel.Mid( pos+2 );
-	SetConfiguration( tech, fin );		
+	SetConfiguration( techAndSysOpt, fin );		
 }
 
-void VarSelectDialog::SetConfiguration( const wxString &tech, const wxString &fin )
+void VarSelectDialog::SetConfiguration( const wxString &techAndSysOpt, const wxString &fin )
 {
-	if ( ConfigInfo *ci = SamApp::Config().Find( tech, tech, fin ) )
+	wxArrayString techAndSysArray = wxSplit(techAndSysOpt, '-');
+	wxString tech = techAndSysArray[0];
+	wxString sys = techAndSysArray.Count() > 1 ? techAndSysArray[1] : wxEmptyString;
+	if ( ConfigInfo *ci = SamApp::Config().Find( tech, fin, sys ) )
 	{
 		wxArrayString names, labels;
 		for( VarInfoLookup::iterator it = ci->Variables.begin();
@@ -1571,7 +1581,7 @@ void VarSelectDialog::SetConfiguration( const wxString &tech, const wxString &fi
 		wxSortByLabels( names, labels );
 		SetItems( names, labels );
 
-		wxString cfgstr = tech + ", " + fin;
+		wxString cfgstr = techAndSysOpt + ", " + fin;
 		if ( cfgstr != m_cfglist->GetStringSelection() )
 			m_cfglist->SetStringSelection( cfgstr );
 	}

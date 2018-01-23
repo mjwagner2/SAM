@@ -241,7 +241,7 @@ class VarSelectDialog : public SelectVariableDialog
 public:
 	VarSelectDialog( wxWindow *parent, const wxString &title );
 	void UpdateVariables();
-	void SetConfiguration( const wxString &tech, const wxString &fin );
+	void SetConfiguration( const wxString &techAndSys, const wxString &fin );
 
 protected:
 	void OnConfig( wxCommandEvent &evt );
