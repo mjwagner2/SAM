@@ -342,7 +342,7 @@ if (financial_type == 'LCOE Calculator')
 if (financial_type != 'None')
 {
 	//set cost parameters
-	set('genericsys.cost.plant', total_installed_cost);
+	set('fixed_plant_input', total_installed_cost);
 	set('genericsys.cost.per_watt', 0);
 	set('genericsys.cost.contingency_percent', 0);
 	set('genericsys.cost.epc.percent', 0);
