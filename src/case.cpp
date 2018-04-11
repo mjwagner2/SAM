@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <wx/datstrm.h>
 #include <wx/wfstream.h>
 
@@ -10,7 +59,7 @@
 #include "invoke.h"
 #include <lk/stdlib.h>
 
-
+     
 CaseCallbackContext::CaseCallbackContext( Case *cc, const wxString &name )
 	: m_case(cc), m_name(name)
 {	
@@ -58,6 +107,7 @@ bool CaseCallbackContext::Invoke( lk::node_t *root, lk::env_t *parent_env )
 	lk::env_t local_env( parent_env );
 	
 	local_env.register_funcs( lk::stdlib_basic() );
+	local_env.register_funcs( lk::stdlib_sysio() );
 	local_env.register_funcs( lk::stdlib_math() );
 	local_env.register_funcs( lk::stdlib_string() );
 	local_env.register_funcs( lk::stdlib_wxui(), this );
@@ -203,7 +253,7 @@ bool CaseEvaluator::UpdateLibrary( const wxString &trigger, wxArrayString &chang
 				if (entry < 0 || !lib->ApplyEntry(entry, varindex, *m_vt, changed))
 				{
 					nerrors++;
-					m_errors.Add("Library error: '" + vv->String() + "'. Please make a different selection before proceeding." );
+					m_errors.Add("Library error: '" + vv->String() + "' is not available in the library. Choose a different item." );
 					wxArrayString errs( lib->GetErrors() );
 					for( size_t k=0;k<errs.size();k++ ) if ( !errs[k].IsEmpty() ) m_errors.Add( errs[k] );
 				}
@@ -329,7 +379,9 @@ bool Case::Read( wxInputStream &_i )
 	wxString fin = in.ReadString();
 
 	if ( !SetConfiguration( tech, fin ) )
+	  {
 		wxLogStatus( "Notice: errors occurred while setting configuration during project file read.  Continuing...\n\n" + tech + "/" + fin );
+	  }
 
 	// read in the variable table
 	m_oldVals.clear();
@@ -341,26 +393,46 @@ bool Case::Read( wxInputStream &_i )
 		wxLogStatus("discrepancy reading in values from project file: %d not found, %d wrong type, %d read != %d in config",
 			(int)di.not_found.size(), (int)di.wrong_type.size(), (int)di.nread, (int)m_vals.size() );
 		
-		if ( di.not_found.size() > 0 ) wxLogStatus("\not found: " + wxJoin(di.not_found, ',') );
-		if ( di.wrong_type.size() > 0 ) wxLogStatus("\twrong type: " + wxJoin(di.wrong_type, ',') );
+		if ( di.not_found.size() > 0 )
+		  {
+		    wxLogStatus("\not found: " + wxJoin(di.not_found, ',') );
+		  }
+		if ( di.wrong_type.size() > 0 )
+		  {
+		    wxLogStatus("\twrong type: " + wxJoin(di.wrong_type, ',') );
+		  }
 	}
 	
 	if ( ver <= 1 )
 	{
 		m_baseCase.Clear();
 		VarTable dum;
-		if ( !dum.Read( _i ) ) wxLogStatus("error reading dummy var table in Case::Read");
+		if ( !dum.Read( _i ) )
+		  {
+		    wxLogStatus("error reading dummy var table in Case::Read");
+		  }
 	}
 	else
-		if ( !m_baseCase.Read( _i ) ) wxLogStatus("error reading m_baseCase in Case::Read");
+		if ( !m_baseCase.Read( _i ) )
+		  {
+		    wxLogStatus("error reading m_baseCase in Case::Read");
+		  }
 
-	if ( !m_properties.Read( _i ) ) wxLogStatus("error reading m_properties in Case::Read");
-	if ( !m_notes.Read( _i ) ) wxLogStatus("error reading m_notes in Case::Read");
+	if ( !m_properties.Read( _i ) )
+	  {
+	    wxLogStatus("error reading m_properties in Case::Read");
+	  }
+	if ( !m_notes.Read( _i ) )
+	  {
+	    wxLogStatus("error reading m_notes in Case::Read");
+	  }
 
 	if ( ver >= 3 )
 	{
 		if (!m_excelExch.Read( _i ))
+		  {
 			wxLogStatus("error reading excel exchange data in Case::Read");
+		  }
 	}
 
 	if ( ver >= 4 )
@@ -370,21 +442,33 @@ bool Case::Read( wxInputStream &_i )
 		for( size_t i=0;i<n;i++) 
 		{
 			Graph g;
-			if ( !g.Read( _i ) ) wxLogStatus("error reading Graph %d of %d in Case::Read", (int)i, (int)n);
+			if ( !g.Read( _i ) )
+			  {
+			    wxLogStatus("error reading Graph %d of %d in Case::Read", (int)i, (int)n);
+			  }
 			m_graphs.push_back( g );
 		}
 
-		if ( !m_perspective.Read( _i ) ) wxLogStatus("error reading perspective of results viewer in Case::Read");
+		if ( !m_perspective.Read( _i ) )
+		  {
+		    wxLogStatus("error reading perspective of results viewer in Case::Read");
+		  }
 	}
 
 	if ( ver >= 5 )
 	{
-		if ( !m_parametric.Read( _i ) ) wxLogStatus("error reading parametric simulation information in Case::Read");
+		if ( !m_parametric.Read( _i ) )
+		  {
+		    wxLogStatus("error reading parametric simulation information in Case::Read");
+		  }
 	}
 
 	if ( ver >= 6 )
 	{
-		if ( !m_stochastic.Read( _i ) ) wxLogStatus("error reading stochastic simulation information in Case::Read");
+		if ( !m_stochastic.Read( _i ) )
+		  {
+		    wxLogStatus("error reading stochastic simulation information in Case::Read");
+		  }
 	}
 
 	return (in.Read8() == code);
@@ -799,7 +883,7 @@ int Case::Recalculate( const wxArrayString &triggers )
 
 }
 
-int Case::RecalculateAll()
+int Case::RecalculateAll( bool quietly )
 {
 	if ( !m_config )
 	{
@@ -810,7 +894,8 @@ int Case::RecalculateAll()
 	CaseEvaluator eval( this, m_vals, m_config->Equations );
 	int n = eval.CalculateAll();
 	if ( n > 0 ) SendEvent( CaseEvent( CaseEvent::VARS_CHANGED, eval.GetUpdated() ) );
-	else if ( n < 0 ) wxShowTextMessageDialog( wxJoin( eval.GetErrors(), wxChar('\n') )  );
+	else if ( n < 0 && !quietly ) wxShowTextMessageDialog( wxJoin( eval.GetErrors(), wxChar('\n') )  );
+
 	return n;
 }
 

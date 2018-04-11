@@ -432,13 +432,14 @@ if (runTornado){
 	
 	// create the plot
 	newplot();
-	plot( xvals_dn, yvals_dn, {'type'='hbar', 'baseline'=baseOutput, 'color'=[140,140,140], 'series'='(--)'});
-	plot( xvals_up, yvals_up, {'type'='hbar', 'baseline'=baseOutput, 'color'=[240,100,100], 'series'='(++)'});
+	plot( xvals_dn, yvals_dn, {'type'='hbar', 'baseline'=baseOutput, 'color'=[140,140,140], 'series'='(--)', thick=20});
+	plot( xvals_up, yvals_up, {'type'='hbar', 'baseline'=baseOutput, 'color'=[240,100,100], 'series'='(++)', thick=20});
 
 	axis('x1', {'min'=minVal-range*0.05, 'max'=maxVal+range*0.05, 'label'= varinfo(outLabel){'label'} });
-
 	axis('y1', { 'type'='label', 'labels'=labels, 'min'=0, 'max'=2*#vars} );
-	plotopt({'legendpos'='bottom', 'title'='LCOE Sensitivity (+/- 10%)'});
+	plotopt({'legendpos'='bottom', 'coarse'=true, 'fine'=true, 'title'='LCOE Sensitivity (+/- 10%)'});
+	annotate( [baseOutput, 0], [baseOutput, 2*#vars], {type='line', color='black'});
+
 	
 	plotLocation = tempfile('png');
 	plotout(plotLocation);
@@ -473,7 +474,7 @@ if( yesno("Would you like to generate a report based off these results?",[defaul
 	}
 	
 	ok = pdfreport( reportFile, 
-					{'template'=runtimedir() + 'reports/windwizard.samreport', 'metadata'=data });
+					{'template'=runtimedir() + 'quickstart/windwizard.samreport', 'metadata'=data });
 	
 	// Open Report
 	browse(reportFile);

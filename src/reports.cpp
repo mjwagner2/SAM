@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <algorithm>
 
 #include <wx/datstrm.h>
@@ -94,7 +143,7 @@ int SamReportTemplate::GetPageCount()
 
 void SamReportTemplate::Clear()
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		delete m_pages[i];
 	m_pages.clear();
 	m_description.Empty();
@@ -168,7 +217,7 @@ bool SamReportTemplate::Write( const wxString &file )
 	ds.WriteString( m_footer ); // footer text (with escapes)
 	ds.Write32( m_pages.size() ); // number of pages
 
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		if (!m_pages[i]->Write( fout ))
 			return false;
 
@@ -186,7 +235,7 @@ bool SamReportTemplate::Read( const wxString &file )
 	Clear();
 	wxDataInputStream ds( fin );
 	unsigned short start_code = ds.Read16();
-	unsigned char ver = ds.Read8();
+	ds.Read8(); // unsigned char ver;
 	m_description = ds.ReadString();
 	m_author = ds.ReadString();
 	m_meta1 = ds.ReadString();
@@ -213,7 +262,7 @@ bool SamReportTemplate::Read( const wxString &file )
 
 void SamReportTemplate::SetCaseName( const wxString &cn )
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 	{
 		int count = 0;
 		wxPageObject **children = m_pages[i]->GetObjects( &count );
@@ -225,7 +274,7 @@ void SamReportTemplate::SetCaseName( const wxString &cn )
 
 void SamReportTemplate::SetMetaData( VarValue *meta )
 {
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 	{
 		int count = 0;
 		wxPageObject **children = m_pages[i]->GetObjects( &count );
@@ -240,7 +289,7 @@ bool SamReportTemplate::RenderPdf( const wxString &file, Case *c, VarValue *meta
 	if ( c != 0 ) SetCaseName( SamApp::Project().GetCaseName( c ) );
 	if ( meta != 0 ) SetMetaData( meta );
 	wxPagePdfRenderer pdf;
-	for (int i=0;i<m_pages.size();i++)
+	for (int i=0;i<(int)m_pages.size();i++)
 		pdf.AddPage( m_pages[i], EscapeHF(m_header), EscapeHF(m_footer) );
 
 
@@ -381,8 +430,8 @@ void SamReportWindow::OnPageSel( wxListEvent & )
 
 void SamReportWindow::OnPageRClick( wxListEvent &evt )
 {
-	int idx = evt.GetSelection();
-	idx = 0;
+//	int idx = evt.GetSelection();
+//	idx = 0;
 }
 
 bool SamReportWindow::Save()
@@ -685,7 +734,7 @@ static wxString InsertVariable( wxWindow *parent, bool with_curly = true )
 		return wxEmptyString;
 	}
 	
-	for (int i=0;i<cur_cases.size();i++)
+	for (int i=0;i<(int)cur_cases.size();i++)
 	{
 		wxString case_name( SamApp::Project().GetCaseName( cur_cases[i] ) );
 		wxArrayString output_names, output_labels, output_groups;
@@ -819,7 +868,7 @@ wxString SamReportFormatVariable( double value, const wxString &fmt )
 		int dec = wxAtoi( fmt.Mid(1) );
 		if (dec < 1) dec = 0;
 		if (dec > 30) dec = 30;		
-		return wxNumericCtrl::Format( value, wxNumericCtrl::REAL, dec, fmt[0]==',', wxEmptyString, wxEmptyString );
+		return wxNumericFormat( value, wxNUMERIC_REAL, dec, fmt[0]==',', wxEmptyString, wxEmptyString );
 	}
 	else if (fmt[0] == 'i')
 		return wxString::Format("%d", (int)value);
@@ -881,11 +930,11 @@ wxString SamReportEscapeString( const wxString &input, Case *c, VarValue *meta )
 			&& (input[pos+1] == wxChar('{')
 			   || input[pos+1] == wxChar('|')) )
 		{
-			bool eqn_mode = false;
+//			bool eqn_mode = false;
 			wxChar end_char = wxChar('}');
 			if ( input[pos+1] == wxChar('|') )
 			{
-				eqn_mode = true;
+//				eqn_mode = true;
 				end_char = wxChar('|');
 			}
 
@@ -972,16 +1021,16 @@ wxString SamReportEscapeString( const wxString &input, Case *c, VarValue *meta )
 					{
 						int idx = wxAtoi( args["index"] );
 						if (idx < 0) idx = 0;
-						if (idx >= vals.size()) idx = vals.size()-1;
+						if (idx >= (int)vals.size()) idx = vals.size()-1;
 
 						text += SamReportFormatVariable( vals[idx]*scaling, format );
 					}
 					else
 					{
-						for (int k=0;k<vals.size();k++)
+						for (int k=0;k<(int)vals.size();k++)
 						{
 							text += SamReportFormatVariable( vals[k]*scaling, format );
-							if (k < vals.size()-1) text+= ", ";
+							if (k < (int)vals.size()-1) text+= ", ";
 						}
 					}
 				}
@@ -1276,9 +1325,9 @@ public:
 
 		buttons->AddStretchSpacer();
 		buttons->Add( new wxStaticText(this, wxID_ANY, "   Rows:"), 0, wxALL|wxEXPAND, 3 );
-		buttons->Add( (m_numRows=new wxNumericCtrl(this, IDTOED_ROWS, 0, wxNumericCtrl::INTEGER)), 0, wxALL|wxEXPAND, 3 );
+		buttons->Add( (m_numRows=new wxNumericCtrl(this, IDTOED_ROWS, 0, wxNUMERIC_INTEGER)), 0, wxALL|wxEXPAND, 3 );
 		buttons->Add( new wxStaticText(this, wxID_ANY, "   Cols:"), 0, wxALL|wxEXPAND, 3 );
-		buttons->Add( (m_numCols=new wxNumericCtrl(this, IDTOED_COLS, 0, wxNumericCtrl::INTEGER)), 0, wxALL|wxEXPAND, 3 );
+		buttons->Add( (m_numCols=new wxNumericCtrl(this, IDTOED_COLS, 0, wxNUMERIC_INTEGER)), 0, wxALL|wxEXPAND, 3 );
 		buttons->Add( new wxButton(this, IDTOED_INSERTVAR, "Insert variable..."), 0, wxALL|wxEXPAND, 3);
 
 		wxBoxSizer *vert = new wxBoxSizer(wxVERTICAL);
@@ -1364,7 +1413,7 @@ public:
 			if ( r >= 0 && r < m_grid->GetNumberRows()
 				&& c >= 0 && c < m_grid->GetNumberCols() )
 			{
-				m_grid->SetCellValue( text, r, c );
+				m_grid->SetCellValue( r, c, text );
 				UpdateDisplay();
 			}
 		}
@@ -1378,7 +1427,7 @@ BEGIN_EVENT_TABLE( SamReportTableObjectEditDialog, wxDialog )
 EVT_NUMERIC( IDTOED_ROWS, SamReportTableObjectEditDialog::OnRows )
 EVT_NUMERIC( IDTOED_COLS, SamReportTableObjectEditDialog::OnCols )
 EVT_BUTTON( IDTOED_INSERTVAR, SamReportTableObjectEditDialog::OnInsertVar )
-EVT_GRID_CMD_CELL_CHANGE( IDTOED_GRID, SamReportTableObjectEditDialog::OnGrid )
+EVT_GRID_CMD_CELL_CHANGED( IDTOED_GRID, SamReportTableObjectEditDialog::OnGrid )
 END_EVENT_TABLE()
 
 bool SamReportTableObject::EditObject( wxPageLayoutCtrl *layout )
@@ -1456,7 +1505,7 @@ bool SamReportTableObject::ReadData( wxInputStream &is )
 {
 	wxDataInputStream in(is);
 	unsigned short code = in.Read16();
-	unsigned char ver = in.Read8();
+	in.Read8(); // unsigned char ver 
 	size_t nrows = in.Read32();
 	size_t ncols = in.Read32();
 	m_table.resize_fill( nrows, ncols, wxEmptyString );
@@ -1606,15 +1655,16 @@ static void fcall_table( lk::invoke_t &cxt )
 static void fcall_graph( lk::invoke_t &cxt )
 {
 	LK_DOC("graph", 
-		"Render a bar graph from the given values. Options include xlabel, ylabel, title, show_values, width, height, decimals, color.", 
+		"Render a bar graph from the given values. Options include xlabel, ylabel, title, show_values, width, height, decimals, color, show_yaxis_ticks.", 
 		"(array:values [, array:labels, table:options]):none");
 	SamReportScriptObject *so = (SamReportScriptObject*)cxt.user_data();
 	if (!so) return;
 
 	std::vector<double> values;
 	wxArrayString labels;
-	wxString xlabel, ylabel, title;
+	wxString xlabel, ylabel, title, ticks_format = wxEmptyString;
 	bool show_values = false;
+	bool show_yaxis_ticks = false;
 	float width = 4.0f;
 	float height = 3.0f;
 	int decimals = 2;
@@ -1653,28 +1703,34 @@ static void fcall_graph( lk::invoke_t &cxt )
 	{
 		lk::vardata_t &v = cxt.arg(2);
 		lk::vardata_t *vv = 0;
-		if ( vv=v.lookup("xlabel") )
+		if ((vv=v.lookup("xlabel")))
 			xlabel = vv->as_string();
 
-		if ( vv=v.lookup("ylabel") )
+		if ((vv=v.lookup("ylabel")))
 			ylabel = vv->as_string();
 
-		if ( vv=v.lookup("title") )
+		if ((vv=v.lookup("title")))
 			title = vv->as_string();
 
-		if ( vv=v.lookup("show_values") )
+		if ((vv = v.lookup("show_values")))
 			show_values = vv->as_boolean();
 
-		if ( vv=v.lookup("width") )
+		if ((vv = v.lookup("show_yaxis_ticks")))
+			show_yaxis_ticks = vv->as_boolean();
+
+		if ((vv = v.lookup("ticks_format")))
+			ticks_format = vv->as_string();
+
+		if ((vv=v.lookup("width")))
 			width = vv->as_number();
 
-		if ( vv=v.lookup("height") )
+		if ((vv=v.lookup("height")))
 			height = vv->as_number();
 
-		if ( vv=v.lookup("decimals") )
+		if ((vv=v.lookup("decimals")))
 			decimals = vv->deref().as_integer();
 
-		if ( vv=v.lookup("color") )
+		if ((vv=v.lookup("color")))
 		{
 			lk::vardata_t &vv2 = vv->deref();
 			if (vv2.type() == lk::vardata_t::VECTOR 
@@ -1693,7 +1749,7 @@ static void fcall_graph( lk::invoke_t &cxt )
 	so->RenderBarGraph( values, labels, 
 		xlabel, ylabel, title, 
 		show_values, width, height, 
-		decimals, color );
+		decimals, color, show_yaxis_ticks, ticks_format );
 }
 
 static void fcall_move_to( lk::invoke_t &cxt )
@@ -1771,7 +1827,7 @@ static void fcall_style( lk::invoke_t &cxt )
 	lk::vardata_t &tab = cxt.arg(0);
 	lk::vardata_t *v = 0;
 
-	if ( v=tab.lookup("face") )
+	if ( (v=tab.lookup("face")) )
 	{
 		lk_string fs = v->as_string();
 		fs.Lower();
@@ -1781,20 +1837,20 @@ static void fcall_style( lk::invoke_t &cxt )
 		else throw lk::error_t("invalid font face specification.  allowed are 'fixed', 'serif', 'sanserif'");
 	}
 
-	if ( v=tab.lookup("size") )
+	if ((v=tab.lookup("size")))
 	{
 		size = v->as_integer();
 		if (size < 1) size = 1;
 		if (size > 300) size = 300;
 	}
 
-	if ( v=tab.lookup("bold") )
+	if ((v=tab.lookup("bold")))
 		bold = v->as_boolean();
 
-	if ( v=tab.lookup("italic") )
+	if ((v=tab.lookup("italic")))
 		ital = v->as_boolean();
 
-	if ( v=tab.lookup("align") )
+	if ((v=tab.lookup("align")))
 	{
 		lk_string al = v->as_string();
 		al.Lower();
@@ -1804,7 +1860,7 @@ static void fcall_style( lk::invoke_t &cxt )
 		else throw lk::error_t("invalid alignment specification.  allowed are 'left', 'center', 'right'");
 	}
 	
-	if ( v=tab.lookup("color") )
+	if ((v=tab.lookup("color")))
 	{
 		lk::vardata_t &vv2 = v->deref();
 		if (vv2.type() == lk::vardata_t::VECTOR 
@@ -1819,14 +1875,14 @@ static void fcall_style( lk::invoke_t &cxt )
 			colour.Set( vv2.as_string() );
 	}
 
-	if (v=tab.lookup("line_width"))
+	if ((v=tab.lookup("line_width")))
 	{
 		line_width = (float)v->as_number();
 		if (line_width < 0.01f) line_width = 0.01f;
 		if (line_width > 10) line_width = 10.0f;
 	}
 
-	if (v=tab.lookup("line_style"))
+	if ((v=tab.lookup("line_style")))
 	{
 		lk_string ssty = v->as_string();
 		ssty.Lower();
@@ -1838,14 +1894,14 @@ static void fcall_style( lk::invoke_t &cxt )
 	so->Style( face, size, colour, bold, ital, align, line_width, line_style );
 
 
-	if ( v=tab.lookup("header_size") )
+	if ((v=tab.lookup("header_size")))
 	{
 		hdrSize = v->as_integer();
 		if (hdrSize < 1) hdrSize = 1;
 		if (hdrSize > 300) hdrSize = 300;
 	}
 
-	if ( v=tab.lookup("header_face") )
+	if ((v=tab.lookup("header_face")))
 	{	
 		lk_string fs = v->as_string();
 		fs.Lower();
@@ -1855,7 +1911,7 @@ static void fcall_style( lk::invoke_t &cxt )
 		else throw lk::error_t("invalid font face specification.  allowed are 'fixed', 'serif', 'sanserif'");
 	}
 
-	if ( v=tab.lookup("header_align") )
+	if ((v=tab.lookup("header_align")))
 	{
 		lk_string al = v->as_string();
 		al.Lower();
@@ -1865,11 +1921,11 @@ static void fcall_style( lk::invoke_t &cxt )
 		else throw lk::error_t("invalid alignment specification.  allowed are 'left', 'center', 'right'");
 	}
 
-	if ( v=tab.lookup("header_bold") )
+	if ((v=tab.lookup("header_bold")))
 		hdrBold = v->as_boolean();
 
 	
-	if ( v=tab.lookup("header_color") )
+	if ((v=tab.lookup("header_color")))
 	{
 		lk::vardata_t &vv2 = v->deref();
 		if ( vv2.type() == lk::vardata_t::VECTOR 
@@ -1884,7 +1940,7 @@ static void fcall_style( lk::invoke_t &cxt )
 			hdrColour.Set( vv2.as_string() );
 	}
 
-	if ( v=tab.lookup("cell_align") )
+	if ((v=tab.lookup("cell_align")))
 	{
 		lk_string al = v->as_string();
 		al.Lower();
@@ -1895,13 +1951,13 @@ static void fcall_style( lk::invoke_t &cxt )
 
 	}
 
-	if ( v=tab.lookup("grid_lines") )
+	if ((v=tab.lookup("grid_lines")))
 		gridLines = v->as_boolean();
 
-	if ( v=tab.lookup("header_line") )
+	if ((v=tab.lookup("header_line")))
 		hdrLine = v->as_boolean();
 
-	if ( v=tab.lookup("col_sizes") )
+	if ((v=tab.lookup("col_sizes")))
 	{
 		lk::vardata_t &vv2 = v->deref();
 		if (vv2.type() == lk::vardata_t::VECTOR)
@@ -1912,7 +1968,7 @@ static void fcall_style( lk::invoke_t &cxt )
 		}
 	}
 
-	if ( v=tab.lookup("row_sizes") )
+	if ((v=tab.lookup("row_sizes")))
 	{
 		lk::vardata_t &vv2 = v->deref();
 		if (vv2.type() == lk::vardata_t::VECTOR)
@@ -1923,7 +1979,7 @@ static void fcall_style( lk::invoke_t &cxt )
 		}
 	}
 
-	if (v=tab.lookup("table_border"))
+	if ((v=tab.lookup("table_border")))
 		tabBorder = v->as_boolean();
 
 	so->TableStyle( hdrSize, hdrFace, hdrAlign, hdrBold,
@@ -2021,9 +2077,10 @@ public:
 		SetEscapeId( wxID_CANCEL );
 			
 		m_editor = new wxLKScriptCtrl(this, IDT_SCRIPT, wxDefaultPosition, wxDefaultSize, 
-			wxLK_STDLIB_BASIC|wxLK_STDLIB_STRING|wxLK_STDLIB_MATH|wxLK_STDLIB_WXUI);
+			wxLK_STDLIB_BASIC|wxLK_STDLIB_SYSIO|wxLK_STDLIB_STRING|wxLK_STDLIB_MATH|wxLK_STDLIB_WXUI);
 		
-		m_editor->RegisterLibrary( report_script_funcs );
+		m_editor->RegisterLibrary(report_script_funcs);
+		m_editor->RegisterLibrary(wxLKPlotFunctions());
 
 		m_toolSizer = new wxBoxSizer( wxHORIZONTAL );
 		m_toolSizer->Add( new wxButton( this, IDT_INSERTVAR, "Variables", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT ), 0, wxRIGHT|wxALIGN_CENTER, 4 );
@@ -2073,10 +2130,10 @@ public:
 			m_editor->InsertText( m_editor->GetCurrentPos(), text );
 	}
 
-	void OnSpin( wxSpinEvent &e ) { InvalidateObject(); }
-	void OnColour( wxColourPickerEvent &e ) { InvalidateObject(); }
+	void OnSpin( wxSpinEvent & ) { InvalidateObject(); }
+	void OnColour( wxColourPickerEvent & ) { InvalidateObject(); }
 	
-	void OnScriptChanged( wxStyledTextEvent &e )
+	void OnScriptChanged( wxStyledTextEvent & )
 	{
 		m_timer.Start( 700, true );
 	}
@@ -2179,6 +2236,7 @@ void SamReportScriptObject::Render( wxPageOutputDevice &dv )
 		lk::env_t env;			
 		env.register_funcs( report_script_funcs, this );
 		env.register_funcs( lk::stdlib_basic() );
+		env.register_funcs( lk::stdlib_sysio() );
 		env.register_funcs( lk::stdlib_string() );
 		env.register_funcs( lk::stdlib_math() );
 		env.register_funcs( lk::stdlib_wxui() );
@@ -2418,7 +2476,7 @@ void SamReportScriptObject::RenderTable( const matrix_t<wxString> &tab )
 
 		col_widths[c] *= 1.2f;
 
-		if ( c < m_colSizes.size()
+		if ( c < (int)m_colSizes.size()
 			&& m_colSizes[c] > 0)
 			col_widths[c] = m_colSizes[c];
 
@@ -2435,7 +2493,7 @@ void SamReportScriptObject::RenderTable( const matrix_t<wxString> &tab )
 
 		row_heights[r] *= 1.2f;
 
-		if ( r < m_rowSizes.size()
+		if ( r < (int)m_rowSizes.size()
 			&& m_rowSizes[r] > 0)
 			row_heights[r] = m_rowSizes[r];
 
@@ -2528,7 +2586,7 @@ struct fRect
 
 void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, const wxArrayString &xlabels, const wxString &xlabel,
 	const wxString &ylabel, const wxString &title, bool show_values, float xsize, float ysize, int decimals,
-	const wxColour &color )
+	const wxColour &color, bool show_yaxis_ticks, const wxString &ticks_format )
 {
 	if (!m_curDevice) return;
 
@@ -2545,7 +2603,7 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	double ymin = 0;
 	double ymax = 0;
 
-	for (int i=0;i<values.size();i++)
+	for (int i=0;i<(int)values.size();i++)
 	{
 		if (values[i] < ymin) ymin = values[i];
 		if (values[i] > ymax) ymax = values[i];
@@ -2560,8 +2618,11 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	double physmax = gr_height*72;
 
 	std::vector<wxPLAxis::TickData> ticks;
-	yaxis.GetAxisTicks( 0, physmax, ticks );
-	
+	if (show_yaxis_ticks)
+		yaxis.GetAxisTicks( -1, physmax, ticks );
+	else
+		yaxis.GetAxisTicks(0, physmax, ticks);
+
 	// save the current style data
 	int saveFace, saveSize, saveAlign;
 	wxColour saveColour;
@@ -2613,12 +2674,14 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 			continue;
 
 		wxString label;
-		if (decimals <= 0 && fabs(ticks[i].world)>999)
-			label = wxNumericCtrl::Format( ticks[i].world, wxNumericCtrl::REAL, wxNumericCtrl::GENERIC, true, wxEmptyString, wxEmptyString );
+		if (ticks_format != wxEmptyString)
+			label = lk::format((const char *)ticks_format.c_str(), ticks[i].world);
+		else if (decimals <= 0 && fabs(ticks[i].world)>999)
+			label = wxNumericFormat( ticks[i].world, wxNUMERIC_REAL, wxNUMERIC_GENERIC, true, wxEmptyString, wxEmptyString );
 		else if (decimals < 6)
-			label = wxNumericCtrl::Format( ticks[i].world, wxNumericCtrl::REAL, decimals, true, wxEmptyString, wxEmptyString );		
+			label = wxNumericFormat( ticks[i].world, wxNUMERIC_REAL, decimals, true, wxEmptyString, wxEmptyString );		
 		else
-			label = wxString::Format("%lg", ticks[i].world );
+			label = wxString::Format("%lg", ticks[i].world);
 
 		float tw = 0.05f;
 		m_curDevice->Measure(label, &tw, 0);
@@ -2634,7 +2697,7 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	for (size_t i=0;i<values.size();i++)
 	{		
 		wxString label;
-		if ( i < (int)xlabels.size() ) label = xlabels[i];
+		if ( i < xlabels.size() ) label = xlabels[i];
 		float tw = 0.05f;
 		m_curDevice->Measure( label, &tw, 0 );
 		if (tw > max_xtick_width) max_xtick_width = tw;
@@ -2649,13 +2712,13 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 	wxArrayString yvaltext_labels;
 	if (show_values)
 	{
-		for (int i=0;i<values.size();i++)
+		for (int i=0;i<(int)values.size();i++)
 		{
 			wxString label;
 			if (decimals <= 0 && fabs(values[i])>999)
-				label = wxNumericCtrl::Format( values[i], wxNumericCtrl::REAL, wxNumericCtrl::GENERIC, true, wxEmptyString, wxEmptyString );
+				label = wxNumericFormat( values[i], wxNUMERIC_REAL, wxNUMERIC_GENERIC, true, wxEmptyString, wxEmptyString );
 			else if (decimals < 6)
-				label = wxNumericCtrl::Format( values[i], wxNumericCtrl::REAL, decimals, true, wxEmptyString, wxEmptyString );		
+				label = wxNumericFormat( values[i], wxNUMERIC_REAL, decimals, true, wxEmptyString, wxEmptyString );		
 			else
 				label = wxString::Format("%lg", values[i] );
 
@@ -2721,7 +2784,7 @@ void SamReportScriptObject::RenderBarGraph( const std::vector<double> &values, c
 		{
 			float y = TO_DEVICE(ticks[i].world);
 			LINEOUT( 0, y, 0.1f, y );
-			TEXTOUT( -ytick_widths[i]-0.025f, y-ytick_height/2, wxString::Format("%lg", ticks[i].world), 0 );
+			TEXTOUT( -ytick_widths[i]-0.025f, y-ytick_height/2, ytick_labels[i], 0 );
 		}
 	}
 
@@ -2782,7 +2845,7 @@ bool SamReportScriptObject::ReadData( wxInputStream &is )
 {
 	wxDataInputStream in( is );
 	unsigned short id_code = in.Read16(); // ID CODE.
-	unsigned char ver = in.Read8();// version
+	in.Read8();// unsigned char version
 	m_script = in.ReadString();
 	return id_code == in.Read16();
 }

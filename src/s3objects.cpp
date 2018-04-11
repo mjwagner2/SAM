@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <wx/datstrm.h>
 #include <algorithm>
 
@@ -240,22 +289,22 @@ void VObject::DeleteProperties()
 	m_properties.clear();
 }
 
-void VObject::SetupHandles( VPlaneType plane )
+void VObject::SetupHandles( VPlaneType  )
 {
 	// nothing to do
 }
 
-bool VObject::OnHandleMoved( VHandle *, VPlaneType plane )
+bool VObject::OnHandleMoved( VHandle *, VPlaneType  )
 {
 	return false;
 }
 
-bool VObject::IsWithin( double x, double y, VPlaneType plane )
+bool VObject::IsWithin( double , double , VPlaneType  )
 {
 	return false;
 }
 
-void VObject::DrawOnPlane( VRenderer2D &dc, VPlaneType plane )
+void VObject::DrawOnPlane( VRenderer2D &, VPlaneType  )
 {
 	// nothing to do 
 }
@@ -343,17 +392,17 @@ bool VObject::Read( wxInputStream &_i )
 			wxString grp = Property(name).GetString();
 			int ndx = wxNOT_FOUND;
 			wxString num_string = "0123456789";
-			wxString n;
+			wxString nn;
 			for (size_t j = 0; j < grp.Len(); j++)
 			{
 				ndx = num_string.Find(grp.Mid(j, 1));
 				if (ndx != wxNOT_FOUND)
-					n += grp.Mid(j, 1);
+					nn += grp.Mid(j, 1);
 			}
 			// default subarray is 1 with range 1 to 4 (zero index)
 			// default string is 1 with range 1 to 8 (zero index)
 			// no string entries before version 2
-			int nsub = wxAtoi(n);
+			int nsub = wxAtoi(nn);
 			if (nsub < 1) nsub = 1;
 			if (nsub > 4) nsub = 1;
 
@@ -584,7 +633,7 @@ size_t VTreeObject::GetXZPoints( double x[10], double z[10] )
 {
 	int shape = Property("Shape").GetInteger();
 	double X = Property("X").GetDouble();
-	double Y = Property("Y").GetDouble();
+//	double Y = Property("Y").GetDouble();
 	double D = Property("Diameter").GetDouble();
 	double H = Property("Height").GetDouble();
 	double TD = Property("Top Diameter").GetDouble();
@@ -1282,9 +1331,9 @@ bool VActiveSurfaceObject::OnHandleMoved( VHandle *h, VPlaneType plane )
 	{
 		double X = Property("X").GetDouble();
 		double Y = Property("Y").GetDouble();
-		double Z = Property("Z").GetDouble();
+//		double Z = Property("Z").GetDouble();
 		double W = Property("Width").GetDouble();
-		double L = Property("Length").GetDouble();
+//		double L = Property("Length").GetDouble();
 		double A = Property("Azimuth").GetDouble();
 		double T = Property("Tilt").GetDouble();
 
@@ -1746,7 +1795,7 @@ void VRoofObject::GetXZPoints(double xd[4], double zd[4])
 		xd[2] = xp[1]; zd[2] = z +height;
 		xd[3] = xr[2]; zd[3] = z;
 	}
-	else if (sin(rot*DTOR) >=0.0 && cos(rot*DTOR <0. ) )
+	else if (sin(rot*DTOR) >=0.0 && cos(rot*DTOR) < 0. )
 	{
 		xd[0] = xr[3]; zd[0] = z;
 		xd[1] = xp[0]; zd[1] = z + height;

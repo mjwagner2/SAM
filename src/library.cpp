@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <vector>
 #include <algorithm>
 
@@ -298,7 +347,7 @@ bool Library::ApplyEntry( int entry, int varindex, VarTable &tab, wxArrayString 
 {
 	m_errors.Clear();
 
-	if ( varindex < 0 || varindex >= m_startRow-2 )
+	if ( varindex < 0 || varindex >= (int)m_startRow-2 )
 	{
 		m_errors.Add( wxString::Format("invalid varindex of %d", varindex ) );
 		return false;
@@ -316,7 +365,7 @@ bool Library::ApplyEntry( int entry, int varindex, VarTable &tab, wxArrayString 
 		Field &f = m_fields[i];
 
 		wxString var;
-		if ( varindex < f.Variables.size() )
+		if ( varindex < (int)f.Variables.size() )
 			var = f.Variables[varindex];
 
 		if ( var.IsEmpty() ) continue; // skip this variable if no name was found
@@ -413,7 +462,7 @@ bool LibraryCtrl::SetEntrySelection( const wxString &entry )
 
 			for( size_t i=0;i<m_view.size();i++ )
 			{
-				if ( m_view[i].index == entry_idx )
+				if ( (int)m_view[i].index == entry_idx )
 				{
 					to_sel = i;
 					break;
@@ -445,14 +494,14 @@ bool LibraryCtrl::SetEntrySelection( const wxString &entry )
 wxString LibraryCtrl::GetEntrySelection()
 {
 	long sel = m_list->GetFirstSelected();
-	if ( sel >= 0 && sel < m_view.size() ) return m_view[ sel ].name;
+	if ( sel >= 0 && sel < (long)m_view.size() ) return m_view[ sel ].name;
 	return wxEmptyString;
 }
 
 wxString LibraryCtrl::GetCellValue( long item, long col )
 {
 	if ( Library *lib = Library::Find( m_library ) )
-		if ( item < m_view.size() && col < m_fieldMap.size() )
+		if ( item < (long)m_view.size() && col < (long)m_fieldMap.size() )
 			return lib->GetEntryValue( m_view[item].index, m_fieldMap[col] );
 
 	return wxT("<inval>");
@@ -554,7 +603,7 @@ void LibraryCtrl::UpdateList()
 		
 		size_t target_field_idx = 0;
 		int t_sel = m_target->GetSelection();
-		if ( t_sel >= 0 && t_sel < m_fieldMap.size() )
+		if ( t_sel >= 0 && t_sel < (int)m_fieldMap.size() )
 			target_field_idx = m_fieldMap[t_sel];
 
 		for (size_t i=0;i<num_entries;i++)
@@ -810,13 +859,13 @@ bool ScanSolarResourceData( const wxString &db_file, bool show_busy )
 
 				csv(row,0) = ff.GetName();
 
-				if ( str = ssc_data_get_string( pdata, "city" ) )
+				if ( (str = ssc_data_get_string( pdata, "city" ) ) != 0)
 					csv(row,1) = wxString(str);
 
-				if ( str = ssc_data_get_string( pdata, "state" ) )
+				if ( (str = ssc_data_get_string( pdata, "state" ) ) != 0)
 					csv(row,2) = wxString(str);
 
-				if ( str = ssc_data_get_string( pdata, "country" ) )
+				if ( (str = ssc_data_get_string( pdata, "country" ) ) != 0)
 					csv(row,3) = wxString(str);
 			
 				if ( ssc_data_get_number( pdata, "lat", &val ) )
@@ -831,10 +880,10 @@ bool ScanSolarResourceData( const wxString &db_file, bool show_busy )
 				if ( ssc_data_get_number( pdata, "elev", &val ) )
 					csv(row,7) = wxString::Format("%g", val);
 
-				if ( str = ssc_data_get_string( pdata, "location" ) )
+				if ( (str = ssc_data_get_string( pdata, "location" ) ) != 0)
 					csv(row,8) = wxString(str);
 			
-				if ( str = ssc_data_get_string( pdata, "source" ) )
+				if ( (str = ssc_data_get_string( pdata, "source" ) ) != 0)
 					csv(row,9) = wxString(str);
 					
 				csv(row,10) = ff.GetFullPath();
@@ -950,13 +999,13 @@ bool ScanWindResourceData( const wxString &db_file, bool show_busy )
 
 			csv(row, 0) = ff.GetName();
 
-			if (str = ssc_data_get_string(pdata, "city"))
+			if ((str = ssc_data_get_string(pdata, "city")) != 0)
 				csv(row, 1) = wxString(str);
 
-			if (str = ssc_data_get_string(pdata, "state"))
+			if ((str = ssc_data_get_string(pdata, "state")) != 0)
 				csv(row, 2) = wxString(str);
 
-			if (str = ssc_data_get_string(pdata, "country"))
+			if ((str = ssc_data_get_string(pdata, "country")) != 0)
 				csv(row, 3) = wxString(str);
 
 			if (ssc_data_get_number(pdata, "lat", &val))
@@ -965,7 +1014,7 @@ bool ScanWindResourceData( const wxString &db_file, bool show_busy )
 			if (ssc_data_get_number(pdata, "lon", &val))
 				csv(row, 5) = wxString::Format("%g", val);
 
-			if (str = ssc_data_get_string(pdata, "location_id"))
+			if ((str = ssc_data_get_string(pdata, "location_id")) != 0)
 				csv(row, 6) = wxString(str);
 
 			if (ssc_data_get_number(pdata, "elev", &val))
@@ -974,7 +1023,7 @@ bool ScanWindResourceData( const wxString &db_file, bool show_busy )
 			if (ssc_data_get_number(pdata, "year", &val))
 				csv(row, 8) = wxString::Format("%g", val);
 
-			if (str = ssc_data_get_string(pdata, "description"))
+			if ((str = ssc_data_get_string(pdata, "description")) != 0)
 				csv(row, 9) = wxString(str);
 
 			csv(row, 10) = ff.GetFullPath();

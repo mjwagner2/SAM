@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <vector>
 #include <stdio.h>
 #include <math.h>
@@ -91,8 +140,8 @@ END_EVENT_TABLE()
 
 LocationSetup::LocationSetup( wxWindow *parent, ShadeTool *st )
 	: wxPanel( parent ), 
-	  m_curl( this, ID_CURL ),
-	  m_shadeTool( st )
+  	  m_shadeTool( st ),
+	  m_curl( this, ID_CURL )
 {
 	SetBackgroundColour( *wxWHITE );
 	
@@ -104,7 +153,7 @@ LocationSetup::LocationSetup( wxWindow *parent, ShadeTool *st )
 	m_zoomLevel = 19;
 	m_mpp = 0.01;
 	
-	wxMetroButton *btn;
+//	wxMetroButton *btn;
 	
 	m_lat = new wxNumericCtrl( this, ID_LATITUDE, 39.7375670 );
 	m_lat->SetFormat( 7 );
@@ -156,12 +205,12 @@ LocationSetup::LocationSetup( wxWindow *parent, ShadeTool *st )
 
 
 
-void LocationSetup::OnCurl( wxEasyCurlEvent &evt )
+void LocationSetup::OnCurl( wxEasyCurlEvent & )
 {
 	// could do a progress thing...?
 }
 
-void LocationSetup::OnAddressChange( wxCommandEvent &e )
+void LocationSetup::OnAddressChange( wxCommandEvent & )
 {
 	m_lat->SetValue( std::numeric_limits<double>::quiet_NaN() );
 	m_lon->SetValue( std::numeric_limits<double>::quiet_NaN() );
@@ -412,8 +461,8 @@ bool LocationSetup::Read( wxInputStream &is )
 	wxDataInputStream in( is );
 
 	wxUint8 code = in.Read8();
-	wxUint8 ver = in.Read8();
-
+	in.Read8(); //ver
+  
 	m_address->ChangeValue( in.ReadString() );
 	m_lat->SetValue( in.ReadDouble() );
 	m_lon->SetValue( in.ReadDouble() );
@@ -602,7 +651,9 @@ void ObjectEditor::ValueToPropGrid( pgpinfo &p )
 		m_propGrid->SetPropertyValue( p.name,  wxVariant( vp.GetString() ) );
 		break;
 	case VProperty::COLOUR:
-		m_propGrid->SetPropertyValue( p.name,  wxVariant( vp.GetColour() ) );
+		wxVariant variant;
+		variant << vp.GetColour();
+		m_propGrid->SetPropertyValue( p.name,  variant);
 		break;
 	}
 }
@@ -659,7 +710,7 @@ void ObjectEditor::OnPropertyGridChange(wxPropertyGridEvent &evt)
 			PropGridToValue( m_curProps[i] );
 }
 
-void ObjectEditor::OnPropertyGridChanging(wxPropertyGridEvent &evt)
+void ObjectEditor::OnPropertyGridChanging(wxPropertyGridEvent &)
 {
 }
 
@@ -679,7 +730,7 @@ void ObjectEditor::OnCommand( wxCommandEvent &evt )
 	}
 }
 
-void ObjectEditor::OnObjectList( wxCommandEvent &evt )
+void ObjectEditor::OnObjectList( wxCommandEvent & )
 {
 	if ( !m_view ) return;
 
@@ -758,8 +809,6 @@ bool ShadeAnalysis::SimulateDiffuse(std::vector<surfshade> &shade, bool save)
 	double lat, lon, tz;
 	m_shadeTool->GetLocationSetup()->GetLocation(&lat, &lon, &tz);
 
-	const int *ndays = ::wxNDay;
-
 	s3d::transform tr;
 	tr.set_scale(SF_ANALYSIS_SCALE);
 
@@ -834,7 +883,7 @@ bool ShadeAnalysis::SimulateDiffuse(std::vector<surfshade> &shade, bool save)
 				shade[n].sfac[c] = 0;
 				if ( shade[n].nsurf[c] > 0 && shade[n].active[c] > 0.0 )
 				{
-					double aoi = shade[n].aoisum[c] / shade[n].nsurf[c]; // average AOI for surfaces in this group
+//					double aoi = shade[n].aoisum[c] / shade[n].nsurf[c]; // average AOI for surfaces in this group
 
 					shade[n].sfac[c] = 100.0 * shade[n].shaded[c] / shade[n].active[c] 
 						* sin( (90-alt)*M_PI/180 ) ; // differential when integrating over a sphere
@@ -848,7 +897,6 @@ bool ShadeAnalysis::SimulateDiffuse(std::vector<surfshade> &shade, bool save)
 	
 	num_scenes = c;
 	
-	int y = 0;
 	// average shading factor over skydome
 	m_diffuseShadeCount.clear();
 	m_diffuseShadeFactor.clear();
@@ -872,15 +920,16 @@ bool ShadeAnalysis::SimulateDiffuse(std::vector<surfshade> &shade, bool save)
 		else average = 0; // if there were no surfaces in this piece (i.e. facing away from sun), no diffuse blocking
 
 		m_diffuseShadePercent.push_back(average);
-//		m_diffuseName.push_back(shade[j].group);
-		m_diffuseName.push_back(GetGroupDisplayName(shade[j].group));
+		m_diffuseName.push_back(shade[j].group);
+//		m_diffuseName.push_back(GetGroupDisplayName(shade[j].group));
 	}
 		
 	wxString difftext("Diffuse shading: ");
 	for (size_t i = 0; i<m_diffuseShadePercent.size(); i++)
 	{
-		difftext += m_diffuseName[i] + wxString::Format(": %.2lf%%", m_diffuseShadePercent[i]);
-//		difftext += m_diffuseName[i] + wxString::Format(": %lg %%", m_diffuseShadePercent[i]);
+		difftext += GetGroupDisplayName(shade[i].group) + wxString::Format(": %.2lf%%", m_diffuseShadePercent[i]);
+		//difftext += m_diffuseName[i] + wxString::Format(": %.2lf%%", m_diffuseShadePercent[i]);
+		//		difftext += m_diffuseName[i] + wxString::Format(": %lg %%", m_diffuseShadePercent[i]);
 		if ( i < m_diffuseShadePercent.size()-1 ) difftext += ", ";
 	}
 
@@ -962,7 +1011,7 @@ bool ShadeAnalysis::SimulateTimeseries( int minute_step, std::vector<surfshade> 
 
 	double azi, zen, alt;
 	const int *ndays = ::wxNDay;
-	size_t m, d, h, jj, c = 0;
+	int m, d, h, jj, c = 0;
 
 	int step_per_hour = 60/minute_step;
 	int npoints = surfshade::nvalues( minute_step );
@@ -1132,11 +1181,12 @@ void ShadeAnalysis::OnGenerateTimeSeries( wxCommandEvent & )
 		std::vector<double> data(nstep);
 		for( size_t j=0;j<shade.size();j++ )
 		{
-			for( size_t i=0;i<nstep;i++ )
+			for( int i=0;i<nstep;i++ )
 				data[i] = shade[j].sfac[i];
 
-			wxDVArrayDataSet *dset = new wxDVArrayDataSet(shade[j].group, "% Shaded", min/60.0, data);
-			dset->SetOffset( 0.5*min/60.0 );
+			wxDVArrayDataSet *dset = new wxDVArrayDataSet(GetGroupDisplayName( shade[j].group), "% Shaded", min / 60.0, data);
+//			wxDVArrayDataSet *dset = new wxDVArrayDataSet(shade[j].group, "% Shaded", min / 60.0, data);
+			dset->SetOffset(0.5*min / 60.0);
 			dview->AddDataSet( dset );
 		}
 		dview->SelectDataOnBlankTabs();
@@ -1184,7 +1234,7 @@ void ShadeAnalysis::InitializeSections( int mode, std::vector<surfshade> &shade 
 			if ( !grp.IsEmpty() )
 			{			
 				int index = -1;
-				for( int k=0;k<shade.size();k++ )
+				for( int k=0;k<(int)shade.size();k++ )
 					if ( shade[k].group == grp ) 
 						index = k;
 
@@ -1259,7 +1309,7 @@ bool ShadeAnalysis::SimulateDiurnal()
 			// for nighttime full shading (fraction=1 and factor=0)
 			// consistent with SAM shading factor of zero for night time
 			//	double sf = 0;
-			double scene_sf = 1; 
+//			double scene_sf = 1; 
 			if (alt > 0)
 			{
 				tr.rotate_azal( azi, alt );
@@ -1359,10 +1409,589 @@ void ShadeAnalysis::GetDiffuse(size_t i, double *shade_percent, double *shade_fa
 	}
 }
 
+#include <wex/lkscript.h>
+
+class ShadeScripting::MyScriptCtrl : public wxLKScriptCtrl
+{
+	wxTextCtrl *m_output;
+public:
+	MyScriptCtrl( wxTextCtrl *output, wxWindow *parent, int id = wxID_ANY )
+		: wxLKScriptCtrl( parent, id, wxDefaultPosition, wxDefaultSize, wxLK_STDLIB_ALL|wxLK_STDLIB_SOUT )
+	{
+		m_output = output;
+	}
+	
+	virtual void OnOutput( const wxString &tt )
+	{
+		m_output->AppendText( tt );
+	}
+	virtual void OnSyntaxCheck( int , const wxString &err )
+	{
+		m_output->Clear();
+		m_output->AppendText( err );
+	}
+};
+
+static void fcall_load_scene( lk::invoke_t &cxt )
+{
+	LK_DOC( "load_scene", "Load a 3D scene from a .s3d file", "(string:filename):boolean" );	
+	cxt.result().assign( ((ShadeTool*)cxt.user_data())->LoadFromFile( cxt.arg(0).as_string() ) ? 1.0 : 0.0 );
+}
+
+static void fcall_save_scene( lk::invoke_t &cxt )
+{
+	LK_DOC( "save_scene", "Saves the 3D scene to a .s3d file", "(string:filename):boolean" );
+	cxt.result().assign( ((ShadeTool*)cxt.user_data())->WriteToFile( cxt.arg(0).as_string() ) ? 1.0 : 0.0 );
+
+}
+
+static void fcall_diffuse_shade( lk::invoke_t &cxt )
+{
+	LK_DOC( "diffuse_shade", "Calculate the diffuse shading on the scene.  Returns the diffuse shade percent on each segment, or null on an error.", "(none):table" );
+
+	std::vector<ShadeTool::diffuse> result;
+	if ( ((ShadeTool*)cxt.user_data())->SimulateDiffuse( result, true ) )
+	{
+		cxt.result().empty_hash();
+		for( size_t i=0;i<result.size();i++ )
+		{
+			wxString N( ((ShadeTool*)cxt.user_data())->GetAnalysis()->GetGroupDisplayName( result[i].name )  );
+			cxt.result().hash_item( N ).assign( result[i].shade_percent );
+		}
+	}
+}
+
+static void fcall_direct_shade( lk::invoke_t &cxt )
+{
+	LK_DOC( "direct_shade", "Calculate the direct (beam) shade loss on the scene.  If a timestep (minutes) is specified, the time series shade loss is calculated.  Otherwise, a diurnal table is calculated.", "([number:time step minutes]):table" );
+
+	int min = 0;
+	if ( cxt.arg_count() == 1 )
+	{
+		min = cxt.arg(0).as_integer();
+		if ( min < 1 || min > 60 )
+			min = 0;
+	}
+
+	if ( min != 0 ) 
+	{
+		std::vector<ShadeTool::shadets> result;
+		if ( ((ShadeTool*)cxt.user_data())->SimulateTimeseries( min, result, true ) )
+		{
+			cxt.result().empty_hash();
+			for( size_t i=0;i<result.size();i++ )
+			{
+				lk::vardata_t &v = cxt.result().hash_item( result[i].name );
+				v.empty_vector();
+				v.resize( result[i].ts.size() );
+				for( size_t j=0;j<result[i].ts.size();j++ )
+					v.index(j)->assign( (double)result[i].ts[j] );
+			}
+		}
+	}
+	else
+	{
+		std::vector<ShadeTool::diurnal> result;
+		if ( ((ShadeTool*)cxt.user_data())->SimulateDiurnal( result ) )
+		{
+			cxt.result().empty_hash();
+			for( size_t i=0;i<result.size();i++ )
+			{
+				lk::vardata_t &M = cxt.result().hash_item( result[i].name );
+				M.empty_vector();
+				M.resize( result[i].mxh.nrows() );
+				for( size_t r=0;r<result[i].mxh.nrows();r++ )
+				{
+					M.index(r)->empty_vector();
+					for( size_t c=0;c<result[i].mxh.ncols();c++ )
+						M.index(r)->vec_append( (double)result[i].mxh(r,c) );
+				}
+			}
+		}
+	}
+}
+
+static void fcall_switch_to( lk::invoke_t &cxt )
+{
+	LK_DOC( "switch_to", "Switches pages in the 3D shade editor.", "(number:page num):none" );
+	((ShadeTool*)cxt.user_data())->SwitchTo( cxt.arg(0).as_integer() );
+}
+
+static void fcall_location( lk::invoke_t &cxt )
+{
+	LK_DOC( "location", "Set or get location information.", "(number:lat, number:lon, number:tz, [string:addr]):none  or  (none):table" );
+	
+	ShadeTool *st = (ShadeTool*)cxt.user_data();
+	if ( cxt.arg_count() == 0 )
+	{
+		double lat, lon, tz;
+		st->GetLocationSetup()->GetLocation( &lat, &lon, &tz );
+		cxt.result().empty_hash();
+		cxt.result().hash_item( "lat" ).assign( lat );
+		cxt.result().hash_item( "lon" ).assign( lon );
+		cxt.result().hash_item( "tz" ).assign( tz );
+		cxt.result().hash_item( "addr" ).assign( st->GetLocationSetup()->GetAddress() );
+	}
+	else
+	{
+		wxString addr;
+		if ( cxt.arg_count() > 3 )
+			addr = cxt.arg(3).as_string();
+
+		st->GetLocationSetup()->SetLocation( addr, 
+			cxt.arg(0).as_number(),
+			cxt.arg(1).as_number(),
+			cxt.arg(2).as_number() );
+	}
+}
+
+static void fcall_clear_scene( lk::invoke_t &cxt )
+{
+	LK_DOC( "clear_scene", "Clear the 3D scene.", "(none):none" );
+	((ShadeTool*)cxt.user_data())->GetView()->DeleteAll();
+	((ShadeTool*)cxt.user_data())->GetView()->Refresh();
+	((ShadeTool*)cxt.user_data())->GetObjectEditor()->SetObject( NULL );
+}
+
+static void fcall_create( lk::invoke_t &cxt )
+{
+	LK_DOC( "create", "Create a new object in the 3d scene.", "(string:object type):name" );
+	
+	if ( VObject *obj  = ((ShadeTool*)cxt.user_data())->GetView()->CreateObject( cxt.arg(0).as_string() ) )
+	{
+		cxt.result().assign( obj->Property("Name").GetString() );
+		((ShadeTool*)cxt.user_data())->GetView()->Refresh();
+		((ShadeTool*)cxt.user_data())->GetObjectEditor()->UpdateObjectList();
+	}
+}
+
+static void fcall_objects( lk::invoke_t &cxt )
+{
+	LK_DOC( "objects", "Returns a list of the names of all the objects in the scene.", "(none):array" );
+	std::vector<VObject*> list = ((ShadeTool*)cxt.user_data())->GetView()->GetObjects();
+	
+	cxt.result().empty_vector();
+	for( size_t i=0;i<list.size();i++ )
+		cxt.result().vec_append( list[i]->Property("Name").GetString() );
+}
+
+static void fcall_property( lk::invoke_t &cxt )
+{
+	LK_DOC( "property", 
+		"Sets or gets properties of an object.", 
+		"(string:name [, table:properties=values]):[table]" );
+	
+	VObject *obj = ((ShadeTool*)cxt.user_data())->GetView()->FindObjectByName( cxt.arg(0).as_string() );
+	if ( !obj ) return;
+
+	if ( cxt.arg_count() > 1 
+		&& cxt.arg(1).type() == lk::vardata_t::HASH)
+	{
+
+		lk::varhash_t *H = cxt.arg(1).hash();
+
+		wxColour col;
+		for( lk::varhash_t::const_iterator it = H->begin();
+			it != H->end();
+			++it )
+		{
+			wxString key( it->first );
+			lk::vardata_t *val(it->second);
+
+			VProperty &p( obj->Property(key) );
+			switch( p.GetType() )
+			{
+			case VProperty::BOOLEAN:
+				p.Set( val->as_boolean() );
+				break;
+			case VProperty::DOUBLE:
+				p.Set( val->as_number() );
+				break;
+			case VProperty::INTEGER:
+				p.Set( val->as_integer() );
+				break;
+			case VProperty::STRING:
+				p.Set( val->as_string() );
+				break;
+			case VProperty::COLOUR:
+				if ( val->type() == lk::vardata_t::STRING )
+					col.Set( val->as_string() );
+				else if ( val->type() == lk::vardata_t::VECTOR && val->length() == 3 )
+					col.Set( (unsigned char)val->index(0)->as_unsigned(),
+						(unsigned char)val->index(1)->as_unsigned(),
+						(unsigned char)val->index(2)->as_unsigned() );
+
+				p.Set( col );
+			default:
+				break;
+			}
+		}
+
+		((ShadeTool*)cxt.user_data())->GetView()->UpdateModel( obj );
+		((ShadeTool*)cxt.user_data())->GetObjectEditor()->UpdateObjectList();
+		((ShadeTool*)cxt.user_data())->GetView()->Refresh();
+	}
+	else
+	{
+		wxArrayString list( obj->Properties() );
+		cxt.result().empty_hash();
+		for( size_t i=0;i<list.size();i++ )
+		{
+			VProperty &p( obj->Property(list[i]) );
+			switch( p.GetType() )
+			{
+			case VProperty::BOOLEAN:
+				cxt.result().hash_item( list[i] ).assign(  p.GetBoolean() ? 1.0 : 0.0 );
+				break;
+			case VProperty::DOUBLE:
+				cxt.result().hash_item( list[i] ).assign( p.GetDouble() );
+				break;
+			case VProperty::INTEGER:
+				cxt.result().hash_item( list[i] ).assign( (double)p.GetInteger() );
+				break;
+			case VProperty::COLOUR:
+			{
+				lk::vardata_t &cc = cxt.result().hash_item( list[i] );
+				cc.empty_vector();
+				cc.vec_append( (double)p.GetColour().Red() );
+				cc.vec_append( (double)p.GetColour().Green() );
+				cc.vec_append( (double)p.GetColour().Blue() );
+			}
+				break;
+			case VProperty::STRING:
+				cxt.result().hash_item( list[i] ).assign( p.GetString() );
+			default:
+				break;
+			}
+		}
+	}
+}
+
+static void fcall_delete( lk::invoke_t &cxt )
+{
+	LK_DOC( "delete", "Delete an object from the scene.", "(string:name):none" );
+
+	ShadeTool *st = ((ShadeTool*)cxt.user_data());
+	if ( VObject *obj = st->GetView()->FindObjectByName( cxt.arg(0).as_string() ) )
+	{
+		st->GetView()->DeleteObject( obj );
+		st->GetObjectEditor()->SetObject( NULL );
+		st->GetObjectEditor()->UpdateObjectList();
+		st->GetView()->DeleteObject( obj );
+		st->GetView()->Refresh();
+	}
+
+}
+
+static void fcall_sunpos( lk::invoke_t &cxt )
+{
+	LK_DOC( "sunpos", "Return solar azimuth and altitude angles given time of day and location.", "(year, month, hour, day, minute, lat, lon, tz):table" );
+	double azi, zen;
+	s3d::sun_pos( 
+		cxt.arg(0).as_integer(),
+		cxt.arg(1).as_integer(),
+		cxt.arg(2).as_integer(),
+		cxt.arg(3).as_integer(),
+		cxt.arg(4).as_integer(),
+		cxt.arg(5).as_number(),
+		cxt.arg(6).as_number(),
+		cxt.arg(7).as_number(),
+		&azi, &zen );
+
+	cxt.result().empty_hash();
+	cxt.result().hash_item( "azi").assign( azi );
+	cxt.result().hash_item( "alt").assign( 90.0-zen );
+
+}
+
+
+static void fcall_rotate( lk::invoke_t &cxt )
+{
+	LK_DOC( "rotate", "Rotate the 3D scene to the desired sun angles", "(number:azimuth, number:altitude):none" );
+	
+	ShadeTool *st = ((ShadeTool*)cxt.user_data());
+	st->GetView()->SetRotation( cxt.arg(0).as_number(), cxt.arg(1).as_number() );
+	st->GetView()->Refresh();
+}
+
+static void fcall_shadef(lk::invoke_t &cxt )
+{
+	LK_DOC( "shadef", "Return the current shaded area fraction at the 3D scene rotation", "(none):number" );
+	ShadeTool *st = ((ShadeTool*)cxt.user_data());
+	cxt.result().assign( st->GetView()->GetShadeFraction() );
+}
+
+#ifndef S3D_STANDALONE
+#include "script.h"
+#endif
+
+lk::fcall_t* shade_tool_funcs()
+{
+	static const lk::fcall_t vec[] = {
+		fcall_load_scene,
+		fcall_save_scene,
+		fcall_clear_scene,
+		fcall_switch_to,
+		fcall_diffuse_shade,
+		fcall_direct_shade,
+		fcall_location,
+		fcall_create,
+		fcall_delete,
+		fcall_objects,
+		fcall_property,
+		fcall_rotate,
+		fcall_shadef,
+		fcall_sunpos,
+#ifndef S3D_STANDALONE
+		fcall_set,
+		fcall_get,
+#endif
+		0 };
+		
+	return (lk::fcall_t*)vec;
+}
+
+
+
+ShadeScripting::ShadeScripting( wxWindow *parent, ShadeTool *st )
+	: wxPanel( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize ),
+	m_shadeTool(st)
+{
+	SetBackgroundColour( *wxWHITE );
+
+	wxBoxSizer *szdoc = new wxBoxSizer( wxHORIZONTAL );
+	szdoc->Add( new wxButton( this, wxID_NEW, "New" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_OPEN, "Open" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_SAVE, "Save" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_SAVEAS, "Save as" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_FIND, "Find" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_FORWARD, "Find next" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_HELP, "Functions" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( new wxButton( this, wxID_EXECUTE, "Run" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2  );
+	szdoc->Add( m_stopButton = new wxButton( this, wxID_STOP, "Stop" , wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL|wxEXPAND, 2 );	
+	szdoc->AddStretchSpacer();
+	m_stopButton->SetForegroundColour( *wxRED );
+	m_stopButton->Hide();
+					
+	
+	m_output = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY|wxTE_MULTILINE|wxBORDER_NONE );
+	
+	m_script = new MyScriptCtrl( m_output, this, wxID_ANY );
+	m_script->RegisterLibrary( shade_tool_funcs(), "Shade Tool Functions", m_shadeTool );	
+
+	wxBoxSizer *szedit = new wxBoxSizer(wxVERTICAL);
+	szedit->Add(szdoc, 0, wxALL | wxEXPAND, 2);
+	szedit->Add( m_script, 4, wxALL|wxEXPAND, 0 );
+	szedit->Add( m_statusLabel = new wxStaticText( this, wxID_ANY, wxEmptyString ), 0, wxALL|wxEXPAND, 0 );
+	szedit->Add( m_output, 1, wxALL|wxEXPAND, 0 );
+
+	SetSizer(szedit);
+		
+}
+
+ShadeScripting::~ShadeScripting()
+{
+}
+	
+bool ShadeScripting::Save()
+{
+	if ( m_fileName.IsEmpty() )
+		return SaveAs();
+	else
+		return Write( m_fileName );
+}
+
+bool ShadeScripting::SaveAs()
+{
+	wxFileDialog dlg( this, "Save as...",
+		wxPathOnly(m_fileName),
+		wxFileNameFromPath(m_fileName),
+		"LK Script Files (*.lk)|*.lk", wxFD_SAVE|wxFD_OVERWRITE_PROMPT );
+	if (dlg.ShowModal() == wxID_OK)
+		return Write( dlg.GetPath() );
+	else
+		return false;
+}
+
+bool ShadeScripting::CloseDoc()
+{
+	if ( m_script->IsScriptRunning() )
+	{
+		if (wxYES==wxMessageBox("A script is running. Cancel it?", "Query", wxYES_NO))
+			m_script->Stop();
+
+		return false;
+	}
+
+	if (m_script->GetModify())
+	{
+		Raise();
+		wxString id = m_fileName.IsEmpty() ? "untitled" : m_fileName;
+		int result = wxMessageBox("Script modified. Save it?\n\n" + id, "Query", wxYES_NO|wxCANCEL);
+		if ( result == wxCANCEL 
+			|| (result == wxYES && !Save()) )
+			return false;
+	}
+
+	m_script->SetText( wxEmptyString );
+	m_script->EmptyUndoBuffer();
+	m_script->SetSavePoint();
+	m_fileName.Clear();
+	m_statusLabel->SetLabel( m_fileName );
+	return true;
+}
+
+void ShadeScripting::Open()
+{
+	CloseDoc();
+	wxFileDialog dlg(this, "Open", wxEmptyString, wxEmptyString,
+							"LK Script Files (*.lk)|*.lk",
+							wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
+
+	if (dlg.ShowModal() == wxID_OK)
+		if (!Load( dlg.GetPath() ))
+			wxMessageBox("Could not load file:\n\n" + dlg.GetPath());
+}
+
+
+bool ShadeScripting::Write( const wxString &file )
+{
+	wxBusyInfo info( "Saving script file...");
+	wxMilliSleep( 120 );
+
+	if ( ((wxStyledTextCtrl*)m_script)->SaveFile( file ) )
+	{
+		m_fileName = file;
+		m_statusLabel->SetLabel( m_fileName );
+		return true;
+	}
+	else return false;
+}
+
+
+bool ShadeScripting::Load( const wxString &file )
+{
+	FILE *fp = fopen(file.c_str(), "r");
+	if ( fp )
+	{
+		wxString str;
+		char buf[1024];
+		while(fgets( buf, 1023, fp ) != 0)
+			str += buf;
+
+		fclose(fp);
+		m_script->SetText(str);
+		m_script->EmptyUndoBuffer();
+		m_script->SetSavePoint();
+		m_fileName = file;
+		m_statusLabel->SetLabel( m_fileName );
+		return true;
+	}
+	else return false;
+}
+
+#include <wx/app.h>
+
+void ShadeScripting::Exec()
+{
+	m_output->Clear();
+	m_stopButton->Show();
+	Layout();
+	wxTheApp->Yield(true);
+	
+	wxLKSetToplevelParentForPlots( m_shadeTool );
+	wxLKSetPlotTarget( NULL );
+
+	
+	wxString svar;
+	if( !m_fileName.IsEmpty() )
+	{
+		svar = wxPathOnly(m_fileName);
+		m_script->SetWorkDir(wxPathOnly(m_fileName));
+	}
+	else
+	{
+		svar = wxEmptyString;
+	}
+
+	m_script->Execute( );
+
+	if ( m_stopButton->IsShown() )
+	{
+		m_stopButton->Hide();
+		Layout();
+	}
+}
+
+void ShadeScripting::OnCommand( wxCommandEvent &evt )
+{
+	switch( evt.GetId() )
+	{
+	case wxID_NEW:
+		CloseDoc();
+		break;
+	case wxID_OPEN:
+		Open();
+		break;
+	case wxID_SAVE:
+		Save();
+		break;
+	case wxID_SAVEAS:
+		SaveAs();
+		break;
+	case wxID_UNDO: m_script->Undo(); break;
+	case wxID_REDO: m_script->Redo(); break;
+	case wxID_CUT: m_script->Cut(); break;
+	case wxID_COPY: m_script->Copy(); break;
+	case wxID_PASTE: m_script->Paste(); break;
+	case wxID_SELECTALL: m_script->SelectAll(); break;		
+	case wxID_FIND:
+		m_script->ShowFindReplaceDialog(); break;
+	case wxID_FORWARD:
+		m_script->FindNext(); break;
+	case wxID_HELP:
+		m_script->ShowHelpDialog( this );
+		break;
+	case wxID_EXECUTE:
+		Exec();
+		break;
+	case wxID_STOP:
+		m_script->Stop();
+		m_stopButton->Hide();
+		Layout();
+		break;
+	}
+}
+
+BEGIN_EVENT_TABLE( ShadeScripting, wxPanel )
+	EVT_BUTTON( wxID_NEW, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_OPEN, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_SAVE, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_SAVEAS, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_HELP, ShadeScripting::OnCommand )
+
+	EVT_BUTTON( wxID_FIND, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_FORWARD, ShadeScripting::OnCommand )
+
+	EVT_BUTTON( wxID_STOP, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_EXECUTE, ShadeScripting::OnCommand )
+	EVT_BUTTON( wxID_HELP, ShadeScripting::OnCommand )
+
+END_EVENT_TABLE()
+
+
+
+
+
+
+
+
+
+
+
 
 enum { ID_SLIDER = wxID_HIGHEST+441, ID_LAST_SLIDER = ID_SLIDER+100, 
-	ID_LOCATION, ID_CREATE, ID_GRAPHICS, ID_ANALYSIS, ID_VIEW_XYZ, ID_VIEW_XY, ID_VIEW_XZ, ID_FEEDBACK,
-	ID_OBJECT_ID, ID_OBJECT_IDMAX=ID_OBJECT_ID+100,
+	ID_LOCATION, ID_CREATE, ID_GRAPHICS, ID_ANALYSIS, ID_SCRIPTING, ID_BSPTREE, ID_VIEW_XYZ, ID_VIEW_XY, ID_VIEW_XZ, ID_FEEDBACK, ID_OBJECT_ID, ID_OBJECT_IDMAX=ID_OBJECT_ID+100,
 
 	// debugging
 	ID_AZIMUTH, ID_ALTITUDE, ID_SCALE, ID_TRI_TEST, 
@@ -1375,11 +2004,13 @@ BEGIN_EVENT_TABLE( ShadeTool, wxPanel )
 	EVT_VIEW3D_UPDATE_SELECTION( ID_GRAPHICS, ShadeTool::OnUpdateSelection )
 	
 #ifdef S3D_STANDALONE
-	EVT_BUTTON( wxID_NEW, ShadeTool::OnCommand )
+	EVT_BUTTON(wxID_NEW, ShadeTool::OnCommand)
+	EVT_BUTTON(ID_BSPTREE, ShadeTool::OnCommand)
 #endif
 	EVT_BUTTON( wxID_OPEN, ShadeTool::OnCommand )
 	EVT_BUTTON( wxID_SAVE, ShadeTool::OnCommand )
 	EVT_BUTTON( ID_ANALYSIS, ShadeTool::OnCommand )
+	EVT_BUTTON( ID_SCRIPTING, ShadeTool::OnCommand )
 	EVT_BUTTON( ID_LOCATION, ShadeTool::OnCommand )
 	EVT_BUTTON( ID_CREATE, ShadeTool::OnCommand )
 	EVT_BUTTON( ID_VIEW_XYZ, ShadeTool::OnCommand )
@@ -1412,6 +2043,7 @@ ShadeTool::ShadeTool( wxWindow *parent, int id, const wxString &data_path )
 	sizer_tool->Add( new wxMetroButton( this, wxID_NEW, "New" ), 0, wxALL|wxEXPAND, 0 );
 	sizer_tool->Add( new wxMetroButton( this, wxID_OPEN, "Open" ), 0, wxALL|wxEXPAND, 0 );
 	sizer_tool->Add( new wxMetroButton( this, wxID_SAVE, "Save" ), 0, wxALL|wxEXPAND, 0 );
+	sizer_tool->Add( new wxMetroButton( this, ID_BSPTREE, "BSP Tree"), 0, wxALL | wxEXPAND, 0);
 #endif
 	sizer_tool->Add( new wxMetroButton( this, ID_LOCATION, "Location" ), 0, wxALL|wxEXPAND, 0 );
 	sizer_tool->Add( new wxMetroButton( this, ID_CREATE, "Create", wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxMB_DOWNARROW ), 0, wxALL|wxEXPAND, 0 );
@@ -1419,6 +2051,7 @@ ShadeTool::ShadeTool( wxWindow *parent, int id, const wxString &data_path )
 	sizer_tool->Add( new wxMetroButton( this, ID_VIEW_XY, "Bird's eye" ), 0, wxALL|wxEXPAND, 0 );
 	sizer_tool->Add( new wxMetroButton( this, ID_VIEW_XZ, "Elevations" ), 0, wxALL|wxEXPAND, 0 );
 	sizer_tool->Add( new wxMetroButton( this, ID_ANALYSIS, "Analyze" ), 0, wxALL|wxEXPAND, 0 );
+	sizer_tool->Add( new wxMetroButton( this, ID_SCRIPTING, "Scripting" ), 0, wxALL|wxEXPAND, 0 );
 	
 #ifndef S3D_STANDALONE
 	sizer_tool->Add( new wxMetroButton( this, wxID_OPEN, "Import" ), 0, wxALL|wxEXPAND, 0 );
@@ -1472,6 +2105,8 @@ ShadeTool::ShadeTool( wxWindow *parent, int id, const wxString &data_path )
 
 	m_analysis = new ShadeAnalysis( m_book, this );
 
+	m_scripting = new ShadeScripting( m_book, this );
+
 #ifdef S3D_STANDALONE
 
 #if defined(__WXMSW__)||defined(__WXOSX__)
@@ -1490,7 +2125,8 @@ ShadeTool::ShadeTool( wxWindow *parent, int id, const wxString &data_path )
 	
 	m_book->AddPage( m_location, "Location" );
 	m_book->AddPage( m_split, "Scene Editor" );
-	m_book->AddPage( m_analysis, "Analysis page" );
+	m_book->AddPage( m_analysis, "Analysis" );
+	m_book->AddPage( m_scripting, "Scripting" );
 
 #ifdef S3D_STANDALONE
 #if defined(__WXMSW__)||defined(__WXOSX__)
@@ -1609,7 +2245,7 @@ bool ShadeTool::SimulateTimeseries(int &minute_timestep, std::vector<shadets> &r
 				shadets &d = result[result.size() - 1];
 				d.name = shade[j].group;
 				std::vector<float> data(nstep);
-				for (size_t i = 0; i < nstep; i++)
+				for (int i = 0; i < nstep; i++)
 					data[i] = shade[j].sfac[i];
 				d.ts = data;
 			}
@@ -1620,7 +2256,7 @@ bool ShadeTool::SimulateTimeseries(int &minute_timestep, std::vector<shadets> &r
 			shadets &d = result[result.size() - 1];
 			d.name = "all active surfaces";
 			std::vector<float> data(nstep);
-			for (size_t i = 0; i < nstep; i++)
+			for (int i = 0; i < nstep; i++)
 			{
 				double sf = 1;
 				double shaded = 0;
@@ -1729,6 +2365,9 @@ void ShadeTool::OnCommand( wxCommandEvent &evt)
 	case wxID_NEW:
 		m_view->DeleteAll();
 		break;
+	case ID_BSPTREE:
+		m_view->RebuildBSPTree();
+		break;
 #endif
 	case wxID_SAVE: Save(); break;
 	case wxID_OPEN: 		
@@ -1739,6 +2378,9 @@ void ShadeTool::OnCommand( wxCommandEvent &evt)
 		break;
 	case ID_ANALYSIS:
 		m_book->SetSelection( PG_ANALYSIS );
+		break;
+	case ID_SCRIPTING:
+		m_book->SetSelection( PG_SCRIPTING );
 		break;
 	case ID_CREATE:
 	{

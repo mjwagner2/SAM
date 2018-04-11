@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <algorithm>
 
 #include <wx/filename.h>
@@ -34,7 +83,7 @@ matrix_t<float> MatPropCtrl::GetData()
 	return m_data;
 }
 
-void MatPropCtrl::OnButton(wxCommandEvent &evt)
+void MatPropCtrl::OnButton(wxCommandEvent &)
 {
 	MatPropDialog dlg(this);
 	dlg.SetData( m_data );
@@ -70,7 +119,7 @@ BEGIN_EVENT_TABLE( MatPropDialog, wxDialog )
 	EVT_BUTTON( ID_IMPORT, MatPropDialog::OnCommand )
 	EVT_BUTTON( ID_EXPORT, MatPropDialog::OnCommand )
 	EVT_NUMERIC( ID_NUMPOINTS, MatPropDialog::OnNumPointsChange )
-	EVT_GRID_CMD_CELL_CHANGE( ID_GRID, MatPropDialog::OnGridCellChange)
+	EVT_GRID_CMD_CELL_CHANGED( ID_GRID, MatPropDialog::OnGridCellChange)
 	EVT_CLOSE( MatPropDialog::OnCloseWindow )
 END_EVENT_TABLE()
 
@@ -95,7 +144,7 @@ MatPropDialog::MatPropDialog(wxWindow *parent)
 	m_grid->SetColLabelAlignment(wxALIGN_LEFT,wxALIGN_CENTRE);
 	m_grid->AutoSize();
 
-	m_numPoints = new wxNumericCtrl(this, ID_NUMPOINTS, 1, wxNumericCtrl::INTEGER );
+	m_numPoints = new wxNumericCtrl(this, ID_NUMPOINTS, 1, wxNUMERIC_INTEGER );
 
 	wxBoxSizer *bxtop = new wxBoxSizer(wxHORIZONTAL);
 	bxtop->Add( new wxStaticText( this,-1, "Number of data points:" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 2);
@@ -122,7 +171,7 @@ void MatPropDialog::SetData(const matrix_t<float> &data)
 
 	for (int r=0;r<nrows;r++)
 	{
-		for (int c=0;c<MPC_NCOLS;c++)
+		for (size_t c=0;c<MPC_NCOLS;c++)
 		{
 			wxString val = "0";
 			if (c<data.ncols()) val.Printf("%lg", data.at(r,c));
@@ -159,7 +208,7 @@ matrix_t<float> MatPropDialog::GetData()
 	return dat;
 }
 
-void MatPropDialog::OnCloseWindow(wxCloseEvent &evt)
+void MatPropDialog::OnCloseWindow(wxCloseEvent &)
 {
 	EndModal(wxID_CANCEL);
 }
@@ -173,7 +222,7 @@ void MatPropDialog::OnCommand(wxCommandEvent &evt)
 	}
 }
 
-void MatPropDialog::OnNumPointsChange(wxCommandEvent &evt)
+void MatPropDialog::OnNumPointsChange(wxCommandEvent &)
 {
 	ChangeNumRows( m_numPoints->AsInteger() );
 }
@@ -405,7 +454,9 @@ wxString substance_flname(int flnum)
 	case 30: //   30.) -blank-
 		name = "Therminol 59";
 		break;
-	case 31: //   31.) -blank-
+	case 31: //   31.) Pressurized water at 23 bar (2.10.17 twn: added)
+		name = "Pressure water at 23 bar";
+		break;
 	case 32: //   32.) -blank-
 	case 33: //   33.) -blank-
 	case 34: //   34.) -blank-
@@ -537,7 +588,9 @@ density = Dens_fluid((T-273.15),int(Fnumd)) !Trough calcs take fluid properties 
 	case 30: //   30.) Therminol 59: Reference: Therminol Reference Disk by Solutia: www.therminol.com/pages/tools/toolscd.asp
 		density = -0.0003*Tc*Tc - 0.6963*Tc + 988.44;
 		break;
-	case 31: //   31.) -blank-
+	case 31: //   31.) Pressurized water at 23 bar (2.10.17 twn: added)
+		density = -0.0023*Tc*Tc - 0.2337*Tc + 1005.6;
+		break;
 	case 32: //   32.) -blank-
 	case 33: //   33.) -blank-
 	case 34: //   34.) -blank-
@@ -567,7 +620,7 @@ This function accepts as inputs temperature [K] and pressure [Pa]
 This function outputs specific heat (Cp) in units of [kJ/kg-K]
 */
 	double T = Tc + 273.15; // C to K
-	double P=1.0; // default pressure used 1Pa
+//	double P=1.0; // default pressure used 1Pa
 	double specific_heat=1.0; // default - Type 229=0, Type 805=1
 
 	switch(flnum)
@@ -663,7 +716,9 @@ specheat = Cp_fluid((T-273.15),int(fnumd))/1000.d0
 	case 30://Therminol 59: Reference: Therminol Reference Disk by Solutia: www.therminol.com/pages/tools/toolscd.asp
 		specific_heat = 0.0033*Tc + 1.6132;
 		break;
-	case 31: //   31.) -blank-
+	case 31: //   31.) Pressurized water at 23 bar (2.10.17 twn: added)
+		specific_heat = 1.E-5*Tc*Tc - 0.0014*Tc + 4.2092;
+		break;
 	case 32: //   32.) -blank-
 	case 33: //   33.) -blank-
 	case 34: //   34.) -blank-

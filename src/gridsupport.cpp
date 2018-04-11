@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <algorithm>
 #include <set>
 
@@ -477,7 +526,7 @@ wxString GridCellArrayRenderer::GetString(const wxGrid& grid, int row, int col)
 			if (vv->Type() == VV_ARRAY)
 			{
 				size_t n;
-				float *v = vv->Array(&n);
+				vv->Array(&n);
 				if (n == 12)
 					text = "monthly...";
 				else if (n == 8760)
@@ -687,7 +736,7 @@ wxString GridCellArrayEditor::GetString(int row, int col, const wxGrid *grid)
 
 
 
-bool GridCellArrayEditor::EndEdit(int row, int col, const wxGrid *grid, const wxString& WXUNUSED(oldval), wxString *newval)
+bool GridCellArrayEditor::EndEdit(int , int , const wxGrid *, const wxString& WXUNUSED(oldval), wxString *newval)
 {
 	wxString new_cell_value = m_new_cell_value;
 	if (new_cell_value == m_cell_value)
@@ -704,7 +753,7 @@ bool GridCellArrayEditor::EndEdit(int row, int col, const wxGrid *grid, const wx
 	return true;
 }
 
-void GridCellArrayEditor::ApplyEdit(int row, int col, wxGrid *grid)
+void GridCellArrayEditor::ApplyEdit(int , int , wxGrid *)
 {
 // read only display
 	m_cell_value.clear();
@@ -872,7 +921,7 @@ bool GridCellCalculatedEditor::IsAcceptedKey(wxKeyEvent& event)
 }
 
 
-bool GridCellCalculatedEditor::DisplayEditor(wxString &title, wxString &label, wxGrid *grid, VarValue *vv)
+bool GridCellCalculatedEditor::DisplayEditor(wxString &, wxString &, wxGrid *, VarValue *)
 {
 //	Text()->SetFocus();
 
@@ -905,7 +954,7 @@ wxString GridCellCalculatedEditor::GetString(int row, int col, const wxGrid *gri
 
 
 
-bool GridCellCalculatedEditor::EndEdit(int row, int col, const wxGrid *grid, const wxString& WXUNUSED(oldval), wxString *newval)
+bool GridCellCalculatedEditor::EndEdit(int , int , const wxGrid *, const wxString& WXUNUSED(oldval), wxString *newval)
 {
 	wxString new_cell_value = m_new_cell_value;
 	if (new_cell_value == m_cell_value)
@@ -921,7 +970,7 @@ bool GridCellCalculatedEditor::EndEdit(int row, int col, const wxGrid *grid, con
 	return true;
 }
 
-void GridCellCalculatedEditor::ApplyEdit(int row, int col, wxGrid *grid)
+void GridCellCalculatedEditor::ApplyEdit(int , int , wxGrid *)
 {
 	// read only display
 	m_cell_value.clear();
@@ -986,7 +1035,7 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 	m_grid->SetColLabelValue(1, label);
 
 
-	for (size_t i = 0; i < vec_size; i++)
+	for (int i = 0; i < vec_size; i++)
 	{
 		if (vec_size != 12) m_grid->SetCellValue(i, 0, wxString::Format("%d", i));
 		m_grid->SetCellValue(i, 1, wxString::Format("%lg", vec[i]));
@@ -1009,7 +1058,7 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 		m_grid->SetCellValue(11, 0, "Dec");
 	}
 
-	m_grid->SetEditable(false);
+	m_grid->EnableEditing(false);
 	
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -1020,8 +1069,8 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 	sz = GetTextExtent(spacer);
 	int width = sz.GetWidth() - 20 ; // subtract scrollbar width
 
-	m_grid->SetColumnWidth(0, (int)(width / 2.0));
-	m_grid->SetColumnWidth(1, width - (int)(width / 2.0));
+	m_grid->SetColSize(0, (int)(width / 2.0));
+	m_grid->SetColSize(1, width - (int)(width / 2.0));
 	
 	wxBoxSizer *cf_tools = new wxBoxSizer(wxHORIZONTAL);
 	cf_tools->Add(new wxMetroButton(this, ID_APD_CLIPBOARD, "Copy to clipboard"), 0, wxALL, 0);
@@ -1060,9 +1109,9 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 
 	bool all_same_size = true;
 
-	for (size_t i = 1; i < values_vec_size; i++)
+	for (int i = 1; i < values_vec_size; i++)
 	{
-		all_same_size &= (vec_size == values_vec[i].size());
+		all_same_size &= (vec_size == (int)values_vec[i].size());
 		if (!all_same_size) break;
 	}
 
@@ -1090,11 +1139,11 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 	m_grid->SetColLabelValue(0, index_label);
 
 
-	for (size_t col = 0; col < values_vec_size; col++)
+	for (int col = 0; col < values_vec_size; col++)
 	{
-		if (labels.Count()>col)
+		if ((int)labels.Count()>col)
 			m_grid->SetColLabelValue(col+1, labels[col]);
-		for (size_t row = 0; row < vec_size; row++)
+		for (int row = 0; row < vec_size; row++)
 			m_grid->SetCellValue(row, col+1, wxString::Format("%lg", values_vec[col][row]));
 	}
 
@@ -1115,11 +1164,11 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 	}
 	else
 	{
-		for (size_t row = 0; row < vec_size; row++)
+		for (int row = 0; row < vec_size; row++)
 			m_grid->SetCellValue(row, 0, wxString::Format("%d", row));
 	}
 
-	if (vec_size == 1) m_grid->SetColumnWidth(0, 0); // hide index column for single values.
+	if (vec_size == 1) m_grid->SetColSize(0, 0); // hide index column for single values.
 	m_grid->EnableEditing(false);
 	m_grid->Thaw();
 
@@ -1137,12 +1186,12 @@ ArrayPopupDialog::ArrayPopupDialog(wxWindow *parent, const wxString &title, cons
 
 	int tot_width = 0;
 	col_width = (int)(width / values_vec_size);
-	for (size_t i = 1; i < cols; i++)
+	for (int i = 1; i < cols; i++)
 	{
-		m_grid->SetColumnWidth(i, col_width);
+		m_grid->SetColSize(i, col_width);
 		tot_width += col_width;
 	}
-	m_grid->SetColumnWidth(0, width - tot_width);
+	m_grid->SetColSize(0, width - tot_width);
 	
 	wxBoxSizer *cf_tools = new wxBoxSizer(wxHORIZONTAL);
 	cf_tools->Add(new wxMetroButton(this, ID_APD_CLIPBOARD, "Copy to clipboard"), 0, wxALL, 2);
@@ -1192,7 +1241,7 @@ void ArrayPopupDialog::GetTextData(wxString &dat, char sep)
 	size_t approxbytes = m_grid_data->GetNumberRows() * 15 * m_grid_data->GetNumberCols();
 	dat.Alloc(approxbytes);
 
-	size_t c;
+	int c;
 
 	for (c = 0; c<m_grid_data->GetNumberCols(); c++)
 	{
@@ -1210,7 +1259,7 @@ void ArrayPopupDialog::GetTextData(wxString &dat, char sep)
 			dat += '\n';
 	}
 
-	for (size_t r = 0; r<m_grid_data->GetNumberRows(); r++)
+	for (int r = 0; r<m_grid_data->GetNumberRows(); r++)
 	{
 		for (c = 0; c<m_grid_data->GetNumberCols(); c++)
 		{
@@ -1594,9 +1643,9 @@ void GridCellChoiceEditor::SetSize(const wxRect& rect)
 }
 
 
-void GridCellChoiceEditor::PaintBackground(wxDC& dc,
-	const wxRect& rectCell,
-	const wxGridCellAttr& attr)
+void GridCellChoiceEditor::PaintBackground(wxDC& ,
+	const wxRect& ,
+	const wxGridCellAttr& )
 {
 	// as we fill the entire client area, don't do anything here to minimize
 	// flicker
@@ -1708,7 +1757,6 @@ void GridCellChoiceEditor::SetParameters(const wxString& params)
 	m_choices.Empty();
 
 	wxStringTokenizer tk(params, wxT(','));
-	unsigned int i = 0;
 	while (tk.HasMoreTokens())
 	{
 		wxString choice = tk.GetNextToken();

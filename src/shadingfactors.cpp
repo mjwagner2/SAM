@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 
 #include <wx/clipbrd.h>
 #include <wx/dcbuffer.h>
@@ -47,8 +96,8 @@ void ShadingInputData::save( std::vector<float> &data )
 	
 	data.push_back( azal.nrows() );
 	data.push_back( azal.ncols() );
-	for (int r=0;r<azal.nrows();r++)
-		for (int c=0;c<azal.ncols();c++)
+	for (size_t r=0;r<azal.nrows();r++)
+		for (size_t c=0;c<azal.ncols();c++)
 			data.push_back( azal.at(r,c) );
 	
 	data.push_back( diff );
@@ -91,7 +140,7 @@ bool ShadingInputData::load( const std::vector<float> &data )
 	clear();
 
 	if (data.size() < 3) return false;
-	if (data.size() != (int)data[ data.size() - 1 ]) return false; // verification check
+	if (data.size() != (size_t)data[ data.size() - 1 ]) return false; // verification check
 	
 	int idx = 0; // indexer to step through data
 
@@ -165,9 +214,6 @@ bool ShadingInputData::load( const std::vector<float> &data )
 
 		return idx == verify;
 	}
-
-
-	return false;
 }
 
 void ShadingInputData::write( VarValue *vv )
@@ -210,8 +256,8 @@ bool ShadingInputData::read( VarValue *root )
 }
 
 
-static const char *hourly_text_basic = "Enter a beam shading loss percentage for each of the simulation time steps in a single year. No shading is 0%, and full shading is 100%. Choose a time step in minutes equivalent to the weather file time step.\n\nNote that the 3D Shade Calculator automatically populates this beam shading table.";
-static const char *hourly_text_strings = "Enter a beam shading loss percentage for each of the simulation time steps in a single year. No shading is 0%, and full shading is 100%. Choose a time step in minutes equivalent to the weather file time step. If you have separate shading data for each of up to 8 strings in this subarray, choose a number of strings to create a table column for each string, and then choose a method for determining the subarray losses from the string losses.\n\nNote that the 3D Shade Calculator automatically populates this beam shading table.";
+static const char *hourly_text_basic = "Enter or import a beam shading loss percentage for each of the simulation time steps in a single year. No shading is 0%, and full shading is 100%. Choose a time step in minutes equivalent to the weather file time step.\n\nNote that the 3D Shade Calculator automatically populates this beam shading table.";
+static const char *hourly_text_strings = "Enter or import a beam shading loss percentage for each of the simulation time steps in a single year. No shading is 0%, and full shading is 100%. Choose a time step in minutes equivalent to the weather file time step. For a subarray of modules with c-Si cells and up to 8 strings of modules, you can use the partial shading model to estimate the impact of partial shading on the subarray's DC output.\n\nIf you use the 3D Shade Calculator to populate this beam shading table, be sure that the active surface subarray number(s) and string number(s) match the system design.";
 static const char *mxh_text = "Enter 288 (24 hours x 12 month) beam shading loss percentages that apply to the 24 hours of the day for each month of the year. No shading is 0%, and full shading is 100%. Select a cell or group of cells and type a number to assign values to the table by hand. Click Import to import a table of values from a properly formatted text file. Click Export to export the data to a text file, or to create a template file for importing.";
 static const char *azal_text = "Use the Azimuth by Altitude option if you have a set of beam shading losses for different sun positions.\n\n"
   "1. Define the size of the table by entering values for the number of rows and columns.\n"
@@ -269,7 +315,8 @@ public:
 		m_timestep->SetInitialSize(wxScaleSize(900, 300));
 		m_timestep->SetMinuteCaption("Time step in minutes:");
 		m_timestep->SetColCaption(wxString("Strings") + wxString((!descText.IsEmpty() ? " in " : "")) + descText + wxString((!descText.IsEmpty() ? ":" : "")));
-		m_timestep->SetStringCaption(wxString("Method for converting string losses to subarray:"));
+//		m_timestep->SetStringCaption(wxString("Method for converting string losses to subarray:"));
+		m_timestep->SetDBCaption(wxString("Enable partial shading model (c-Si modules only)"));
 
 		int num_cols = 8;
 		matrix_t<float> ts_data(8760, num_cols, 0);
@@ -448,7 +495,8 @@ public:
 			m_timestep->SetNumMinutes(nminutes);
 			stat += "Updated timestep beam shading losses.\n";
 			int string_option = sh.string_option;
-			m_timestep->SetStringOption(string_option);
+			m_timestep->SetDBOption(string_option);
+//			m_timestep->SetStringOption(string_option);
 		}
 
 		if ( all || sh.en_mxh )
@@ -483,7 +531,8 @@ public:
 		sh.en_timestep = m_enableTimestep->IsChecked();
 		m_timestep->GetData(sh.timestep);
 
-		sh.string_option = m_timestep->GetStringOption();
+		sh.string_option = m_timestep->GetDBOption();
+//		sh.string_option = m_timestep->GetStringOption();
 
 		sh.en_mxh = m_enableMxH->IsChecked();
 		sh.mxh.copy( m_mxh->GetData() );
@@ -882,8 +931,7 @@ bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent )
 	int imageCount = 0;
 	int columnCount = 0;
 	int elevationStartCol = -1;
-	float obstructionStep;
-	double tmpVal;
+	float obstructionStep = 0.0;
 		
 	matrix_t<float> azaltvals, obstructions;
 	azaltvals.resize_fill(91,362, 0.0);
@@ -908,7 +956,7 @@ bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent )
 		else if (readdata == true && j == -1)
 		{ // get image count here
 			columnCount = lnp.Count();
-			for (size_t i = 0; i < columnCount; i++)
+			for (int i = 0; i < columnCount; i++)
 			{
 				int ndx = lnp[i].Lower().Find("elevation");
 				if (ndx != wxNOT_FOUND && (ndx < 2)) // Not Average or Maximum 
@@ -935,7 +983,7 @@ bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent )
 
 			if (j <= 360)
 			{
-				if (lnp.Count() < elevationStartCol + imageCount)
+				if ((int)lnp.Count() < elevationStartCol + imageCount)
 				{
 					wxMessageBox(wxString::Format("Error: Not enough data found at data row=%d.", j ));
 					return false;
@@ -943,7 +991,7 @@ bool ImportSunEyeObstructions( ShadingInputData &dat, wxWindow *parent )
 				else
 				{
 					azi[j] = wxAtof(lnp[0]); //first column contains compass heading azimuth values (0=north, 90=east)
-					for (int ii=0; ii<imageCount && (ii+elevationStartCol) < lnp.Count(); ii++)
+					for (int ii=0; ii<imageCount && (ii+elevationStartCol) < (int)lnp.Count(); ii++)
 						obstructions.at(j,ii) = wxAtof(lnp[ii+elevationStartCol]); 
 				}
 				j++;
@@ -1039,7 +1087,6 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 	int i, imageCount = 0;
 	bool readdata = false;
 	bool readok = true;
-	bool headingok = true;
 	int month=0; // 
 	double beam[290];
 	for (i=0;i<290;i++) beam[i]=0.0;
@@ -1095,7 +1142,6 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 	if (readdata == false || imageCount == 0)
 	{
 		readok = false;
-		headingok = false;
 	}
 
 	if (readok)
@@ -1121,16 +1167,18 @@ bool ImportSolPathMonthByHour( ShadingInputData &dat, wxWindow *parent )
 
 DEFINE_EVENT_TYPE(wxEVT_wxShadingFactorsCtrl_CHANGE)
 
-enum { ISFC_CHOICECOL = wxID_HIGHEST + 857, ISFC_CHOICEMINUTE, ISFC_CHOICESTRING, ISFC_GRID, ISFC_COPY, ISFC_PASTE, ISFC_IMPORT, ISFC_EXPORT };
+//enum { ISFC_CHOICECOL = wxID_HIGHEST + 857, ISFC_CHOICEMINUTE, ISFC_CHOICESTRING, ISFC_GRID, ISFC_COPY, ISFC_PASTE, ISFC_IMPORT, ISFC_EXPORT };
+enum { ISFC_CHOICECOL = wxID_HIGHEST + 857, ISFC_CHOICEMINUTE, ISFC_CHKDB, ISFC_GRID, ISFC_COPY, ISFC_PASTE, ISFC_IMPORT, ISFC_EXPORT };
 
 BEGIN_EVENT_TABLE(wxShadingFactorsCtrl, wxPanel)
-EVT_GRID_CMD_CELL_CHANGE(ISFC_GRID, wxShadingFactorsCtrl::OnCellChange)
-EVT_CHOICE(ISFC_CHOICECOL, wxShadingFactorsCtrl::OnChoiceCol)
-EVT_CHOICE(ISFC_CHOICEMINUTE, wxShadingFactorsCtrl::OnChoiceMinute)
-EVT_BUTTON(ISFC_COPY, wxShadingFactorsCtrl::OnCommand)
-EVT_BUTTON(ISFC_PASTE, wxShadingFactorsCtrl::OnCommand)
-EVT_BUTTON(ISFC_EXPORT, wxShadingFactorsCtrl::OnCommand)
-EVT_BUTTON(ISFC_IMPORT, wxShadingFactorsCtrl::OnCommand)
+	EVT_GRID_CMD_CELL_CHANGED(ISFC_GRID, wxShadingFactorsCtrl::OnCellChange)
+	EVT_CHOICE(ISFC_CHOICECOL, wxShadingFactorsCtrl::OnChoiceCol)
+	EVT_CHOICE(ISFC_CHOICEMINUTE, wxShadingFactorsCtrl::OnChoiceMinute)
+	EVT_BUTTON(ISFC_COPY, wxShadingFactorsCtrl::OnCommand)
+	EVT_CHECKBOX(ISFC_CHKDB, wxShadingFactorsCtrl::OnCommand)
+	EVT_BUTTON(ISFC_PASTE, wxShadingFactorsCtrl::OnCommand)
+	EVT_BUTTON(ISFC_EXPORT, wxShadingFactorsCtrl::OnCommand)
+	EVT_BUTTON(ISFC_IMPORT, wxShadingFactorsCtrl::OnCommand)
 END_EVENT_TABLE()
 
 wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
@@ -1146,7 +1194,7 @@ wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 	m_show_db_options = show_db_options;
 	m_col_arystrvals.Clear();
 	m_minute_arystrvals.Clear();
-	m_string_arystrvals.Clear();
+	//m_string_arystrvals.Clear();
 
 	m_grid = new wxExtGridCtrl(this, ISFC_GRID);
 	m_grid->CreateGrid(8760, 8);
@@ -1159,19 +1207,24 @@ wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 	m_grid->SetRowLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
 
-	m_string_arystrvals.push_back("Database lookup");
-	m_string_arystrvals.push_back("Average of strings");
-	m_string_arystrvals.push_back("Maximum of strings");
-	m_string_arystrvals.push_back("Minimum of strings");
-	m_choice_string_option = new wxChoice(this, ISFC_CHOICESTRING, wxDefaultPosition, wxDefaultSize, m_string_arystrvals);
-	m_choice_string_option->SetBackgroundColour(*wxWHITE);
+//	m_string_arystrvals.push_back("Database lookup");
+//	m_string_arystrvals.push_back("Average of strings");
+//	m_string_arystrvals.push_back("Maximum of strings");
+//	m_string_arystrvals.push_back("Minimum of strings");
+//	m_choice_string_option = new wxChoice(this, ISFC_CHOICESTRING, wxDefaultPosition, wxDefaultSize, m_string_arystrvals);
+//	m_choice_string_option->SetBackgroundColour(*wxWHITE);
 
 
 	m_caption_col = new wxStaticText(this, wxID_ANY, "");
 	m_caption_col->SetFont(*wxNORMAL_FONT);
 
-	m_caption_string = new wxStaticText(this, wxID_ANY, "");
-	m_caption_string->SetFont(*wxNORMAL_FONT);
+	m_caption_shading_db = new wxStaticText(this, wxID_ANY, "");
+	m_caption_shading_db->SetFont(*wxNORMAL_FONT);
+
+	m_chk_shading_db = new wxCheckBox(this, ISFC_CHKDB, "");
+
+//	m_caption_string = new wxStaticText(this, wxID_ANY, "");
+//	m_caption_string->SetFont(*wxNORMAL_FONT);
 
 	m_col_arystrvals.push_back("1");
 	m_col_arystrvals.push_back("2");
@@ -1208,8 +1261,8 @@ wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 	{
 		m_caption_col->Show(false);
 		m_choice_col->Show(false);
-		m_caption_string->Show(false);
-		m_choice_string_option->Show(false);
+//		m_caption_string->Show(false);
+//		m_choice_string_option->Show(false);
 	}
 
 
@@ -1219,14 +1272,17 @@ wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 		wxBoxSizer *v_tb_sizer = new wxBoxSizer(wxVERTICAL);
 		v_tb_sizer->Add(m_caption_timestep, 0, wxALL | wxEXPAND, 3);
 		v_tb_sizer->Add(m_choice_timestep, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->AddSpacer(5);
+		v_tb_sizer->Add(m_caption_shading_db, 0, wxALL | wxEXPAND, 3);
+		v_tb_sizer->Add(m_chk_shading_db, 0, wxALL | wxEXPAND, 3);
 		if (show_db_options)
 		{
 			v_tb_sizer->AddSpacer(5);
 			v_tb_sizer->Add(m_caption_col, 0, wxALL | wxEXPAND, 3);
 			v_tb_sizer->Add(m_choice_col, 0, wxALL | wxEXPAND, 3);
-			v_tb_sizer->AddSpacer(5);
-			v_tb_sizer->Add(m_caption_string, 0, wxALL | wxEXPAND, 3);
-			v_tb_sizer->Add(m_choice_string_option, 0, wxALL | wxEXPAND, 3);
+			//			v_tb_sizer->AddSpacer(5);
+//			v_tb_sizer->Add(m_caption_string, 0, wxALL | wxEXPAND, 3);
+//			v_tb_sizer->Add(m_choice_string_option, 0, wxALL | wxEXPAND, 3);
 		}
 
 		v_tb_sizer->AddSpacer(5);
@@ -1248,14 +1304,17 @@ wxShadingFactorsCtrl::wxShadingFactorsCtrl(wxWindow *parent, int id,
 		wxBoxSizer *h_tb_sizer = new wxBoxSizer(wxHORIZONTAL);
 		h_tb_sizer->Add(m_caption_timestep, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
 		h_tb_sizer->Add(m_choice_timestep, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->AddSpacer(5);
+		h_tb_sizer->Add(m_caption_shading_db, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
+		h_tb_sizer->Add(m_chk_shading_db, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
 		if (show_db_options)
 		{
 			h_tb_sizer->AddSpacer(5);
 			h_tb_sizer->Add(m_caption_col, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
 			h_tb_sizer->Add(m_choice_col, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
-			h_tb_sizer->AddSpacer(5);
-			h_tb_sizer->Add(m_caption_string, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
-			h_tb_sizer->Add(m_choice_string_option, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
+//			h_tb_sizer->AddSpacer(5);
+//			h_tb_sizer->Add(m_caption_string, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
+//			h_tb_sizer->Add(m_choice_string_option, 0, wxALL | wxALIGN_CENTER_VERTICAL, 3);
 		}
 		/*
 		h_tb_sizer->AddSpacer(5);
@@ -1293,6 +1352,23 @@ void wxShadingFactorsCtrl::UpdateNumberColumns(size_t &new_cols)
 	SetData(m_data);
 }
 
+void wxShadingFactorsCtrl::AverageCols()
+{
+	size_t ncols = m_data.ncols();
+	for (size_t nr = 0; nr < m_data.nrows(); nr++)
+	{
+		float avg = 0;
+		for (size_t nc = 0; nc < ncols; nc++)
+			avg += m_data.at(nr, nc);
+		avg /= ncols;
+		m_data.at(nr, 0) = avg;
+	}
+	m_data.resize_preserve(m_data.nrows(), 1, m_default_val);
+	SetData(m_data);
+	m_choice_col->SetSelection(0);
+}
+
+
 void wxShadingFactorsCtrl::UpdateNumberRows(size_t &new_rows)
 {
 	// resize and preserve existing data and fill new data with default.
@@ -1316,6 +1392,15 @@ void wxShadingFactorsCtrl::OnCommand(wxCommandEvent &evt)
 {
 	switch (evt.GetId())
 	{
+		case ISFC_CHKDB:
+			{
+				bool bol_db = m_chk_shading_db->GetValue();
+				m_caption_col->Show(bol_db);
+				m_choice_col->Show(bol_db);
+				if (!bol_db)
+					AverageCols();
+			}
+			break;
 		case ISFC_COPY:
 			m_grid->Copy(true);
 			break;
@@ -1344,7 +1429,7 @@ void wxShadingFactorsCtrl::OnCommand(wxCommandEvent &evt)
 				{
 					wxArrayString col_vals1 = wxStringTokenize(lines[0], "\t", ::wxTOKEN_RET_EMPTY_ALL);
 					ncols = col_vals1.Count();
-					if (ncols > m_col_arystrvals.Count())
+					if (ncols > (int)m_col_arystrvals.Count())
 						ncols = m_col_arystrvals.Count();
 					int ndx = m_col_arystrvals.Index(wxString::Format("%d", ncols));
 					if (ndx >= 0)
@@ -1362,14 +1447,16 @@ void wxShadingFactorsCtrl::OnCommand(wxCommandEvent &evt)
 
 				m_grid->Paste( wxExtGridCtrl::PASTE_ALL );
 
-				for (int r = 0; r < m_data.nrows(); r++)
-					for (int c = 0; c < m_data.ncols(); c++)
+				for (size_t r = 0; r < m_data.nrows(); r++)
+					for (size_t c = 0; c < m_data.ncols(); c++)
 						m_data.at(r, c) = atof(m_grid->GetCellValue(r, c).c_str());
 				SetData(m_data);
 				int ndx = m_minute_arystrvals.Index(wxString::Format("%d", minutes));
 				if (ndx >= 0)
 					m_choice_timestep->SetSelection(ndx);
-
+				m_chk_shading_db->SetValue(true);
+				m_caption_col->Show(true);
+				m_choice_col->Show(true);
 			}
 
 		}
@@ -1378,8 +1465,16 @@ void wxShadingFactorsCtrl::OnCommand(wxCommandEvent &evt)
 		{
 			wxFileDialog dlg(this, "Select data matrix file to import");
 			if (dlg.ShowModal() == wxID_OK)
+			{
 				if (!Import(dlg.GetPath()))
 					wxMessageBox("Error import data file:\n\n" + dlg.GetPath());
+				else
+				{
+					m_chk_shading_db->SetValue(true);
+					m_caption_col->Show(true);
+					m_choice_col->Show(true);
+				}
+			}
 		}
 		break;
 		case ISFC_EXPORT:
@@ -1397,8 +1492,8 @@ void wxShadingFactorsCtrl::OnCommand(wxCommandEvent &evt)
 bool wxShadingFactorsCtrl::Export(const wxString &file)
 {
 	wxCSVData csv;
-	for (int r = 0; r<m_data.nrows(); r++)
-		for (int c = 0; c<m_data.ncols(); c++)
+	for (size_t r = 0; r<m_data.nrows(); r++)
+		for (size_t c = 0; c<m_data.ncols(); c++)
 			csv(r, c) = wxString::Format("%g", m_data(r, c));
 
 	return csv.WriteFile(file);
@@ -1425,7 +1520,7 @@ bool wxShadingFactorsCtrl::Import(const wxString &file)
 	if (m_show_db_options && (csv.NumCols() > 0))
 	{
 		ncols = csv.NumCols();
-		if (ncols > m_col_arystrvals.Count())
+		if (ncols > (int)m_col_arystrvals.Count())
 			ncols = m_col_arystrvals.Count();
 		int ndx = m_col_arystrvals.Index(wxString::Format("%d", ncols));
 		if (ndx >= 0)
@@ -1449,18 +1544,18 @@ bool wxShadingFactorsCtrl::Import(const wxString &file)
 }
 
 
-void wxShadingFactorsCtrl::OnChoiceCol(wxCommandEvent  &evt)
+void wxShadingFactorsCtrl::OnChoiceCol(wxCommandEvent  &)
 {
-	if ((m_choice_col->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_col->GetString(m_choice_col->GetSelection())) != m_data.ncols()))
+	if ((m_choice_col->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_col->GetString(m_choice_col->GetSelection())) != (int)m_data.ncols()))
 	{ 
 		size_t new_cols = wxAtoi(m_choice_col->GetString(m_choice_col->GetSelection()));
 		UpdateNumberColumns(new_cols);
 	}
 }
 
-void wxShadingFactorsCtrl::OnChoiceMinute(wxCommandEvent  &evt)
+void wxShadingFactorsCtrl::OnChoiceMinute(wxCommandEvent  &)
 {
-	if ((m_choice_timestep->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection())) != m_num_minutes))
+	if ((m_choice_timestep->GetSelection() != wxNOT_FOUND) && (wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection())) != (int)m_num_minutes))
 	{
 		m_num_minutes = wxAtoi(m_choice_timestep->GetString(m_choice_timestep->GetSelection()));
 		UpdateNumberMinutes(m_num_minutes);
@@ -1509,7 +1604,7 @@ void wxShadingFactorsCtrl::OnCellChange(wxGridEvent &evt)
 	{
 		float val = (float)wxAtof(m_grid->GetCellValue(irow, icol).c_str());
 
-		if (irow < m_data.nrows() && icol < m_data.ncols()
+		if (irow < (int)m_data.nrows() && icol < (int)m_data.ncols()
 			&& irow >= 0 && icol >= 0)
 			m_data.at(irow, icol) = val;
 
@@ -1531,7 +1626,7 @@ wxString wxShadingFactorsCtrl::GetColCaption()
 {
 	return m_caption_col->GetLabel();
 }
-
+/*
 void wxShadingFactorsCtrl::SetStringCaption(const wxString &cap)
 {
 	m_caption_string->SetLabel(cap);
@@ -1542,7 +1637,7 @@ wxString wxShadingFactorsCtrl::GetStringCaption()
 {
 	return m_caption_string->GetLabel();
 }
-
+*/
 
 void wxShadingFactorsCtrl::SetMinuteCaption(const wxString &cap)
 {
@@ -1553,6 +1648,17 @@ void wxShadingFactorsCtrl::SetMinuteCaption(const wxString &cap)
 wxString wxShadingFactorsCtrl::GetMinuteCaption()
 {
 	return m_caption_timestep->GetLabel();
+}
+
+void wxShadingFactorsCtrl::SetDBCaption(const wxString &cap)
+{
+	m_caption_shading_db->SetLabel(cap);
+	this->Layout();
+}
+
+wxString wxShadingFactorsCtrl::GetDBCaption()
+{
+	return m_caption_shading_db->GetLabel();
 }
 
 
@@ -1571,6 +1677,26 @@ void wxShadingFactorsCtrl::SetNumCols(size_t &cols)
 		m_choice_col->SetSelection(ndx);
 	UpdateNumberColumns(cols);
 }
+
+void wxShadingFactorsCtrl::SetDBOption(int &db_option)
+{
+	// keep compatibility with shading database = 0 choice
+	bool bol_shade_db = (db_option == 0);
+	m_chk_shading_db->SetValue(bol_shade_db);
+	m_caption_col->Show(bol_shade_db);
+	m_choice_col->Show(bol_shade_db);
+}
+
+int wxShadingFactorsCtrl::GetDBOption()
+{
+	// keep compatibility with shading database = 0 choice
+	if (m_chk_shading_db->GetValue())
+		return 0;
+	else
+		return 1; // average
+}
+
+/*
 void wxShadingFactorsCtrl::SetStringOption(int &string_option)
 {
 	if (string_option >= 0 && string_option < (int)m_string_arystrvals.Count())
@@ -1586,7 +1712,7 @@ int wxShadingFactorsCtrl::GetStringOption()
 	else
 		return -1; // no string options
 }
-
+*/
 
 wxShadingFactorsTable::wxShadingFactorsTable(matrix_t<float> *da, float _def_val, const wxString &_label)
 {
@@ -1614,14 +1740,14 @@ int wxShadingFactorsTable::GetNumberCols()
 	return (int)d_mat->ncols();
 }
 
-bool wxShadingFactorsTable::IsEmptyCell(int row, int col)
+bool wxShadingFactorsTable::IsEmptyCell(int , int )
 {
 	return false;
 }
 
 wxString wxShadingFactorsTable::GetValue(int row, int col)
 {
-	if (d_mat && row >= 0 && row < d_mat->nrows() && col >= 0 && col < d_mat->ncols())
+	if (d_mat && row >= 0 && row < (int)d_mat->nrows() && col >= 0 && col < (int)d_mat->ncols())
 		return wxString::Format("%g", d_mat->at(row, col));
 	else
 		return "-0.0";
@@ -1629,7 +1755,7 @@ wxString wxShadingFactorsTable::GetValue(int row, int col)
 
 void wxShadingFactorsTable::SetValue(int row, int col, const wxString& value)
 {
-	if (d_mat && row >= 0 && row < d_mat->nrows() && col >= 0 && col < d_mat->ncols())
+	if (d_mat && row >= 0 && row < (int)d_mat->nrows() && col >= 0 && col < (int)d_mat->ncols())
 		d_mat->at(row, col) = wxAtof(value);
 }
 
@@ -1661,17 +1787,17 @@ wxString wxShadingFactorsTable::GetColLabelValue(int col)
 	return col_label;
 }
 
-wxString wxShadingFactorsTable::GetTypeName(int row, int col)
+wxString wxShadingFactorsTable::GetTypeName(int , int )
 {
 	return wxGRID_VALUE_STRING;
 }
 
-bool wxShadingFactorsTable::CanGetValueAs(int row, int col, const wxString& typeName)
+bool wxShadingFactorsTable::CanGetValueAs(int , int , const wxString& typeName)
 {
 	return typeName == wxGRID_VALUE_STRING;
 }
 
-bool wxShadingFactorsTable::CanSetValueAs(int row, int col, const wxString& typeName)
+bool wxShadingFactorsTable::CanSetValueAs(int , int , const wxString& typeName)
 {
 	return typeName == wxGRID_VALUE_STRING;
 }
@@ -1701,7 +1827,6 @@ bool wxShadingFactorsTable::InsertRows(size_t pos, size_t nrows)
 
 	if (!d_mat) return true;
 
-	if (pos < 0) pos = 0;
 	if (pos > d_mat->nrows()) pos = d_mat->nrows();
 
 	size_t new_rows = d_mat->nrows() + nrows;
@@ -1783,7 +1908,6 @@ bool wxShadingFactorsTable::InsertCols(size_t pos, size_t ncols)
 
 	if (!d_mat) return true;
 
-	if (pos < 0) pos = 0;
 	if (pos > d_mat->ncols()) pos = d_mat->ncols();
 
 	size_t new_cols = d_mat->ncols() + ncols;

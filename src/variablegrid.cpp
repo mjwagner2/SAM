@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <algorithm>
 #include <set>
 
@@ -164,7 +213,7 @@ wxString VariableGridData::GetColLabelValue(int col)
 wxString VariableGridData::GetVarName(int row, int col)
 {
 	wxString  ret_val = wxEmptyString;
-	if ((col > 0) && (col < m_var_names.Count()) && (row > -1) && (row < m_rows))
+	if ((col > 0) && (col < (int)m_var_names.Count()) && (row > -1) && (row < m_rows))
 	{
 		int lookup_row = row;
 		if (m_sorted) lookup_row = m_sorted_index[row];
@@ -247,7 +296,7 @@ wxString VariableGridData::GetChoice(int row, int col)
 			int ndx = -1;
 			double val;
 			if (GetValue(row, col).ToDouble(&val)) ndx = int(val);
-			if ((as.Count() > 0) && (ndx >= 0) && (ndx < as.Count()))
+			if ((as.Count() > 0) && (ndx >= 0) && (ndx < (int)as.Count()))
 				ret_str = as[ndx];
 		}
 	}
@@ -393,7 +442,7 @@ wxString VariableGridData::GetTypeName(int row, int col)
 		if (VarInfo *var_info = m_var_info_lookup_vec[col - 2]->Lookup(m_var_names[lookup_row]))
 		{ // TODO - better control list maintenance here and in UIEditorPanel
 			wxString type = var_info->UIObject;
-			bool calculated = var_info->Flags   & VF_CALCULATED;
+			bool calculated = (var_info->Flags   & VF_CALCULATED) > 0;
 			if (calculated)
 				return "GridCellCalculated";
 			else if (type == "Numeric")
@@ -405,6 +454,8 @@ wxString VariableGridData::GetTypeName(int row, int col)
 			else if (type == "RadioChoice")
 				return "GridCellVarValue";
 			else if (type == "TextEntry")
+				return wxGRID_VALUE_STRING;
+			else if (type == "MultilineText")
 				return wxGRID_VALUE_STRING;
 			else if (type == "Slider")
 				return "GridCellVarValue";
@@ -506,12 +557,12 @@ bool VariableGridData::ShowRow(int row, int comparison_type, bool show_calculate
 	{
 		bool calculated = false;
 		int lookup_row = row;
-		if (m_sorted) lookup_row = m_sorted_index[row];
-		if (m_var_info_lookup_vec[0]->Lookup(m_var_names[lookup_row]))
+		if ((row < (int)m_sorted_index.Count()) && (m_sorted)) lookup_row = m_sorted_index[row];
+		if ((lookup_row < (int)m_var_names.Count()) && (m_var_info_lookup_vec[0]->Lookup(m_var_names[lookup_row])))
 		{
 			VarInfo *vi = m_var_info_lookup_vec[0]->Lookup(m_var_names[lookup_row]);
 			if (vi)
-				calculated = vi->Flags & VF_CALCULATED;
+				calculated = (vi->Flags & VF_CALCULATED) > 0 ;
 			if (calculated) show = show && show_calculated;
 		}
 	}
@@ -605,7 +656,7 @@ BEGIN_EVENT_TABLE(VariableGrid, wxExtGridCtrl)
 EVT_GRID_CELL_LEFT_CLICK(VariableGrid::OnLeftClick)
 END_EVENT_TABLE()
 
-VariableGrid::VariableGrid(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long style, const wxString &name) : wxExtGridCtrl(parent, id, pos, size)
+VariableGrid::VariableGrid(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long , const wxString &) : wxExtGridCtrl(parent, id, pos, size)
 {
 }
 
@@ -698,7 +749,7 @@ VariableGridFrame::VariableGridFrame(wxWindow *parent, ProjectFile *pf, Case *c,
 
 
 		
-		wxBoxSizer *comparetools = new wxBoxSizer(wxHORIZONTAL);
+//		wxBoxSizer *comparetools = new wxBoxSizer(wxHORIZONTAL);
 
 		wxBoxSizer *tools = new wxBoxSizer(wxHORIZONTAL);
 		m_btn_export = new wxMetroButton(this, ID_EXP_BTN, "Export", wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxMB_DOWNARROW);
@@ -737,7 +788,7 @@ VariableGridFrame::VariableGridFrame(wxWindow *parent, ProjectFile *pf, Case *c,
 
 }
 
-void VariableGridFrame::OnShow(wxShowEvent& evt)
+void VariableGridFrame::OnShow(wxShowEvent& )
 {
 	m_griddata->Sort(0, !(m_grid->IsSortingBy(0) &&
 		m_grid->IsSortOrderAscending()));
@@ -773,7 +824,7 @@ void VariableGridFrame::GetTextData(wxString &dat, char sep)
 	size_t approxbytes = m_griddata->GetNumberRows() * 15 * m_griddata->GetNumberCols();
 	dat.Alloc(approxbytes);
 
-	size_t c;
+	int c;
 
 	for (c = 0; c<m_griddata->GetNumberCols(); c++)
 	{
@@ -791,7 +842,7 @@ void VariableGridFrame::GetTextData(wxString &dat, char sep)
 			dat += '\n';
 	}
 
-	for (size_t r = 0; r<m_griddata->GetNumberRows(); r++)
+	for (int r = 0; r<m_griddata->GetNumberRows(); r++)
 	{
 		if (m_grid->IsRowShown(r))
 		{
@@ -920,7 +971,7 @@ void VariableGridFrame::SizeColumns()
 		GetTextExtent(m_grid->GetColLabelValue(col), &width, &height);
 		if ((width + 10) > col_width[col]) col_width[col] = width + 10;
 		if (col_width[col] > 250) col_width[col] = 250;
-		m_grid->SetColumnWidth(col, col_width[col]);
+		m_grid->SetColSize(col, col_width[col]);
 	}
 }
 

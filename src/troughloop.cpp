@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 
 #include <wx/clipbrd.h>
 #include <wx/dcbuffer.h>
@@ -43,7 +92,7 @@ TRLoopCtrl::TRLoopCtrl(wxWindow *parent, int id, const wxPoint &pos, const wxSiz
 	}
 
 	mRenderer = new TRLoopRenderer(this);
-	mNumSCAs = new wxNumericCtrl(this, IDTRL_NSCAS, mLoop.size(), wxNumericCtrl::INTEGER);
+	mNumSCAs = new wxNumericCtrl(this, IDTRL_NSCAS, mLoop.size(), wxNUMERIC_INTEGER);
 
 	mEditModeSCA = new wxRadioButton(this, IDTRL_EDITSCA, "Edit SCAs", wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
 	mEditModeHCE = new wxRadioButton(this, IDTRL_EDITHCE, "Edit HCEs");
@@ -78,7 +127,7 @@ void TRLoopCtrl::LoopData(const std::vector<int> &dat)
 {
 	if (dat.size() < 2) return;
 	int nsca = dat[0];
-	if (dat.size() != nsca*3+1) return;
+	if ((int)dat.size() != nsca*3+1) return;
 
 	mLoop.resize(nsca);
 	for (size_t i=0;i<mLoop.size();i++)
@@ -125,7 +174,7 @@ void TRLoopCtrl::ResetDefocus()
 		mLoop[i].Defocus = mLoop.size()-i;
 }
 
-void TRLoopCtrl::OnResetDefocus(wxCommandEvent &evt)
+void TRLoopCtrl::OnResetDefocus(wxCommandEvent &)
 {
 	ResetDefocus();
 	mRenderer->Refresh();
@@ -138,7 +187,7 @@ void TRLoopCtrl::DispatchEvent()
 	GetEventHandler()->ProcessEvent(change);
 }
 
-void TRLoopCtrl::OnNSCAChange(wxCommandEvent &evt)
+void TRLoopCtrl::OnNSCAChange(wxCommandEvent &)
 {
 	int nsca = CLAMP(mNumSCAs->AsInteger(),1,32);
 	if (nsca != mNumSCAs->AsInteger()) mNumSCAs->SetValue(nsca);
@@ -232,7 +281,7 @@ void TRLoopRenderer::RepositionAll()
 	Refresh();
 }
 
-void TRLoopRenderer::OnPaint(wxPaintEvent &evt)
+void TRLoopRenderer::OnPaint(wxPaintEvent &)
 {
 	wxAutoBufferedPaintDC pdc(this);
 
@@ -379,7 +428,7 @@ void TRLoopRenderer::OnPaint(wxPaintEvent &evt)
 	pdc.DrawRectangle(0, 0, cw, ch);
 }
 
-void TRLoopRenderer::OnResize(wxSizeEvent &evt)
+void TRLoopRenderer::OnResize(wxSizeEvent &)
 {
 	RepositionAll();
 }
@@ -483,7 +532,7 @@ void TRLoopRenderer::OnMouseDown(wxMouseEvent &evt)
 					"Defocus Order", wxString::Format("%d", lpn.Defocus), this);
 
 				if (result.IsEmpty()) return;
-				lpn.Defocus = CLAMP( wxAtoi(result), 1, mTRCtrl->mLoop.size() );
+				lpn.Defocus = CLAMP( wxAtoi(result), 1, (int)mTRCtrl->mLoop.size() );
 				mTRCtrl->DispatchEvent();
 				Refresh();
 			}
@@ -498,7 +547,7 @@ void TRLoopRenderer::OnMouseDown(wxMouseEvent &evt)
 	}
 }
 
-void TRLoopRenderer::OnMouseUp(wxMouseEvent &evt)
+void TRLoopRenderer::OnMouseUp(wxMouseEvent &)
 {
 	if (bMultiSelMode)
 	{
@@ -546,7 +595,7 @@ void TRLoopRenderer::OnMouseMove(wxMouseEvent &evt)
 	}
 }
 
-void TRLoopRenderer::OnLeave(wxMouseEvent &evt)
+void TRLoopRenderer::OnLeave(wxMouseEvent &)
 {
 }
 
@@ -558,7 +607,7 @@ void TRLoopRenderer::DrawMultiSelBox()
 #ifdef __WXOSX__
 	wxBrush brush( wxColour(240,240,240,130) );
 #else
-	wxBrush brush( *wxWHITE, wxTRANSPARENT );
+	wxBrush brush( *wxWHITE, wxBRUSHSTYLE_TRANSPARENT );
 #endif
 	wxPen pen( wxColour(90,90,90) );
 	pen.SetCap(wxCAP_BUTT);

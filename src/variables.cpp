@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <cmath>
 #include <numeric>
 #include <algorithm>
@@ -169,7 +218,9 @@ void VarTable::Write( wxOutputStream &_O, size_t maxdim )
 			it->second->Write( _O );
 
 			if ( it->second->Type() == VV_BINARY )
+			  {
 				wxLogStatus("WRITE VV_BINARY(%s): %d bytes", (const char*)it->first.c_str(), (int)it->second->Binary().GetDataLen() );
+			  }
 		}
 	}
 	else
@@ -208,8 +259,9 @@ void VarTable::Write( wxOutputStream &_O, size_t maxdim )
 			out.WriteString( names[i] );
 			list[i]->Write( _O );
 			if ( list[i]->Type() == VV_BINARY )
+			  {
 				wxLogStatus("WRITE VV_BINARY(%s): %d bytes", (const char*)names[i].c_str(), (int)list[i]->Binary().GetDataLen() );
-
+			  }
 		}
 	}
 
@@ -229,9 +281,9 @@ bool VarTable::Read( wxInputStream &_I )
 	
 	wxDataInputStream in(_I);
 	wxUint8 code = in.Read8();
-	wxUint8 ver = in.Read8();
+	in.Read8(); //ver
 
-	bool ok = true;
+  bool ok = true;
 	size_t n = in.Read32();
 	for ( size_t i=0;i<n;i++ )
 	{
@@ -240,7 +292,9 @@ bool VarTable::Read( wxInputStream &_I )
 		ok = ok && value->Read( _I );
 
 		if( value->Type() == VV_BINARY )
+		  {
 			wxLogStatus("READ VV_BINARY(%s): %d bytes", (const char*)name.c_str(), (int)value->Binary().GetDataLen() );
+		  }
 		
 		if ( find(name) == end() ) (*this)[name] = value;
 		else delete value;
@@ -353,10 +407,12 @@ bool VarValue::ValueEqual( VarValue &rhs )
 			if (equal)
 				for (size_t r = 0; r < m_val.nrows(); r++)
 					for (size_t c = 0; c < m_val.ncols(); c++)
+					  {
 						if (equal)
 							equal = equal && (m_val(r, c) == rhs.m_val(r, c));
 						else
 							break;
+					  }
 			break;
 		case VV_TABLE: // not working correctly 
 			equal = (m_tab.size() == rhs.m_tab.size());
@@ -459,7 +515,7 @@ bool VarValue::Read( wxInputStream &_I )
 	wxDataInputStream in( _I );
 
 	wxUint8 code = in.Read8();
-	wxUint8 ver = in.Read8();
+	in.Read8(); // ver
 
 	m_type = in.Read8();
 
@@ -748,7 +804,7 @@ bool VarValue::Write( lk::vardata_t &val )
 			if ( n > 0 )
 			{
 				val.vec()->reserve( (size_t) n  );
-				for (int i=0;i<n;i++)
+				for (size_t i=0;i<n;i++)
 					val.vec_append( (double)p[i] );
 			}
 		}
@@ -758,12 +814,12 @@ bool VarValue::Write( lk::vardata_t &val )
 			::matrix_t<float> &mat = Matrix();
 			val.empty_vector();
 			val.vec()->reserve( mat.nrows() );
-			for (int i=0;i<mat.nrows();i++)
+			for (size_t i=0;i<mat.nrows();i++)
 			{
 				val.vec()->push_back( lk::vardata_t() );
 				val.vec()->at(i).empty_vector();
 				val.vec()->at(i).vec()->reserve( mat.ncols() );
-				for (int j=0;j<mat.ncols();j++)
+				for (size_t j=0;j<mat.ncols();j++)
 					val.vec()->at(i).vec_append( mat.at(i,j) );
 			}
 		}
@@ -821,7 +877,6 @@ wxString bintohexstr( char *data, int len )
 
 void hexstrtobin( const wxString &str, char *data, int len )
 {
-	int slen = str.Len();
 	int idx = 0;
 	wxString::const_iterator it = str.begin();
 	while ( it != str.end() )
@@ -903,12 +958,12 @@ bool VarValue::Parse( int type, const wxString &str, VarValue &value )
 		return true;
 		}
 	case VV_BINARY:
-		value.m_type == VV_BINARY;
+		value.m_type = VV_BINARY;
 		value.m_bin.Clear();
 		if ( str.Len() > 0 )
 		{
 			int nbytes = str.Len()/2;
-			if ( nbytes*2 != str.Len() ) return false;
+			if ( nbytes*2 != (int)str.Len() ) return false;
 			char *data = (char*)value.m_bin.GetWriteBuf( nbytes );
 			hexstrtobin( str, data, nbytes );
 			value.m_bin.UngetWriteBuf( nbytes );

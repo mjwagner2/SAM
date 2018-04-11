@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <algorithm>
 
 #include <wx/clipbrd.h>
@@ -17,7 +66,7 @@ BEGIN_EVENT_TABLE( PTLayoutCtrl, wxPanel )
 	EVT_NUMERIC( ID_SPAN, PTLayoutCtrl::OnSpanAngleChange )
 	EVT_NUMERIC( ID_NUMROWS, PTLayoutCtrl::OnGridSizeChange )
 	EVT_NUMERIC( ID_NUMCOLS, PTLayoutCtrl::OnGridSizeChange )
-	EVT_GRID_CMD_CELL_CHANGE( ID_GRID, PTLayoutCtrl::OnGridCellChange)
+	EVT_GRID_CMD_CELL_CHANGED( ID_GRID, PTLayoutCtrl::OnGridCellChange)
 	EVT_GRID_CMD_SELECT_CELL( ID_GRID, PTLayoutCtrl::OnGridCellSelect)
 
 	EVT_BUTTON( ID_COPY, PTLayoutCtrl::OnButton )
@@ -36,12 +85,12 @@ PTLayoutCtrl::PTLayoutCtrl(wxWindow *parent, int id, const wxPoint &pos, const w
 	m_spanAngle = 360;
 
 	m_numSpan = new wxNumericCtrl(this, ID_SPAN, 360.0);
-	m_numRows = new wxNumericCtrl(this, ID_NUMROWS, 6, wxNumericCtrl::INTEGER);
-	m_numCols = new wxNumericCtrl(this, ID_NUMCOLS, 8, wxNumericCtrl::INTEGER);
+	m_numRows = new wxNumericCtrl(this, ID_NUMROWS, 6, wxNUMERIC_INTEGER);
+	m_numCols = new wxNumericCtrl(this, ID_NUMCOLS, 8, wxNUMERIC_INTEGER);
 
 	m_data.resize_fill(12,12, 0.0);
-	for (int r=0;r<m_data.nrows();r++)
-		for (int c=0;c<m_data.ncols();c++)
+	for (size_t r=0;r<m_data.nrows();r++)
+		for (size_t c=0;c<m_data.ncols();c++)
 			m_data.at(r,c) = 1;
 
 	m_renderer = new PTLayoutRenderer(this);
@@ -167,14 +216,14 @@ void PTLayoutCtrl::UpdateData()
 		}
 
 		double angle = 0;
-		for (int i=0;i<nc;i++)
+		for (int i=0;i<(int)nc;i++)
 		{
 			m_grid->SetColLabelValue(i, wxString::Format("%.1lf",angle));
 			if (i!=n_ecol) angle += zspan;
 			else angle += (360.0-m_spanAngle);
 		}
 
-		for (int i=0;i<nr;i++)
+		for (int i=0;i<(int)nr;i++)
 			m_grid->SetRowLabelValue(i, wxString::Format("Rad.%d", i+1));
 
 		m_lblRows->SetLabel("Radial Zones:");
@@ -184,7 +233,7 @@ void PTLayoutCtrl::UpdateData()
 		{
 			// grey out empty column
 			m_grid->SetColLabelValue( n_ecol, "(empty)");			
-			for (int r=0;r<m_data.nrows();r++)
+			for (size_t r=0;r<m_data.nrows();r++)
 				m_grid->SetCellBackgroundColour(r,n_ecol, wxColour(230,230,230));
 		}
 
@@ -192,7 +241,7 @@ void PTLayoutCtrl::UpdateData()
 	else
 	{
 		
-		for (int i=0;i<nr;i++)
+		for (int i=0;i<(int)nr;i++)
 			m_grid->SetRowLabelValue(i, wxString::Format("Heliostat %d", i+1));
 
 		m_lblRows->SetLabel("# of Heliostats:");
@@ -234,7 +283,7 @@ void PTLayoutCtrl::SetGrid( const matrix_t<float> &data )
 }
 
 
-void PTLayoutCtrl::OnSpanAngleChange(wxCommandEvent &evt)
+void PTLayoutCtrl::OnSpanAngleChange(wxCommandEvent &)
 {
 	if (m_spanAngleEnabled)
 	{
@@ -249,15 +298,15 @@ void PTLayoutCtrl::OnSpanAngleChange(wxCommandEvent &evt)
 	}
 }
 
-void PTLayoutCtrl::OnGridSizeChange(wxCommandEvent &evt)
+void PTLayoutCtrl::OnGridSizeChange(wxCommandEvent &)
 {
 	size_t nr = (size_t)m_numRows->AsInteger();
 	size_t nc = (size_t)m_numCols->AsInteger();
 	
 	FixDimensions(nr,nc);
 
-	if (nr != m_numRows->AsInteger()) m_numRows->SetValue(nr);
-	if (nc != m_numCols->AsInteger()) m_numCols->SetValue(nc);
+	if ((int)nr != m_numRows->AsInteger()) m_numRows->SetValue(nr);
+	if ((int)nc != m_numCols->AsInteger()) m_numCols->SetValue(nc);
 
 	ResizeGrid(nr,nc);
 	DispatchEvent();
@@ -290,10 +339,10 @@ void PTLayoutCtrl::ResizeGrid( size_t nrows, size_t ncols )
 		for( size_t c=0; c<old.ncols() && c < ncols; c++ )
 			m_data.at(r,c) = old.at(r,c);
 	
-	if (m_numRows->AsInteger() != m_data.nrows())
+	if (m_numRows->AsInteger() != (int)m_data.nrows())
 		m_numRows->SetValue( m_data.nrows() );
 
-	if (m_numCols->AsInteger() != m_data.ncols())
+	if (m_numCols->AsInteger() != (int)m_data.ncols())
 		m_numCols->SetValue( m_data.ncols() );
 
 	UpdateData();
@@ -314,7 +363,7 @@ void PTLayoutCtrl::OnGridCellChange(wxGridEvent &evt)
 		return;
 	}
 
-	if (m_spanAngle != 360.0 && c == m_data.ncols()/2 && m_data.ncols() > 2)
+	if (m_spanAngle != 360.0 && c == (int)m_data.ncols()/2 && m_data.ncols() > 2)
 		val = 0;
 
 	m_data.at(r,c) = val;
@@ -346,8 +395,8 @@ float PTLayoutCtrl::NumHeliostats()
 	float sum = 0;
 	if (IsZonal())
 	{
-		for (int r=0;r<m_data.nrows();r++)
-			for (int c=0;c<m_data.ncols();c++)
+		for (size_t r=0;r<m_data.nrows();r++)
+			for (size_t c=0;c<m_data.ncols();c++)
 				sum += m_data.at(r,c);
 	}
 	else
@@ -462,31 +511,31 @@ void PTLayoutRenderer::Highlight(int rad, int azm)
 	Refresh();
 }
 
-void PTLayoutRenderer::OnResize(wxSizeEvent &evt)
+void PTLayoutRenderer::OnResize(wxSizeEvent &)
 {
 	Refresh();
 }
 
-void PTLayoutRenderer::OnChar(wxKeyEvent &evt)
+void PTLayoutRenderer::OnChar(wxKeyEvent &)
 {
 }
 
-void PTLayoutRenderer::OnMouseDown(wxMouseEvent &evt)
+void PTLayoutRenderer::OnMouseDown(wxMouseEvent &)
 {
 	bMouseDown = true;
 }
 
 
-void PTLayoutRenderer::OnMouseUp(wxMouseEvent &evt)
+void PTLayoutRenderer::OnMouseUp(wxMouseEvent &)
 {
 	bMouseDown = false;
 }
 
-void PTLayoutRenderer::OnMouseMove(wxMouseEvent &evt)
+void PTLayoutRenderer::OnMouseMove(wxMouseEvent &)
 {
 }
 
-void PTLayoutRenderer::OnPaint(wxPaintEvent &evt)
+void PTLayoutRenderer::OnPaint(wxPaintEvent &)
 {
 	wxAutoBufferedPaintDC pdc(this);
 
@@ -552,7 +601,7 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 	int cir_y = geom.y+geom.height/2;
 	int tw,th;
 
-	wxPen p = wxPen(*wxLIGHT_GREY, 2, wxDOT);
+	wxPen p = wxPen(*wxLIGHT_GREY, 2, wxPENSTYLE_DOT);
 	dc.SetPen(p);
 	dc.DrawLine(cir_x, geom.y, cir_x, geom.y+geom.height);
 	dc.DrawLine(geom.x, cir_y, geom.x+geom.width, cir_y);
@@ -562,20 +611,20 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 
 	dc.DrawCircle(cir_x, cir_y, (int)max_radius);
 
-	int i,r,c,a;
+	int r,a;
 
 	double maxval = -1e99;
-	double rlo = 1.0, save, z;
+	double rlo = 1.0, z;
 	matrix_t<double> uf1;
 	uf1.resize_fill(nrad, nazm, 0.0);
 
-	for (r=0;r<nrad;r++)
+	for (r=0;r<(int)nrad;r++)
 	{
-		for (a=0;a<nazm;a++)
+		for (a=0;a<(int)nazm;a++)
 		{
 			if (r==0)
 				z = 2.0/(rlo+1.5)*m_data.at(r,a);
-			else if (r==nrad-1)
+			else if (r==(int)nrad-1)
 				z = 2.0/(nrad-0.5+rlo)*m_data.at(r,a);
 			else
 				z = m_data.at(r,a)/(r+1.0+rlo);
@@ -596,7 +645,7 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 	for (r=nrad-1;r>=0;r--)
 	{
 		angle = -adelta/2+90;
-		for (a=0;a<nazm;a++)
+		for (a=0;a<(int)nazm;a++)
 		{
 			int index = 0;
 			if (maxval != 0.0)
@@ -609,7 +658,7 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 
 			double astart = angle+zspan;
 			double aend = angle;
-			if (a==n_empty)
+			if ((int)a==n_empty)
 			{
 				astart=angle+zspan-espan;
 				aend=astart+espan;
@@ -661,7 +710,7 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 		radius -= rdelta;
 	}
 
-	dc.SetFont(wxFont(7, wxSWISS, wxNORMAL, wxBOLD));
+	dc.SetFont(wxFont(7, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	if (dc.GetCharHeight() > rdelta)
 		dc.SetFont(*wxSMALL_FONT);
 
@@ -670,7 +719,7 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 
 	double dispangle = 0;
 	angle = -adelta/2-90;
-	for (a=0;a<nazm;a++)
+	for (a=0;a<(int)nazm;a++)
 	{
 		int end_x = cir_x + (int)(max_radius * cos( angle*M_PI/180 ));
 		int end_y = cir_y + (int)(max_radius * sin( angle*M_PI/180 ));
@@ -718,12 +767,12 @@ void PTLayoutRenderer::DrawZonal(wxDC &dc, const wxRect &geom)
 
 	// RENDER RADIAL ZONE NUMBERS in ZONE 1
 	dc.SetTextForeground( *wxBLACK );
-	dc.SetFont(wxFont(7, wxSWISS, wxNORMAL, wxBOLD));
+	dc.SetFont(wxFont(7, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	if (dc.GetCharHeight() > rdelta)
 		dc.SetFont(*wxSMALL_FONT);
 
 
-	for ( r=0;r<nrad;r++ )
+	for ( r=0;r<(int)nrad;r++ )
 	{
 		buf = wxString::Format("%d", (int)(r+1));
 		dc.GetTextExtent(buf, &tw, &th);
@@ -736,7 +785,7 @@ void PTLayoutRenderer::DrawXY(wxDC &dc, const wxRect &geom)
 	matrix_t<float> &m_data = mPTCtrl->m_data;
 
 	int nhel = m_data.nrows();
-	int i,r,c,a;
+	int r;
 
 	int cx = geom.x+geom.width/2;
 	int cy = geom.y+geom.height/2;
@@ -794,7 +843,7 @@ void PTLayoutRenderer::DrawXY(wxDC &dc, const wxRect &geom)
 	}
 
 	wxPen p = *wxLIGHT_GREY_PEN;
-	p.SetStyle(wxDOT);
+	p.SetStyle(wxPENSTYLE_DOT);
 	dc.SetPen(p);
 	dc.DrawLine(cx,geom.y,cx,geom.y+geom.height);
 	dc.DrawLine(geom.x, cy, geom.x+geom.width, cy);

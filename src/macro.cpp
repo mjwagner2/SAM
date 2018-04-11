@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <memory>
 
 #include <wx/panel.h>
@@ -6,8 +55,10 @@
 #include <wx/html/htmlwin.h>
 #include <wx/dir.h>
 #include <wx/file.h>
+#include <wx/filefn.h>
 #include <wx/tokenzr.h>
 #include <wx/wfstream.h>
+#include <wx/arrstr.h>
 
 #include <wex/metro.h>
 #include <wex/utils.h>
@@ -36,7 +87,7 @@ public:
 		m_counter = 0;
 	}
 
-	virtual bool on_run( int line )
+	virtual bool on_run( int  )
 	{
 		// expression & (constant-1) is equivalent to expression % constant where 
 		// constant is a power of two: so use bitwise operator for better performance
@@ -52,10 +103,9 @@ public:
 class my_vm : public lk::vm
 {
 	MacroEngine *m_me;
-	size_t m_counter;
 public:
 	my_vm( MacroEngine *me ) : m_me(me) { }
-	virtual bool on_run( const lk::srcpos_t &sp )
+	virtual bool on_run( const lk::srcpos_t & )
 	{
 		wxGetApp().Yield( true );
 		return !m_me->IsStopFlagSet();
@@ -112,7 +162,7 @@ bool MacroEngine::Run( const wxString &script, lk::vardata_t *args )
 	// parse macro code
 	lk::input_string p( script );
 	lk::parser parse( p );	
-	std::auto_ptr<lk::node_t> tree( parse.script() );
+	smart_ptr<lk::node_t>::ptr tree( parse.script() );
 			
 	int i=0;
 	while ( i < parse.error_count() )
@@ -129,16 +179,12 @@ bool MacroEngine::Run( const wxString &script, lk::vardata_t *args )
 	
 	// compile the code into VM instructions and load it
 	macro_vm vm( this );
-	lk::code_gen cg;
-	if ( cg.emitasm( tree.get() ) )
-	{
-		std::vector<unsigned int> code;
-		std::vector<lk::vardata_t> data;
-		std::vector<lk_string> id;
-		std::vector<lk::srcpos_t> dbg;		
-
-		cg.bytecode( code, data, id, dbg );
-		vm.load( code, data, id, dbg );
+	lk::codegen cg;
+	lk::bytecode bc;
+	if ( cg.generate( tree.get() ) )
+	{	
+		cg.get( bc );
+		vm.load( &bc );
 	}
 	else
 	{
@@ -153,12 +199,13 @@ bool MacroEngine::Run( const wxString &script, lk::vardata_t *args )
 	else env.assign( "macro", new lk::vardata_t ); // assign null to macro variable
 
 	env.register_funcs( lk::stdlib_basic() );
+	env.register_funcs( lk::stdlib_sysio() );
 	env.register_funcs( lk::stdlib_string() );
 	env.register_funcs( lk::stdlib_math() );
 	env.register_funcs( lk::stdlib_wxui() );
-	env.register_funcs( lk::stdlib_basic() );
 	env.register_funcs( wxLKPlotFunctions() );
 	env.register_funcs( wxLKMiscFunctions() );
+	env.register_funcs( wxLKFileFunctions() );
 	env.register_funcs( invoke_general_funcs() );
 	env.register_funcs( invoke_ssc_funcs() );
 	env.register_funcs( sam_functions() );
@@ -310,22 +357,6 @@ MacroPanel::MacroPanel( wxWindow *parent, Case *cc )
 	ConfigurationChanged();
 }
 
-void MacroPanel::ListScripts( const wxString &path, wxArrayString &list )
-{
-	wxDir dir( path );
-	wxString file;
-	if ( dir.IsOpened() )
-	{
-		bool ok = dir.GetFirst( &file, "*.lk", wxDIR_FILES );
-		while( ok )
-		{
-			list.Add( path + "/" + file );
-			ok = dir.GetNext( &file );
-		}
-	}
-}
-
-
 void MacroPanel::UpdateHtml()
 {
 	ClearUI();
@@ -408,7 +439,7 @@ class VarListSelector : public wxPanel
 
 public:
 	VarListSelector( wxWindow *parent, bool only_num=false, bool en_meta=false, const wxString &prompt=wxEmptyString )
-		: wxPanel( parent ), m_onlyNumbers( only_num ), m_enableMeta(en_meta), m_prompt(prompt)
+	  : wxPanel( parent ), m_enableMeta(en_meta), m_prompt(prompt), m_onlyNumbers( only_num )
 	{
 		SetMinClientSize( wxScaleSize( 200, 130 ) );
 		wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
@@ -622,7 +653,7 @@ public:
 		if ( sld.ShowModal() == wxID_OK )
 		{
 			int isel = sld.GetSelection();
-			if ( isel >= 0 && isel < m_names.size() )
+			if ( isel >= 0 && isel < (int)m_names.size() )
 			{
 				m_curName = m_names[isel];
 				m_text->ChangeValue( m_labels[isel] );
@@ -635,8 +666,80 @@ public:
 
 
 BEGIN_EVENT_TABLE( SVOutputCtrl, wxPanel )
-	EVT_BUTTON( ID_SELECT_OUTPUT, SVOutputCtrl::OnSelect )
+	EVT_BUTTON(ID_SELECT_OUTPUT, SVOutputCtrl::OnSelect )
 END_EVENT_TABLE()
+
+
+
+enum { ID_SELECT_FILENAME = wxID_HIGHEST + 449 };
+
+class FileNameInputCtrl : public wxPanel
+{
+	wxTextCtrl *m_text;
+	wxString m_fileName, m_filter, m_label, m_dir;
+public:
+	FileNameInputCtrl(wxWindow *parent, const wxString &_label, const wxString &_filename, const wxString &_filter = "csv,txt")
+		: wxPanel(parent, wxID_ANY), m_fileName(_filename), m_filter(_filter), m_label(_label)
+	{
+
+		if (m_fileName == wxEmptyString)
+		{
+			m_text = new wxTextCtrl(this, wxID_ANY, "<none selected>", wxDefaultPosition, wxDefaultSize, wxTE_READONLY | wxBORDER_NONE);
+			m_dir = "";
+		}
+		else
+		{
+			m_text = new wxTextCtrl(this, wxID_ANY, m_fileName, wxDefaultPosition, wxDefaultSize, wxTE_READONLY | wxBORDER_NONE);
+			m_dir = wxPathOnly(m_fileName);
+		}
+		m_text->SetForegroundColour(*wxBLUE);
+
+		wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
+		sizer->Add(m_text, 1, wxALL | wxALIGN_CENTER_VERTICAL, 2);
+		sizer->Add(new wxButton(this, ID_SELECT_FILENAME, "...", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL | wxALIGN_CENTER_VERTICAL, 2);
+		SetSizer(sizer);
+
+		wxArrayString as = wxSplit(m_filter, ',');
+		wxString filter = wxEmptyString, fil_front = wxEmptyString, fil_back = wxEmptyString;
+		if (as.Count() > 0)
+		{
+			filter = "Files (";
+			for (size_t i = 0; i < as.Count(); i++)
+			{
+				fil_front += "*." + as[i].Lower();
+				if (i < (as.Count() -1)) fil_front += ",";
+				fil_back += "*." + as[i].Lower();
+				if (i < (as.Count() - 1)) fil_back += ";";
+			}
+			filter += fil_front + ")|" + fil_back;
+		}
+		if (filter != wxEmptyString) m_filter = filter;
+
+	}
+
+	wxString GetFileName() {
+		return m_fileName;
+	}
+
+	void OnSelect(wxCommandEvent &)
+	{
+		wxFileDialog dlg(this, m_label, m_dir, m_fileName, m_filter, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		if (dlg.ShowModal() == wxID_OK)
+		{
+			m_fileName = dlg.GetPath();
+			m_dir = wxPathOnly(m_fileName);
+			m_text->ChangeValue(m_fileName);
+		}
+	}
+
+	DECLARE_EVENT_TABLE();
+};
+
+
+BEGIN_EVENT_TABLE(FileNameInputCtrl, wxPanel)
+EVT_BUTTON(ID_SELECT_FILENAME, FileNameInputCtrl::OnSelect)
+END_EVENT_TABLE()
+
 
 void MacroPanel::CreateUI( const wxString &buf )
 {
@@ -683,11 +786,11 @@ void MacroPanel::CreateUI( const wxString &buf )
 		}
 		else if ( type == "integer" )
 		{
-			win = new wxNumericCtrl( m_macroUI, wxID_ANY, wxAtof(value), wxNumericCtrl::INTEGER );
+			win = new wxNumericCtrl( m_macroUI, wxID_ANY, wxAtof(value), wxNUMERIC_INTEGER );
 		}
 		else if ( type == "number" )
 		{
-			win = new wxNumericCtrl( m_macroUI, wxID_ANY, wxAtof(value), wxNumericCtrl::REAL );
+			win = new wxNumericCtrl( m_macroUI, wxID_ANY, wxAtof(value), wxNUMERIC_REAL );
 		}
 		else if ( type == "combo" )
 		{
@@ -722,6 +825,20 @@ void MacroPanel::CreateUI( const wxString &buf )
 		else if ( type == "svoutput" )
 		{
 			win = new SVOutputCtrl( m_macroUI );
+			expand_win = true;
+		}
+		else if (type == "filename")
+		{
+			if (value.Find("|") != wxNOT_FOUND)
+			{
+				wxArrayString as = wxSplit(value, '|');
+				if (as.Count() > 1)
+					win = new FileNameInputCtrl(m_macroUI, label, as[0], as[1]);
+				else
+					win = new FileNameInputCtrl(m_macroUI, label, value);
+			}
+			else
+				win = new FileNameInputCtrl(m_macroUI,label,value);
 			expand_win = true;
 		}
 
@@ -803,6 +920,8 @@ void MacroPanel::GetUIArgs( lk::vardata_t &table )
 					item.vec_append( list[i] );
 			}
 		}
+		else if (FileNameInputCtrl *fni = dynamic_cast<FileNameInputCtrl*>(x.window))
+			item.assign(fni->GetFileName());
 	}
 }
 
@@ -1006,17 +1125,38 @@ bool MacroPanel::WriteUIData( const wxString &file )
 		return false;
 }
 
+static void ListScripts( const wxString &path, wxArrayString &list )
+{
+	wxDir dir( path );
+	wxString file;
+	if ( dir.IsOpened() )
+	{
+		bool ok = dir.GetFirst( &file, "*.lk", wxDIR_FILES );
+		while( ok )
+		{
+			list.Add( path + "/" + file );
+			ok = dir.GetNext( &file );
+		}
+	}
+}
+
+wxArrayString MacroEngine::ListMacrosForConfiguration( const wxString &tech, const wxString &fin )
+{	
+	wxArrayString list;
+	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + tech + "_" + fin, list );
+	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + tech, list );
+	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + fin, list );
+	ListScripts(  SamApp::GetRuntimePath() + "/macros", list );
+	return list;
+}
+
 
 void MacroPanel::ConfigurationChanged()
 {
 	wxString tech, fin;
 	m_case->GetConfiguration( &tech, &fin );
 
-	m_macroList.clear();
-	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + tech + "_" + fin, m_macroList );
-	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + tech, m_macroList );
-	ListScripts(  SamApp::GetRuntimePath() + "/macros/" + fin, m_macroList );
-	ListScripts(  SamApp::GetRuntimePath() + "/macros", m_macroList );
+	m_macroList = MacroEngine::ListMacrosForConfiguration( tech, fin );
 		
 	m_listbox->Clear();
 	for( size_t i=0;i<m_macroList.size();i++ )
@@ -1096,7 +1236,7 @@ void MacroPanel::OnCommand( wxCommandEvent &evt )
 			{
 				wxMessageBox("Error loading macro data file:\n\n" + dlg.GetPath() );
 			}
-			else if ( ivals < m_ui.size() )
+			else if ( ivals < (int)m_ui.size() )
 			{
 				wxMessageBox("Only some of the loaded macro data was applicable to the currently selected macro.");
 			}

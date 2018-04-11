@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <wx/dcbuffer.h>
 #include <wx/clipbrd.h>
 #include <wx/tokenzr.h>
@@ -110,7 +159,9 @@ public:
 	virtual void OnPropertyChanged( const wxString &id, wxUIProperty *p )
 	{
 		if ( AFMonthlyFactorCtrl *pt = GetNative<AFMonthlyFactorCtrl>() )
+		{
 			if ( id == "Description" ) pt->SetDescription( p->GetString() );
+		}
 	}
 	virtual void Draw( wxWindow *win, wxDC &dc, const wxRect &geom )
 	{
@@ -118,6 +169,44 @@ public:
 		dc.SetFont( *wxNORMAL_FONT );
 		dc.SetTextForeground( *wxBLACK );
 		wxString label("Edit values...");
+		int x, y;
+		dc.GetTextExtent( label, &x, &y );
+		dc.DrawText( label, geom.x + geom.width/2-x/2, geom.y+geom.height/2-y/2 );
+	}
+};
+
+class wxUITableDataObject : public wxUIObject
+{
+public:
+	wxUITableDataObject() {
+		AddProperty("Description", new wxUIProperty( wxString("Table of values") ) );
+		AddProperty( "Fields",  new wxUIProperty( wxArrayString() ) );
+		AddProperty("TabOrder", new wxUIProperty( (int)-1 ) );
+	}
+	virtual wxString GetTypeName() { return "TableData"; }
+	virtual wxUIObject *Duplicate() { wxUIObject *o = new wxUITableDataObject; o->Copy( this ); return o; }
+	virtual bool IsNativeObject() { return true; }
+	virtual bool DrawDottedOutline() { return false; }
+	virtual wxWindow *CreateNative( wxWindow *parent ) {
+		AFTableDataCtrl *mf = new AFTableDataCtrl( parent, wxID_ANY );
+		mf->SetDescription( Property("Description").GetString() );
+		mf->SetFields( Property("Fields").GetStringList() );
+		return AssignNative( mf );
+	}
+	virtual void OnPropertyChanged( const wxString &id, wxUIProperty *p )
+	{
+		if ( AFTableDataCtrl *pt = GetNative<AFTableDataCtrl>() )
+		{
+			if ( id == "Description" ) pt->SetDescription( p->GetString() );
+			if ( id == "Fields" ) pt->SetFields( p->GetStringList() );
+		}
+	}
+	virtual void Draw( wxWindow *win, wxDC &dc, const wxRect &geom )
+	{
+		wxRendererNative::Get().DrawPushButton( win, dc, geom );
+		dc.SetFont( *wxNORMAL_FONT );
+		dc.SetTextForeground( *wxBLACK );
+		wxString label("Edit...");
 		int x, y;
 		dc.GetTextExtent( label, &x, &y );
 		dc.DrawText( label, geom.x + geom.width/2-x/2, geom.y+geom.height/2-y/2 );
@@ -272,27 +361,27 @@ public:
 		AFSearchListBox *list = new AFSearchListBox( parent, wxID_ANY );
 		list->Append( Property("Items").GetStringList() );
 		int sel = Property("Selection").GetInteger();
-		if ( sel >= 0 && sel < items.size() ) list->SetSelection( sel );
+		if ( sel >= 0 && sel < (int)items.size() ) list->SetSelection( sel );
 		return AssignNative( list );
 	}
 	virtual void OnPropertyChanged( const wxString &id, wxUIProperty *p )
 	{
 		if ( AFSearchListBox *list = GetNative<AFSearchListBox>() )
 		{
-			if ( id == "Selection" && p->GetInteger() >= 0 && p->GetInteger() < list->Count() )
+			if ( id == "Selection" && p->GetInteger() >= 0 && p->GetInteger() < (int)list->Count() )
 				list->SetSelection( p->GetInteger() );
 			else if ( id == "Items" )
 			{
 				int sel = list->GetSelection();
 				list->Clear();
 				list->Append( p->GetStringList() );
-				if( sel >= 0 && sel < list->Count() ) list->SetSelection( sel );
+				if( sel >= 0 && sel < (int)list->Count() ) list->SetSelection( sel );
 			}
 			else if ( id == "Prompt" )
 				list->SetPromptText( p->GetString() );
 		}
 	}
-	virtual void Draw( wxWindow *win, wxDC &dc, const wxRect &geom )
+	virtual void Draw( wxWindow *, wxDC &dc, const wxRect &geom )
 	{
 		dc.SetBrush( *wxWHITE_BRUSH );
 		dc.SetPen( wxPen( wxColour(135,135,135) ) );
@@ -311,7 +400,7 @@ public:
 		dc.SetPen( *wxTRANSPARENT_PEN );
 		for (size_t i=0;i<items.size() && y < geom.y+geom.height;i++)
 		{
-			if ( i==sel ) dc.DrawRectangle( geom.x+1, y-1, geom.width-2, dc.GetCharHeight()+2 );
+			if ( (int)i==sel ) dc.DrawRectangle( geom.x+1, y-1, geom.width-2, dc.GetCharHeight()+2 );
 
 			dc.DrawText( items[i], geom.x+3, y );
 			y += dc.GetCharHeight() + 2;
@@ -370,67 +459,6 @@ public:
 
 };
 
-/*
-
-class wxUIDataMatrixObject : public wxUIObject
-{
-public:
-	wxUIDataMatrixObject() {
-		AddProperty( "PasteAppendRows", new wxUIProperty( false ) );
-		AddProperty("ShowRows", new wxUIProperty(true));
-		AddProperty("ShowRowLabels", new wxUIProperty(false));
-		AddProperty("RowLabels", new wxUIProperty(wxString("")));
-		AddProperty("ShadeR0C0", new wxUIProperty(false));
-		AddProperty("ShadeC0", new wxUIProperty(false));
-		AddProperty("ShowCols", new wxUIProperty(true));
-		AddProperty("ShowColLabels", new wxUIProperty( true ) );
-		AddProperty("ColLabels", new wxUIProperty(wxString("")));
-		AddProperty("NumRowsLabel", new wxUIProperty(wxString("Rows:")));
-		AddProperty("NumColsLabel", new wxUIProperty(wxString("Cols:")));
-		AddProperty("Layout", new wxUIProperty(0, "Buttons on top,Buttons on side"));
-
-		Property("Width").Set(400);
-		Property("Height").Set(300);
-	}
-	virtual wxString GetTypeName() { return "DataMatrix"; }
-	virtual wxUIObject *Duplicate() { wxUIObject *o = new wxUIDataMatrixObject; o->Copy( this ); return o; }
-	virtual bool IsNativeObject() { return true; }
-	virtual wxWindow *CreateNative( wxWindow *parent ) {
-		AFDataMatrixCtrl *dm = new AFDataMatrixCtrl( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, Property("Layout").GetInteger() == 1 );
-		dm->PasteAppendRows( Property("PasteAppendRows").GetBoolean() );
-		dm->ShowRows(Property("ShowRows").GetBoolean());
-		dm->ShowRowLabels(Property("ShowRowLabels").GetBoolean());
-		dm->SetRowLabels(Property("RowLabels").GetString());
-		dm->ShadeR0C0(Property("ShadeR0C0").GetBoolean());
-		dm->ShadeC0(Property("ShadeC0").GetBoolean());
-		dm->ShowCols(Property("ShowCols").GetBoolean());
-		dm->ShowColLabels( Property("ShowColLabels").GetBoolean() );
-		dm->SetColLabels(Property("ColLabels").GetString());
-		dm->SetNumRowsLabel(Property("NumRowsLabel").GetString());
-		dm->SetNumColsLabel(Property("NumColsLabel").GetString());
-		return AssignNative(dm);
-	}
-	virtual void OnPropertyChanged( const wxString &id, wxUIProperty *p )
-	{
-		if ( AFDataMatrixCtrl *dm = GetNative<AFDataMatrixCtrl>() )
-		{
-			if ( id == "PasteAppendRows" ) dm->PasteAppendRows( p->GetBoolean() );
-			if (id == "ShadeR0C0") dm->ShadeR0C0(p->GetBoolean());
-			if (id == "ShadeC0") dm->ShadeC0(p->GetBoolean());
-			if (id == "ShowRows") dm->ShowRows(p->GetBoolean());
-			if (id == "ShowRowLabels") dm->ShowRowLabels(p->GetBoolean());
-			if (id == "RowLabels") dm->SetRowLabels(p->GetString());
-			if (id == "ShowCols") dm->ShowCols(p->GetBoolean());
-			if (id == "ShowColLabels") dm->ShowColLabels(p->GetBoolean());
-			if (id == "ColLabels") dm->SetColLabels(p->GetString());
-			if (id == "NumRowsLabel") dm->SetNumRowsLabel(p->GetString());
-			if (id == "NumColsLabel") dm->SetNumColsLabel(p->GetString());
-		}
-	}
-};
-
-*/
- 
 
 class wxUIDataMatrixObject : public wxUIObject
 {
@@ -451,6 +479,8 @@ public:
 		AddProperty("Layout", new wxUIProperty(0, "Buttons on top,Buttons on side"));
 		AddProperty("ChoiceColumn", new wxUIProperty(-1));
 		AddProperty("Choices", new wxUIProperty(wxString("Choice1,Choice2")));
+		AddProperty("HideColumn", new wxUIProperty(-1));
+		AddProperty("ShowColumn", new wxUIProperty(-1));
 
 		Property("Width").Set(400);
 		Property("Height").Set(300);
@@ -472,6 +502,8 @@ public:
 		dm->SetColLabels(Property("ColLabels").GetString());
 		dm->SetNumRowsLabel(Property("NumRowsLabel").GetString());
 		dm->SetNumColsLabel(Property("NumColsLabel").GetString());
+		dm->ShowCol(Property("ShowColumn").GetInteger(), true);
+		dm->ShowCol(Property("HideColumn").GetInteger(), false);
 		return AssignNative(dm);
 	}
 	virtual void OnPropertyChanged(const wxString &id, wxUIProperty *p)
@@ -489,6 +521,8 @@ public:
 //			if (id == "ColLabels") dm->SetColLabels(p->GetString());
 			if (id == "NumRowsLabel") dm->SetNumRowsLabel(p->GetString());
 			if (id == "NumColsLabel") dm->SetNumColsLabel(p->GetString());
+			if (id == "ShowColumn") dm->ShowCol(p->GetInteger(), true);
+			if (id == "HideColumn") dm->ShowCol(p->GetInteger(), false);
 		}
 	}
 };
@@ -553,7 +587,7 @@ public:
 		vm->SetColLabels( Property("ColLabels").GetString() );
 		return AssignNative( vm );
 	}
-	virtual void Draw( wxWindow *win, wxDC &dc, const wxRect &geom )
+	virtual void Draw( wxWindow *, wxDC &dc, const wxRect &geom )
 	{
 		dc.SetBrush( wxBrush( "Forest Green" ) );
 		dc.DrawRectangle( geom.x, geom.y+geom.height/2, 25, geom.height/2 );
@@ -625,7 +659,7 @@ public:
 		ll->SetLibrary( Property("Library").GetString(), Property("Fields").GetString() );
 		return AssignNative( ll );
 	}
-	virtual void OnPropertyChanged( const wxString &id, wxUIProperty *p )
+	virtual void OnPropertyChanged( const wxString &id, wxUIProperty * )
 	{
 		if ( LibraryCtrl *ll = GetNative<LibraryCtrl>() )
 			if ( id == "Library" || id == "Fields" )
@@ -706,4 +740,5 @@ void RegisterUIObjectsForSAM()
 	wxUIObjectTypeProvider::Register( new wxUILibraryCtrl );
 	wxUIObjectTypeProvider::Register( new wxUILossAdjustmentCtrl );
 	wxUIObjectTypeProvider::Register( new wxUIScene3DObject );
+	wxUIObjectTypeProvider::Register( new wxUITableDataObject );
 }

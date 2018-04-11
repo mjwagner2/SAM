@@ -1,3 +1,52 @@
+/*******************************************************************************************************
+*  Copyright 2017 Alliance for Sustainable Energy, LLC
+*
+*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+*  (“Alliance”) under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+*  copies to the public, perform publicly and display publicly, and to permit others to do so.
+*
+*  Redistribution and use in source and binary forms, with or without modification, are permitted
+*  provided that the following conditions are met:
+*
+*  1. Redistributions of source code must retain the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+*  other materials provided with the distribution.
+*
+*  3. The entire corresponding source code of any redistribution, with or without modification, by a
+*  research entity, including but not limited to any contracting manager/operator of a United States
+*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+*  made publicly available under this license for as long as the redistribution is made available by
+*  the research entity.
+*
+*  4. Redistribution of this software, without modification, must refer to the software by the same
+*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+*  the underlying software originally provided by Alliance as “System Advisor Model” or “SAM”. Except
+*  to comply with the foregoing, the terms “System Advisor Model”, “SAM”, or any confusingly similar
+*  designation may not be used to refer to any modified version of this software or any modified
+*  version of the underlying software originally provided by Alliance without the prior written consent
+*  of Alliance.
+*
+*  5. The name of the copyright holder, contributors, the United States Government, the United States
+*  Department of Energy, or any of their employees may not be used to endorse or promote products
+*  derived from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*******************************************************************************************************/
+
 #include <wx/panel.h>
 #include <wx/button.h>
 #include <wx/busyinfo.h>
@@ -173,10 +222,10 @@ EVT_GRID_CELL_LEFT_CLICK(ParametricGrid::OnLeftClick)
 END_EVENT_TABLE()
 
 
-ParametricGrid::ParametricGrid(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long style, const wxString &name)
+ParametricGrid::ParametricGrid(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long , const wxString &)
 : wxExtGridCtrl(parent, id, pos, size)
 {
-}
+} 
 
 ParametricGrid::~ParametricGrid()
 {
@@ -210,7 +259,7 @@ BEGIN_EVENT_TABLE(ParametricViewer, wxPanel)
 	EVT_BUTTON(ID_SELECT_OUTPUTS, ParametricViewer::OnCommand)
 	EVT_NUMERIC(ID_NUMRUNS, ParametricViewer::OnCommand)
 	EVT_BUTTON(ID_RUN, ParametricViewer::OnCommand)
-	EVT_BUTTON(ID_GEN_LK, ParametricViewer::OnCommand)
+//	EVT_BUTTON(ID_GEN_LK, ParametricViewer::OnCommand)
 	EVT_BUTTON(ID_QUICK_SETUP, ParametricViewer::OnCommand)
 	
 	EVT_BUTTON(ID_EXPORT_MENU, ParametricViewer::OnCommand)
@@ -218,10 +267,12 @@ BEGIN_EVENT_TABLE(ParametricViewer, wxPanel)
 	EVT_BUTTON(ID_OUTPUTMENU_CLIPBOARD, ParametricViewer::OnMenuItem)
 	EVT_BUTTON(ID_OUTPUTMENU_CSV, ParametricViewer::OnMenuItem)
 	EVT_BUTTON(ID_OUTPUTMENU_EXCEL, ParametricViewer::OnMenuItem)
+	EVT_BUTTON(ID_GEN_LK, ParametricViewer::OnMenuItem)
 	EVT_BUTTON(ID_CLEAR, ParametricViewer::OnCommand)
 	
 	EVT_MENU(ID_OUTPUTMENU_CLIPBOARD, ParametricViewer::OnMenuItem)
 	EVT_MENU(ID_OUTPUTMENU_CSV, ParametricViewer::OnMenuItem)
+	EVT_MENU(ID_GEN_LK, ParametricViewer::OnMenuItem)
 	EVT_MENU(ID_OUTPUTMENU_EXCEL, ParametricViewer::OnMenuItem)
 	EVT_MENU(ID_CLEAR, ParametricViewer::OnCommand)
 
@@ -256,12 +307,12 @@ ParametricViewer::ParametricViewer(wxWindow *parent, Case *cc)
 	tool_sizer->Add(new wxMetroButton(top_panel, ID_SELECT_INPUTS, "Inputs..."), 0, wxALL | wxEXPAND, 0);
 	tool_sizer->Add(new wxMetroButton(top_panel, ID_SELECT_OUTPUTS, "Outputs..."), 0, wxALL | wxEXPAND, 0);
 	tool_sizer->Add(new wxMetroButton(top_panel, ID_RUN, "Run simulations", wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxMB_RIGHTARROW), 0, wxALL | wxEXPAND, 0);
-	tool_sizer->Add(new wxMetroButton(top_panel, ID_GEN_LK, "Generate lk", wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxMB_RIGHTARROW), 0, wxALL | wxEXPAND, 0);
+//	tool_sizer->Add(new wxMetroButton(top_panel, ID_GEN_LK, "Generate lk for SDKtool", wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxMB_RIGHTARROW), 0, wxALL | wxEXPAND, 0);
 	tool_sizer->AddStretchSpacer();
 	wxStaticText *lblruns = new wxStaticText(top_panel, wxID_ANY, "Number of runs:");
 	lblruns->SetForegroundColour( *wxWHITE );
 	tool_sizer->Add( lblruns, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 3);
-	m_num_runs_ctrl = new wxNumericCtrl(top_panel, ID_NUMRUNS, 0, wxNumericCtrl::INTEGER);
+	m_num_runs_ctrl = new wxNumericCtrl(top_panel, ID_NUMRUNS, 0, wxNUMERIC_INTEGER);
 	wxSize bestsz( m_num_runs_ctrl->GetBestSize() );
 	m_num_runs_ctrl->SetInitialSize( wxSize( bestsz.x/2, bestsz.y ) );
 	m_num_runs_ctrl->SetEditable(true);
@@ -417,7 +468,8 @@ void ParametricViewer::OnCommand(wxCommandEvent &evt)
 #ifdef __WXMSW__
 			menu.Append(ID_OUTPUTMENU_EXCEL, "Send to Excel");	
 #endif
-			
+			menu.Append(ID_GEN_LK, "Generate LK for SDKTool");
+
 			wxPoint p(wxDefaultPosition);
 			wxWindow *btn = dynamic_cast<wxWindow*>( evt.GetEventObject() );
 			if ( btn )
@@ -445,9 +497,9 @@ void ParametricViewer::OnCommand(wxCommandEvent &evt)
 		RunSimulations();
 		UpdateGrid();
 		break;
-	case ID_GEN_LK:
-		Generate_lk();
-		break;
+//	case ID_GEN_LK:
+//		Generate_lk();
+//		break;
 	case ID_CLEAR:
 		ClearResults();
 		UpdateGrid();
@@ -494,6 +546,9 @@ void ParametricViewer::OnMenuItem(wxCommandEvent &evt)
 	case ID_OUTPUTMENU_CSV:
 		SaveToCSV();
 		break;
+	case ID_GEN_LK:
+		Generate_lk();
+		break;
 #ifdef __WXMSW__
 	case ID_OUTPUTMENU_EXCEL:
 		SendToExcel();
@@ -509,7 +564,7 @@ void ParametricViewer::OnMenuItem(wxCommandEvent &evt)
 		FillDown(-1);
 		break;
 	case ID_SHOW_ALL_INPUTS:
-		if (m_grid_data->GetRuns().size() > m_selected_grid_row)
+		if ((int)m_grid_data->GetRuns().size() > m_selected_grid_row)
 		{
 			if (m_grid_data->GetRuns()[m_selected_grid_row])
 			{
@@ -529,7 +584,7 @@ void ParametricViewer::GetTextData(wxString &dat, char sep)
 	size_t approxbytes = m_grid_data->GetNumberRows() * 15 * m_grid_data->GetNumberCols();
 	dat.Alloc(approxbytes);
 
-	size_t c;
+	int c;
 
 	for (c = 0; c<m_grid_data->GetNumberCols(); c++)
 	{
@@ -547,7 +602,7 @@ void ParametricViewer::GetTextData(wxString &dat, char sep)
 			dat += '\n';
 	}
 
-	for (size_t r = 0; r<m_grid_data->GetNumberRows(); r++)
+	for (int r = 0; r<m_grid_data->GetNumberRows(); r++)
 	{
 		for (c = 0; c<m_grid_data->GetNumberCols(); c++)
 		{
@@ -750,7 +805,7 @@ bool ParametricViewer::Plot(int col, Graph &g)
 				case VV_ARRAY:
 				{
 					size_t n;
-					float *y = m_grid_data->GetArray(0, col, &n); // checked above for rows>0
+					m_grid_data->GetArray(0, col, &n); // checked above for rows>0
 
 					if (n == 12) // asume monthly
 					{
@@ -781,7 +836,7 @@ bool ParametricViewer::Plot(int col, Graph &g)
 
 void ParametricViewer::AddAllPlots()
 {
-	for (int i = 0; i < m_output_names.Count(); i++)
+	for (int i = 0; i < (int)m_output_names.Count(); i++)
 		AddPlot(m_output_names[i]);
 }
 
@@ -820,7 +875,7 @@ void ParametricViewer::AddPlot(const wxString &output_name)
 				else // DView
 				{
 					wxDVTimeSeriesCtrl *dv = new wxDVTimeSeriesCtrl(this, wxID_ANY, wxDV_RAW, wxDV_AVERAGE);
-					for (size_t row = 0; row < m_grid_data->GetRowsCount(); row++)
+					for (int row = 0; row < m_grid_data->GetRowsCount(); row++)
 					{
 						size_t n;
 						float *y = m_grid_data->GetArray(row, col, &n);
@@ -918,8 +973,8 @@ void ParametricViewer::SelectInputs()
 		wxString name = it->first;
 		VarInfo &vi = *(it->second);
 
-		// update to select only "Parametric" variables
-		if (vi.Flags & VF_PARAMETRIC)
+		// update to select only "Parametric" variables and NOT calculated variables
+		if ((vi.Flags & VF_PARAMETRIC) 	&& !(vi.Flags & VF_INDICATOR)	&& !(vi.Flags & VF_CALCULATED))
 		{
 			wxString label = vi.Label;
 			if (label.IsEmpty())
@@ -1010,7 +1065,7 @@ void ParametricViewer::UpdateGrid()
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 // m_par contains list of inputs and outputs
-ParametricGridData::ParametricGridData(Case *cc) :m_case(cc), m_par(cc->Parametric())
+ParametricGridData::ParametricGridData(Case *cc) :m_par(cc->Parametric()), m_case(cc)
 {
 	m_color_for_inputs = wxColour("LIGHT BLUE");
 	m_color_for_valid_outputs = wxColour(145,210,142);
@@ -1036,7 +1091,6 @@ ParametricGridData::~ParametricGridData()
 
 void ParametricGridData::Init()
 { // assumes m_par has been read in and is sorted properly..
-	if (m_par.Setup.size()<0) return;
 	m_col_hdrs.Clear();
 	m_input_names.Clear();
 	m_output_names.Clear();
@@ -1062,7 +1116,7 @@ void ParametricGridData::Init()
 	m_rows = m_par.Runs.size();
 
 	// set m_valid_runs according to data that is read in
-	for (size_t i = 0; i < m_rows; i++)
+	for (int i = 0; i < m_rows; i++)
 		m_valid_run.push_back(true);
 }
 
@@ -1072,7 +1126,7 @@ void ParametricGridData::UpdateSetup()
 // used instead of inserting inputs so that additional sorting can be performed
 	std::vector<ParametricData::Var> sorted_setup;
 	int i, ndx;
-	for (i = 0; i < m_input_names.Count(); i++)
+	for (i = 0; i < (int)m_input_names.Count(); i++)
 	{
 		ndx = m_par.FindSetup(m_input_names[i]);
 		if (ndx < 0)
@@ -1084,7 +1138,7 @@ void ParametricGridData::UpdateSetup()
 		sorted_setup.push_back(m_par.Setup[ndx]);
 	}
 
-	for (i = 0; i < m_output_names.Count(); i++)
+	for (i = 0; i < (int)m_output_names.Count(); i++)
 	{
 		ndx = m_par.FindSetup(m_output_names[i]);
 		if (ndx < 0)
@@ -1143,18 +1197,29 @@ bool ParametricGridData::IsEmptyCell(int row, int col)
 bool ParametricGridData::IsInput(int col)
 {
 	if ((col>-1) && (col < m_cols))
-		if (VarValue *vv = m_par.GetCase()->Values().Get(m_par.Setup[col].Name))
-			return true;
-		else
-			return false;
+	{
+		wxString var_name = m_par.Setup[col].Name;
+		return IsInput(var_name);
+	}
 	else
 		return false;
 }
 
 bool ParametricGridData::IsInput(wxString &var_name)
 {
-	if (VarValue *vv = m_par.GetCase()->Values().Get(var_name))
-		return true;
+//	if (VarValue *vv = m_par.GetCase()->Values().Get(var_name))
+	if (VarInfo *vi = m_par.GetCase()->Variables().Lookup(var_name))
+	{
+		if (m_input_names.Index(var_name) != wxNOT_FOUND)
+			return true;
+		else
+		{
+			if ((vi->Flags & VF_PARAMETRIC) && !(vi->Flags & VF_INDICATOR) && !(vi->Flags & VF_CALCULATED))
+				return true;
+			else
+				return false;
+		}
+	}
 	else
 		return false;
 }
@@ -1203,7 +1268,7 @@ wxString ParametricGridData::GetColLabelValue(int col)
 }
 
 
-VarInfo* ParametricGridData::GetVarInfo(int row, int col)
+VarInfo* ParametricGridData::GetVarInfo(int , int col)
 {
 	VarInfo* vi = NULL;
 	if ((col>-1) && (col < m_cols))
@@ -1214,7 +1279,7 @@ VarInfo* ParametricGridData::GetVarInfo(int row, int col)
 	return vi;
 }
 
-void ParametricGridData::SetVarInfo(int row, int col, VarInfo *vi)
+void ParametricGridData::SetVarInfo(int , int col, VarInfo *vi)
 {
 	if ((col>-1) && (col < m_cols))
 	{
@@ -1292,7 +1357,7 @@ wxString ParametricGridData::GetChoice(int row, int col)
 		{
 			wxArrayString as = vi->IndexLabels;
 			int ndx = (int)GetDouble(row, col);
-			if ((as.Count() > 0) && (ndx >= 0) && (ndx < as.Count()))
+			if ((as.Count() > 0) && (ndx >= 0) && (ndx < (int)as.Count()))
 				ret_str = as[ndx];
 		}
 	}
@@ -1339,7 +1404,7 @@ void ParametricGridData::SetValue(int row, int col, const wxString& value)
 		{
 			VarValue *vv = &m_par.Setup[col].Values[row];
 			VarValue::Parse(vv->Type(), value, *vv);
-			if (row < m_valid_run.size())
+			if (row < (int)m_valid_run.size())
 			{
 				m_valid_run[row] = false;
 				ClearResults(row);
@@ -1370,6 +1435,8 @@ wxString ParametricGridData::GetTypeName(int row, int col)
 			else if (type == "RadioChoice")
 				return "GridCellVarValue";
 			else if (type == "TextEntry")
+				return wxGRID_VALUE_STRING;
+			else if (type == "MultilineText")
 				return wxGRID_VALUE_STRING;
 			else if (type == "Slider")
 				return "GridCellVarValue";
@@ -1560,24 +1627,24 @@ void ParametricGridData::UpdateNumberRows(int rows)
 			int ndx = m_par.FindSetup(m_var_names[i]);
 			if (ndx > -1)
 			{
-				if ((m_par.Setup[i].Values.size() < rows) && (IsInput(i)))
+				if (((int)m_par.Setup[i].Values.size() < rows) && (IsInput(i)))
 				{
-					while (m_par.Setup[i].Values.size() < rows)
+					while ((int)m_par.Setup[i].Values.size() < rows)
 					{ // inputs
 						if (VarValue *vv = m_case->Values().Get(m_var_names[i]))
 							m_par.Setup[i].Values.push_back(*vv);
 					}
 				}
-				else if (m_par.Setup[i].Values.size() > rows)
+				else if ((int)m_par.Setup[i].Values.size() > rows)
 				{
-					while (m_par.Setup[i].Values.size() > rows)
+					while ((int)m_par.Setup[i].Values.size() > rows)
 						m_par.Setup[i].Values.pop_back();
 				}
 			}
 		}
 
 		// update Runs
-		if (m_par.Runs.size() < rows)
+		if ((int)m_par.Runs.size() < rows)
 		{
 			for (int num_run = m_par.Runs.size(); num_run < rows; num_run++)
 			{
@@ -1586,22 +1653,22 @@ void ParametricGridData::UpdateNumberRows(int rows)
 				m_par.Runs.push_back(s);
 			}
 		}
-		else if (m_par.Runs.size() > rows)
+		else if ((int)m_par.Runs.size() > rows)
 		{
 			//apd note on 8/5/2014: is this a memory leak??
-			while (m_par.Runs.size() > rows)
+			while ((int)m_par.Runs.size() > rows)
 				m_par.Runs.pop_back();
 		}
 
 		// update valid runs
-		if (m_valid_run.size() < rows)
+		if ((int)m_valid_run.size() < rows)
 		{
 			for (int num_run = m_valid_run.size(); num_run < rows; num_run++)
 				m_valid_run.push_back(false);
 		}
-		else if (m_valid_run.size() > rows)
+		else if ((int)m_valid_run.size() > rows)
 		{
-			while (m_valid_run.size() > rows)
+			while ((int)m_valid_run.size() > rows)
 				m_valid_run.pop_back();
 		}
 
@@ -1697,7 +1764,7 @@ wxString ParametricGridData::GetUnits(int col)
 wxString ParametricGridData::GetVarName(int row, int col)
 {
 	wxString  ret_val=wxEmptyString;
-	if ((col > -1) && (col < m_var_names.Count()) && (row > -1) && (row < m_rows))
+	if ((col > -1) && (col < (int)m_var_names.Count()) && (row > -1) && (row < m_rows))
 	{
 		ret_val = m_var_names[col];
 	}
@@ -1799,7 +1866,7 @@ bool ParametricGridData::RunSimulations_multi()
 	int total_runs = 0;
 	for (size_t i = 0; i < m_par.Runs.size(); i++)
 		if (!m_valid_run[i]) total_runs++;
-
+	if (total_runs == 0) total_runs = m_par.Runs.size();
 
 	std::vector<Simulation*> sims;
 	for (size_t i = 0; i < m_par.Runs.size(); i++)
@@ -1838,16 +1905,15 @@ bool ParametricGridData::RunSimulations_multi()
 	}
 
 
-	int time_prep = sw.Time();
+//	int time_prep = sw.Time();
 	sw.Start();
 
-	if ( nthread > sims.size() ) nthread = sims.size();
+	if ( nthread > (int)sims.size() ) nthread = sims.size();
 	tpd.NewStage("Calculating...", nthread);
 
-	size_t nok = 0;
-	nok = Simulation::DispatchThreads(tpd, sims, nthread);
+	Simulation::DispatchThreads(tpd, sims, nthread);
 
-	int time_sim = sw.Time();
+//	int time_sim = sw.Time();
 	sw.Start();
 
 	for (size_t i = 0; i < m_par.Runs.size(); i++)
@@ -1885,7 +1951,7 @@ bool ParametricGridData::RunSimulations_multi()
 	}
 	sims.clear();
 
-	int time_outputs = sw.Time();
+//	int time_outputs = sw.Time();
 
 	return true;
 };
@@ -2125,7 +2191,7 @@ wxGridCellAttr *ParametricGridData::GetAttr(int row, int col, wxGridCellAttr::wx
 		{ 
 			if (!attr)
 			{
-				if ((row < m_valid_run.size()) && (m_valid_run[row]))
+				if ((row < (int)m_valid_run.size()) && (m_valid_run[row]))
 					attr = m_attr_for_valid_outputs;
 				else
 					attr = m_attr_for_invalid_outputs;
@@ -2138,7 +2204,7 @@ wxGridCellAttr *ParametricGridData::GetAttr(int row, int col, wxGridCellAttr::wx
 					wxGridCellAttr *attrNew = attr->Clone();
 					attr->DecRef();
 					attr = attrNew;
-					if ((row < m_valid_run.size()) && (m_valid_run[row]))
+					if ((row < (int)m_valid_run.size()) && (m_valid_run[row]))
 						attr->SetBackgroundColour(m_color_for_valid_outputs);
 					else
 						attr->SetBackgroundColour(m_color_for_invalid_outputs);
@@ -2214,7 +2280,7 @@ m_case(c)
 	choice_sizer->Add(new wxStaticText(this, wxID_ANY, "Setup mode:"), 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxALL, 3);
 	choice_sizer->Add(rchSetupOption, 2, wxEXPAND | wxALL, 2);
 
-	numberRuns = new wxNumericCtrl(this, ID_numberRuns, 0, wxNumericCtrl::INTEGER);
+	numberRuns = new wxNumericCtrl(this, ID_numberRuns, 0, wxNUMERIC_INTEGER);
 	numberRuns->SetFormat(0, true);
 	numberRuns->SetEditable(false);
 	wxBoxSizer *numrun_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -2224,7 +2290,8 @@ m_case(c)
 	wxBoxSizer *button_sizer = new wxBoxSizer(wxHORIZONTAL);
 	button_sizer->Add(numrun_sizer);
 	button_sizer->AddStretchSpacer();
-	button_sizer->Add(CreateButtonSizer(wxOK | wxCANCEL | wxHELP), 1, wxALL | wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALIGN_RIGHT, 5);
+//	button_sizer->Add(CreateButtonSizer(wxOK | wxCANCEL | wxHELP), 1, wxALL | wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALIGN_RIGHT, 5);
+	button_sizer->Add(CreateButtonSizer(wxOK | wxCANCEL | wxHELP), 1, wxALL | wxEXPAND, 5);
 
 
 	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -2362,13 +2429,13 @@ void Parametric_QS::UpdateFromParametricData()
 }
 
 
-void Parametric_QS::OnEditValues(wxCommandEvent &evt)
+void Parametric_QS::OnEditValues(wxCommandEvent &)
 {
 	if (!m_case)
 		return;
 
 	int idx = lstVariables->GetSelection();
-	if (idx < 0 || idx > m_input_names.Count())
+	if (idx < 0 || idx > (int)m_input_names.Count())
 		wxMessageBox("No variable selected!");
 	else
 	{
@@ -2521,7 +2588,7 @@ void Parametric_QS::OnValueDblClick(wxCommandEvent &evt)
 }
 
 
-void Parametric_QS::OnRemoveVariable(wxCommandEvent &evt)
+void Parametric_QS::OnRemoveVariable(wxCommandEvent &)
 {
 	if (!m_case)
 		return;
@@ -2532,7 +2599,7 @@ void Parametric_QS::OnRemoveVariable(wxCommandEvent &evt)
 	else
 	{
 		wxString name = "";
-		if ((idx >= 0) && (idx < m_input_names.Count()))
+		if ((idx >= 0) && (idx < (int)m_input_names.Count()))
 			name = m_input_names[idx];
 
 		for (std::vector<wxArrayString>::iterator it = m_input_values.begin();
@@ -2557,7 +2624,7 @@ void Parametric_QS::OnRemoveVariable(wxCommandEvent &evt)
 
 }
 
-void Parametric_QS::OnAddVariable(wxCommandEvent &evt)
+void Parametric_QS::OnAddVariable(wxCommandEvent &)
 {
 	if (!m_case)
 		return;
@@ -2574,7 +2641,7 @@ void Parametric_QS::OnAddVariable(wxCommandEvent &evt)
 		VarInfo &vi = *(it->second);
 
 		// update to select only "Parametric" variables
-		if (vi.Flags & VF_PARAMETRIC)
+		if ((vi.Flags & VF_PARAMETRIC) && !(vi.Flags & VF_INDICATOR) && !(vi.Flags & VF_CALCULATED))
 		{
 			wxString label = vi.Label;
 			if (label.IsEmpty())
@@ -2607,7 +2674,7 @@ void Parametric_QS::OnAddVariable(wxCommandEvent &evt)
 
 
 
-void Parametric_QS::OnVariableSelect(wxCommandEvent &evt)
+void Parametric_QS::OnVariableSelect(wxCommandEvent &)
 {
 	RefreshValuesList();
 }
@@ -2628,7 +2695,7 @@ void Parametric_QS::RefreshValuesList()
 
 	int idx = lstVariables->GetSelection();
 
-	if (idx >= 0 && idx < m_input_names.Count())
+	if (idx >= 0 && idx < (int)m_input_names.Count())
 	{
 		wxString name = m_input_names[idx];
 		items = GetValuesDisplayList(name);
@@ -2664,11 +2731,11 @@ wxString Parametric_QS::GetBaseCaseValue(const wxString &varname)
 wxArrayString Parametric_QS::GetValuesList(const wxString &varname)
 {
 	wxArrayString list;
-	for (int i = 0; i < m_input_values.size(); i++)
+	for (int i = 0; i < (int)m_input_values.size(); i++)
 	{
 		if (m_input_values[i].Count() > 0 && m_input_values[i].Item(0) == varname)
 		{
-			for (int j = 1; j < m_input_values[i].Count(); j++)
+			for (int j = 1; j < (int)m_input_values[i].Count(); j++)
 				list.Add(m_input_values[i].Item(j));
 			break;
 		}
@@ -2711,11 +2778,11 @@ wxArrayString Parametric_QS::GetValuesDisplayList(const wxString &varname)
 	}
 	else
 	{
-		for (int i = 0; i < m_input_values.size(); i++)
+		for (int i = 0; i < (int)m_input_values.size(); i++)
 		{
 			if (m_input_values[i].Count() > 0 && m_input_values[i].Item(0) == varname)
 			{
-				for (int j = 1; j < m_input_values[i].Count(); j++)
+				for (int j = 1; j < (int)m_input_values[i].Count(); j++)
 					list.Add(m_input_values[i].Item(j));
 				break;
 			}
@@ -2728,7 +2795,7 @@ void Parametric_QS::SetValuesList(const wxString &varname, const wxArrayString &
 {
 	int idx = -1;
 	if (values.Count() <= 0) return;
-	for (int i = 0; i < m_input_values.size(); i++)
+	for (int i = 0; i <(int) m_input_values.size(); i++)
 	{
 		if (m_input_values[i].Count() > 0 && m_input_values[i].Item(0) == varname)
 		{
@@ -2738,7 +2805,7 @@ void Parametric_QS::SetValuesList(const wxString &varname, const wxArrayString &
 	}
 	wxArrayString vals;
 	vals.Add(varname);
-	for (int i = 0; i < values.Count(); i++)
+	for (int i = 0; i < (int)values.Count(); i++)
 		vals.Add(values[i]);
 	if (idx > -1)
 		m_input_values[idx] = vals;
@@ -2759,7 +2826,7 @@ void Parametric_QS::UpdateCaseParametricData()
 		wxArrayString outputs;
 		for (size_t i = 0; i < par.Setup.size(); i++)
 		{
-			if (VarValue *vv = m_case->Values().Get(par.Setup[i].Name))
+			if (m_case->Values().Get(par.Setup[i].Name))
 				continue;
 			outputs.Add(par.Setup[i].Name);
 		}
