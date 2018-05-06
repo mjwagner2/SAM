@@ -1500,9 +1500,17 @@ void InputPageData::Write_text(wxOutputStream &os)
 
 	m_form.Write_text(os);
 	m_vars.Write_text(os);
-	out.WriteString(m_eqnScript);
-	out.PutChar('`');
-	out.WriteString(m_cbScript);
+	out.Write32((wxUint32)m_eqnScript.size());
+//	out.PutChar('`');
+	for (size_t i = 0; i < m_eqnScript.size(); i++)
+		out.PutChar(m_eqnScript[i]);
+//	out.WriteString(m_eqnScript);
+//	out.PutChar('`');
+	out.Write32((wxUint32)m_cbScript.size());
+//	out.PutChar('`');
+	for (size_t i = 0; i < m_cbScript.size(); i++)
+		out.PutChar(m_cbScript[i]);
+	//	out.WriteString(m_cbScript);
 	out.PutChar('`');
 
 //	out.Write8(0x48);
@@ -1517,8 +1525,22 @@ bool InputPageData::Read_text(wxInputStream &is)
 	bool ok = true;
 	ok = ok && m_form.Read_text(is);
 	ok = ok && m_vars.Read_text(is);
-	m_eqnScript = in.ReadWord();
-	m_cbScript = in.ReadWord();
+	m_eqnScript.Clear();
+	size_t n = in.Read32();
+	if (n > 0)
+	{
+		for (size_t i = 0; i < n; i++)
+			m_eqnScript.Append(in.GetChar());
+	}
+	m_cbScript.Clear();
+	n = in.Read32();
+	if (n > 0)
+	{
+		for (size_t i = 0; i < n; i++)
+			m_cbScript.Append(in.GetChar());
+	}
+//	m_eqnScript = in.ReadWord();
+//	m_cbScript = in.ReadWord();
 
 	return ok;
 //	return in.Read8() == code && ok;
