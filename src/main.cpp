@@ -1494,34 +1494,36 @@ bool InputPageData::Read(wxInputStream &is)
 void InputPageData::Write_text(wxOutputStream &os)
 {
 	wxTextOutputStream out(os);
-//	out.Write8(0x48);
-	out.Write8(1);
-	out.PutChar('`');;
-
 	m_form.Write_text(os);
 	m_vars.Write_text(os);
-	out.Write32((wxUint32)m_eqnScript.size());
-//	out.PutChar('`');
-	for (size_t i = 0; i < m_eqnScript.size(); i++)
-		out.PutChar(m_eqnScript[i]);
-//	out.WriteString(m_eqnScript);
-//	out.PutChar('`');
-	out.Write32((wxUint32)m_cbScript.size());
-//	out.PutChar('`');
-	for (size_t i = 0; i < m_cbScript.size(); i++)
-		out.PutChar(m_cbScript[i]);
-	//	out.WriteString(m_cbScript);
+	size_t n = m_eqnScript.size();
+	out.Write32((wxUint32)n);
+	if (n > 0)
+	{
+		out.PutChar('`');
+		for (size_t i = 0; i < n; i++)
+		{
+			if (m_eqnScript[i] != '\r')
+				out.PutChar(m_eqnScript[i]);
+		}
+	}
 	out.PutChar('`');
-
-//	out.Write8(0x48);
+	n = m_cbScript.size();
+	out.Write32((wxUint32)n);
+	if (n > 0)
+	{
+		out.PutChar('`');
+		for (size_t i = 0; i < n; i++)
+		{
+			if (m_cbScript[i] != '\r')
+				out.PutChar(m_cbScript[i]);
+		}
+	}
 }
 
 bool InputPageData::Read_text(wxInputStream &is)
 {
 	wxTextInputStream in(is, "`");
-	//	wxUint8 code = in.Read8();
-	in.Read8(); // wxUint8 ver
-
 	bool ok = true;
 	ok = ok && m_form.Read_text(is);
 	ok = ok && m_vars.Read_text(is);
@@ -1530,7 +1532,7 @@ bool InputPageData::Read_text(wxInputStream &is)
 	if (n > 0)
 	{
 		for (size_t i = 0; i < n; i++)
-			m_eqnScript.Append(in.GetChar());
+				m_eqnScript.Append(in.GetChar());
 	}
 	m_cbScript.Clear();
 	n = in.Read32();
@@ -1539,11 +1541,7 @@ bool InputPageData::Read_text(wxInputStream &is)
 		for (size_t i = 0; i < n; i++)
 			m_cbScript.Append(in.GetChar());
 	}
-//	m_eqnScript = in.ReadWord();
-//	m_cbScript = in.ReadWord();
-
 	return ok;
-//	return in.Read8() == code && ok;
 }
 
 bool InputPageData::BuildDatabases()
