@@ -1248,13 +1248,13 @@ void VarInfo::Write(wxOutputStream &os)
 	//	out.Write8(2);
 	out.Write8(3); // change to version 3 after wxString "UIObject" field added
 
-	out.Write32(Type);
-	out.WriteString(Label);
-	out.WriteString(Units);
-	out.WriteString(Group);
-	out.WriteString(wxJoin(IndexLabels, ','));
-	out.Write32(Flags);
-	DefaultValue.Write(os);
+	out.Write32( Type );
+	out.WriteString( Label );
+	out.WriteString( Units );
+	out.WriteString( Group );
+	out.WriteString( wxJoin(IndexLabels, '|') );
+	out.Write32( Flags );
+	DefaultValue.Write( os );
 	out.WriteString(UIObject);
 
 	out.Write8(0xe1);
@@ -1273,7 +1273,7 @@ bool VarInfo::Read(wxInputStream &is)
 	Label = in.ReadString();
 	Units = in.ReadString();
 	Group = in.ReadString();
-	IndexLabels = wxSplit(in.ReadString(), ',');
+	IndexLabels = wxSplit( in.ReadString(), '|' );
 	Flags = in.Read32();
 	bool valok = DefaultValue.Read(is);
 	if (ver < 3)
@@ -1310,7 +1310,7 @@ void VarInfo::Write_text(wxOutputStream &os)
 		out.WriteString(" ");
 	out.PutChar('`');
 	if (IndexLabels.Count() > 0)
-		out.WriteString(wxJoin(IndexLabels, ','));
+		out.WriteString(wxJoin(IndexLabels, '|'));
 	else
 		out.WriteString(" ");
 	out.PutChar('`');
@@ -1340,7 +1340,7 @@ bool VarInfo::Read_text(wxInputStream &is)
 	Label = in.ReadWord();
 	Units = in.ReadWord();
 	Group = in.ReadWord();
-	IndexLabels = wxSplit(in.ReadWord(), ',');
+	IndexLabels = wxSplit(in.ReadWord(), '|');
 	Flags = in.Read32();
 	ok = ok && DefaultValue.Read_text(is);
 	if (ver < 3)
