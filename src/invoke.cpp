@@ -1208,6 +1208,134 @@ static void fcall_xl_get( lk::invoke_t &cxt )
 		cxt.error( "invalid xl-obj-ref" );
 }
 
+static void fcall_xl_read(lk::invoke_t &cxt)
+{
+	LK_DOC("xl_read", "Read an excel file into a 2D array (default) or a table. Options: "
+		"'skip' (header lines to skip), "
+		"'numeric' (t/f to return numbers), "
+		"'order' (r/c, row-major order default), "
+		"'table' (t/f to return a table assuming 1 header line with names)",
+		"(string:file[, table:options]):array or table");
+
+	lk::vardata_t &out = cxt.result();
+	out.empty_hash();
+
+	size_t nskip = 0;
+	bool rowMajor = true;
+	bool tonum = false;
+	bool astable = false;
+	if (cxt.arg_count() > 1 && cxt.arg(1).deref().type() == lk::vardata_t::HASH)
+	{
+		lk::vardata_t &opts = cxt.arg(1).deref();
+
+		if (lk::vardata_t *item = opts.lookup("skip"))
+			nskip = item->as_unsigned();
+
+		if (lk::vardata_t *item = opts.lookup("numeric"))
+			tonum = item->as_boolean();
+
+		if (lk::vardata_t *item = opts.lookup("table"))
+			astable = item->as_boolean();
+
+		if (lk::vardata_t *item = opts.lookup("order"))
+			rowMajor = (item->as_string() == "c") ? false : true;
+	}
+
+	if (lkXLObject *xl = dynamic_cast<lkXLObject*>(cxt.env()->query_object(cxt.arg(0).as_integer())))
+	{
+		wxArrayString vals;
+		int rowCount, columnCount;
+		xl->Excel().getUsedCellRange(rowCount, columnCount, vals);
+
+		if (nskip >= rowCount - 1) nskip = 0;
+		if (astable)
+		{
+			if (rowMajor) {
+				wxArrayString colHeaders;
+				//read column headers from first nonskipped row
+				for (size_t c = 0; c < columnCount; c++) {
+					wxString name = vals[c*rowCount + nskip];
+					colHeaders.push_back(name);
+					if (name.IsEmpty()) continue;
+
+					lk::vardata_t &it = out.hash_item(name);
+					it.empty_vector();
+					it.resize(rowCount - 1 - nskip);
+				}
+				for (size_t c = 0; c < columnCount; c++) {
+					lk::vardata_t* it = out.lookup(colHeaders[c]);
+					for (size_t r = 1 + nskip; r < rowCount; r++) {
+						if (tonum) it->index(r - 1 - nskip)->assign(wxAtof(vals[c*rowCount + r]));
+						else it->index(r - 1 - nskip)->assign(vals[c*rowCount + r]);
+					}
+				}
+			}
+			else {
+				wxArrayString rowHeaders;
+				//read row headers from first nonskipped column
+				for (size_t r = 0; r < rowCount; r++) {
+					wxString name = vals[nskip*rowCount + r];
+					rowHeaders.push_back(name);
+					if (name.IsEmpty()) continue;
+
+					lk::vardata_t &it = out.hash_item(name);
+					it.empty_vector();
+					it.resize(columnCount - 1 - nskip);
+				}
+
+				for (size_t r = 0; r < rowCount; r++) {
+					lk::vardata_t* it = out.lookup(rowHeaders[r]);
+					for (size_t c = 1 + nskip; c < columnCount; c++) {
+						if (tonum) it->index(c - 1 - nskip)->assign(wxAtof(vals[c*rowCount + r]));
+						else it->index(c - 1 - nskip)->assign(vals[c*rowCount + r]);
+					}
+				}
+			}
+		}
+		else {
+			if (rowMajor == true) {
+				out.empty_vector();
+				out.vec()->resize(rowCount - nskip);
+				for (size_t r = nskip; r < rowCount; r++) {
+					lk::vardata_t *row = out.index(r - nskip);
+					row->empty_vector();
+					row->vec()->resize(columnCount);
+					for (size_t c = 0; c < columnCount; c++)
+					{
+						if (tonum) {
+							row->index(c)->assign(wxAtof(vals[c*rowCount + r]));
+						}
+						else {
+							row->index(c)->assign(vals[c*rowCount + r]);
+						}
+					}
+				}
+			}
+			else {
+				out.empty_vector();
+				out.vec()->resize(columnCount - nskip);
+				for (size_t c = nskip; c < columnCount; c++) {
+					lk::vardata_t *col = out.index(c - nskip);
+					col->empty_vector();
+					col->vec()->resize(rowCount);
+					for (size_t r = 0; r < rowCount; r++)
+					{
+						if (tonum) {
+							col->index(r)->assign(wxAtof(vals[c*rowCount + r]));
+						}
+						else {
+							col->index(r)->assign(vals[c*rowCount + r]);
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+		cxt.error("invalid xl-obj-ref");
+
+}
+
 #endif
 
 
@@ -1347,8 +1475,6 @@ static void sscvar_to_lkvar( lk::vardata_t &out, const char *name, ssc_data_t p_
 	}
 }
 
-
-
 class lkSSCdataObj : public lk::objref_t
 {
 	ssc_data_t m_data;
@@ -1358,6 +1484,10 @@ public:
 		m_data = ssc_data_create();
 	}
 	
+	lkSSCdataObj(ssc_data_t p_data) {
+		m_data = p_data;
+	}
+
 	virtual ~lkSSCdataObj() {
 		ssc_data_free( m_data );
 	}
@@ -1391,6 +1521,93 @@ void fcall_ssc_create( lk::invoke_t &cxt )
 {
 	LK_DOC( "ssc_create", "Create a new empty SSC data container object.", "(none):ssc-obj-ref" );	
 	cxt.result().assign( cxt.env()->insert_object( new lkSSCdataObj ) );
+}
+
+void fcall_ssc_module_create_from_case(lk::invoke_t &cxt)
+{
+	LK_DOC("ssc_module_create_from_case", "Create a new SSC data container object populated from the input compute module values defined in the current case", "(string:compute_module_name):ssc-obj-ref");
+	
+	// Get the existing simulation object from the base
+	Case *c = SamApp::Window()->GetCurrentCase();
+	Simulation &sim = c->BaseCase();
+
+	// Create the ssc_data and compute module 
+	wxString cm = cxt.arg(0).as_string();
+	ssc_data_t p_data = ssc_data_create();
+	ssc_module_t p_mod = ssc_module_create((const char*)cm.ToUTF8());
+	if (!p_mod)
+	{
+		cxt.error("could not create ssc module: " + cm);
+		return;
+	}
+
+	// Assign the compute module with existing values
+	int pidx = 0;
+	while (const ssc_info_t p_inf = ssc_module_var_info(p_mod, pidx++))
+	{
+		int var_type = ssc_info_var_type(p_inf);   // SSC_INPUT, SSC_OUTPUT, SSC_INOUT
+		int data_type = ssc_info_data_type(p_inf); // SSC_STRING, SSC_NUMBER, SSC_ARRAY, SSC_MATRIX		
+		wxString name(ssc_info_name(p_inf)); // assumed to be non-null
+		wxString reqd(ssc_info_required(p_inf));
+
+		if (var_type == SSC_INPUT || var_type == SSC_INOUT)
+		{
+			// handle ssc variable names
+			// that are explicit field accesses"shading:mxh"
+			wxString field;
+			int pos = name.Find(':');
+			if (pos != wxNOT_FOUND)
+			{
+				field = name.Mid(pos + 1);
+				name = name.Left(pos);
+			}
+
+			int existing_type = ssc_data_query(p_data, ssc_info_name(p_inf));
+			if (existing_type != data_type)
+			{
+				if (VarValue *vv = sim.GetInput(name))
+				{
+					if (!field.IsEmpty())
+					{
+						if (vv->Type() != VV_TABLE)
+							cxt.error("SSC variable has table:field specification, but '" + name + "' is not a table in SAM");
+
+						bool do_copy_var = false;
+						if (reqd.Left(1) == "?")
+						{
+							// if the SSC variable is optional, check for the 'en_<field>' element in the table
+							if (VarValue *en_flag = vv->Table().Get("en_" + field))
+								if (en_flag->Boolean())
+									do_copy_var = true;
+						}
+						else do_copy_var = true;
+
+						if (do_copy_var)
+						{
+							if (VarValue *vv_field = vv->Table().Get(field))
+							{
+								if (!VarValueToSSC(vv_field, p_data, name + ":" + field))
+									cxt.error("Error translating table:field variable from SAM UI to SSC for '" + name + "':" + field);
+							}
+						}
+
+					}
+
+					if (!VarValueToSSC(vv, p_data, name))
+						cxt.error("Error translating data from SAM UI to SSC for " + name);
+
+				}
+				else if (reqd == "*")
+					cxt.error("SSC requires input '" + name + "', but was not found in the SAM UI or from previous simulations");
+			}
+		}
+	}
+
+	// Run the ssc compute module and dump results into the cxt
+	cxt.result().assign(cxt.env()->insert_object(new lkSSCdataObj(p_data)));
+	ssc_module_free(p_mod);
+
+	// ssc_data_free is called later, as creating the new lkSSCdataObj doesn't actually create a deep copy of p_data
 }
 
 void fcall_ssc_free( lk::invoke_t &cxt )
@@ -3893,6 +4110,7 @@ lk::fcall_t* invoke_general_funcs()
 		fcall_xl_close,
 		fcall_xl_wkbook,
 		fcall_xl_sheet,
+		fcall_xl_read,
 		fcall_xl_set,
 		fcall_xl_get,
 		fcall_xl_autosizecols,
@@ -3922,6 +4140,7 @@ lk::fcall_t* invoke_ssc_funcs()
 {
 	static const lk::fcall_t vec[] = {
 		fcall_ssc_create,
+		fcall_ssc_module_create_from_case,
 		fcall_ssc_free,
 		fcall_ssc_dump,
 		fcall_ssc_var,
