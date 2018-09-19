@@ -439,8 +439,9 @@ void DefaultsManager::OnListRightClick( wxMouseEvent & )
 	menu.Append(ID_CHECK_ALL, "Check all");
 	menu.Append(ID_UNCHECK_ALL, "Uncheck all");
 	menu.AppendSeparator();
-	menu.Append(ID_SAVE_BINARY, "Save checked as binary");
-	menu.Append(ID_SAVE_TEXT, "Save checked as text");
+//	menu.Append(ID_SAVE_BINARY, "Save checked as binary");
+//	menu.Append(ID_SAVE_TEXT, "Save checked as text");
+	menu.Append(ID_SAVE_TEXT, "Save checked");
 	PopupMenu( &menu );
 }
 
@@ -464,7 +465,11 @@ void DefaultsManager::OnQuery(wxCommandEvent &)
 		
 		wxString file(GetDefaultsFile(m_techList[i], m_finList[i]));
 		VarTable tab;
+#ifdef UI_BINARY
 		if ( !tab.Read( file ))			
+#else
+		if (!tab.Read_text(file))
+#endif
 		{
 			Log("file error: " + file);
 			continue;
@@ -488,7 +493,11 @@ void DefaultsManager::OnLoad( wxCommandEvent & )
 
 	wxString file(GetDefaultsFile(m_techList[i], m_finList[i]));
 	VarTable tab;
-	if ( !tab.Read( file ))			
+#ifdef UI_BINARY
+	if (!tab.Read(file))
+#else
+	if (!tab.Read_text(file))
+#endif
 	{
 		Log("file read error: " + file);
 		return;
@@ -613,7 +622,11 @@ void DefaultsManager::OnDeleteVar(wxCommandEvent &)
 		wxString file = GetDefaultsFile(m_techList[i], m_finList[i]);
 		
 		VarTable tab;
+#ifdef UI_BINARY
 		if ( !tab.Read( file ) )
+#else
+		if (!tab.Read_text(file))
+#endif
 		{
 			Log("read error: " + file );
 			continue;
@@ -623,7 +636,11 @@ void DefaultsManager::OnDeleteVar(wxCommandEvent &)
 		{
 			tab.Delete( name );
 
-			if (!tab.Write( file ) )
+#ifdef UI_BINARY
+			if (!tab.Write(file))
+#else
+			if (!tab.Write_text(file))
+#endif
 				Log("Error writing: " + file );
 			else
 				Log("Deleted '" + name + "' from " + m_techList[i] + ", " + m_finList[i]);
